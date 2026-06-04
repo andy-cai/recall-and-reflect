@@ -110,11 +110,13 @@ _CARDS_SYSTEM = """You turn a short study conversation into spaced-repetition ca
 
 Produce a focused set (aim for the number requested) mixing two types:
 - "basic": a {question, answer} testing one core idea, distinction, or application.
-- "cloze": a {source} sentence with {{c1::term}} markers (1-2 markers, substantive terms only).
+- "cloze": a {source} that is ONE standalone sentence with {{c1::term}} markers
+  (1-2 markers, substantive terms only).
 
 Rules: test the most important ideas, not trivia. Prefer the learner's own words and
-examples from the conversation. Answers concise and unambiguous. Vary the cognitive
-angle (recall, application, contrast). Output only the structured object."""
+examples. Answers concise and unambiguous. Vary the cognitive angle (recall,
+application, contrast). NEVER copy the conversation, speaker labels, or multiple lines
+into a cloze source — it must be a single clean sentence. Output only the structured object."""
 
 _GRADE_SYSTEM = """You grade a learner's free-recall answer against a reference answer, then nudge them.
 
@@ -123,9 +125,9 @@ it's terse. If the core idea is present, mark "correct". If partially right or m
 key piece, "partial". If absent/wrong, "wrong". Do NOT invent requirements beyond the
 reference, and do not be harsh about phrasing.
 
-Then write ONE short Socratic "poke": a single question that pushes them toward the gap
-(or, if they nailed it, one step deeper) WITHOUT revealing the answer. Keep it to a
-sentence."""
+Then ALWAYS write ONE short Socratic "poke" (never leave it empty): a single question
+that pushes them toward the gap they missed, or — if they nailed it — one level deeper
+(a "why", an edge case, or an application). Never reveal the answer. Keep it to one sentence."""
 
 
 class LLMService:
@@ -272,7 +274,10 @@ class LLMService:
         for c in result.cards:
             ctype = (c.type or "basic").strip().lower()
             if ctype == "cloze" and c.source.strip():
-                out.append({"type": "cloze", "source": c.source.strip()})
+                # a cloze is one sentence — drop any leaked transcript / extra lines
+                src = c.source.strip().split("\n")[0].strip()
+                if "{{c" in src:
+                    out.append({"type": "cloze", "source": src})
             elif c.question.strip() and c.answer.strip():
                 out.append({"type": "basic", "question": c.question.strip(), "answer": c.answer.strip()})
         if not out:

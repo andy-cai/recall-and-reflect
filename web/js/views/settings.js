@@ -1,0 +1,87 @@
+import { el, toast, applyTheme, state } from '../store.js';
+import { api } from '../api.js';
+import { refreshBadge } from '../app.js';
+
+export async function render() {
+  const s = await api.getSettings();
+  const view = el('div', { class: 'view' });
+  view.append(el('div', { class: 'page-head' }, el('h1', {}, 'Settings')));
+
+  // daily target
+  const targetInput = el('input', { class: 'input', type: 'number', min: '1', max: '500', value: String(s.daily_target), style: { maxWidth: '120px' } });
+
+  // desired retention
+  const retVal = Math.round((s.desired_retention || 0.9) * 100);
+  const retLabel = el('b', {}, retVal + '%');
+  const retNote = el('div', { class: 'muted', style: { fontSize: '12.5px' } });
+  const retSlider = el('input', { class: 'slider', type: 'range', min: '70', max: '97', value: String(retVal) });
+  function retText(v) { return v >= 92 ? 'Thorough — more frequent reviews.' : v <= 82 ? 'Light — fewer reviews, more forgetting.' : 'Balanced (90% is the sweet spot).'; }
+  retNote.textContent = retText(retVal);
+  retSlider.addEventListener('input', () => { retLabel.textContent = retSlider.value + '%'; retNote.textContent = retText(+retSlider.value); });
+
+  // model
+  const models = (s.llm && s.llm.models) || [];
+  const modelSel = el('select', { class: 'input', style: { maxWidth: '260px' } },
+    ...(models.length ? models : [s.model]).map(m => el('option', { value: m, selected: m === s.model ? '' : null }, m)));
+  const llmStatus = s.llm && s.llm.available
+    ? el('span', { class: 'verdict correct' }, '● ' + s.llm.model)
+    : el('span', { class: 'verdict wrong' }, '● offline');
+
+  // theme
+  const themeSel = el('select', { class: 'input', style: { maxWidth: '160px' } },
+    ...['light', 'dark', 'system'].map(t => el('option', { value: t, selected: t === s.theme ? '' : null }, t[0].toUpperCase() + t.slice(1))));
+  themeSel.addEventListener('change', () => { applyTheme(themeSel.value); localStorage.setItem('rr-theme', themeSel.value); });
+
+  // notifications
+  let notif = !!s.notifications;
+  const sw = el('div', { class: 'switch' + (notif ? ' on' : ''), onClick: () => { notif = !notif; sw.classList.toggle('on', notif); } }, el('i'));
+
+  function field(label, control, hint) {
+    return el('div', { class: 'row spread', style: { padding: '14px 0', borderBottom: '1px solid var(--border)' } },
+      el('div', {}, el('div', { style: { fontWeight: '560' } }, label), hint ? el('div', { class: 'muted', style: { fontSize: '12.5px', maxWidth: '420px' } }, hint) : null),
+      control);
+  }
+
+  const saveBtn = el('button', { class: 'btn btn-primary', onClick: save }, 'Save settings');
+
+  view.append(el('div', { class: 'card' },
+    field('Daily review target', targetInput, 'A gentle goal for reviews per day.'),
+    el('div', { style: { padding: '14px 0', borderBottom: '1px solid var(--border)' } },
+      el('div', { class: 'row spread' }, el('div', { style: { fontWeight: '560' } }, 'Target retention'), retLabel),
+      el('div', { style: { margin: '8px 0' } }, retSlider), retNote),
+    field('AI model (local)', el('div', { class: 'row', style: { gap: '10px' } }, llmStatus, modelSel), 'Runs entirely on your machine via Ollama. Cloud models are blocked.'),
+    field('Theme', themeSel),
+    field('Due reminders', sw, 'A gentle Windows notification when reviews pile up.'),
+    el('div', { class: 'row', style: { justifyContent: 'flex-end', paddingTop: '16px' } }, saveBtn)));
+
+  view.append(el('div', { class: 'card', style: { marginTop: '16px', background: 'var(--surface-2)' } },
+    el('div', { class: 'row', style: { gap: '10px' } },
+      el('span', {}, '🔒'),
+      el('div', { class: 'muted', style: { fontSize: '13px' } },
+        el('b', { style: { color: 'var(--text-soft)' } }, 'Your data stays on this machine. '),
+        'Notes and reviews live in a local SQLite file. The app only talks to a local Ollama and never sends anything to the cloud.'))));
+
+  async function save() {
+    saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+    try {
+      await api.updateSettings({
+        daily_target: +targetInput.value,
+        desired_retention: +retSlider.value / 100,
+        notifications: notif,
+        theme: themeSel.value,
+        model: modelSel.value,
+      });
+      localStorage.setItem('rr-theme', themeSel.value);
+      applyTheme(themeSel.value);
+      state.settings = await api.getSettings();
+      state.llm = state.settings.llm;
+      refreshBadge();
+      toast('Settings saved');
+    } catch (e) {
+      toast('Save failed: ' + e.message);
+    }
+    saveBtn.disabled = false; saveBtn.textContent = 'Save settings';
+  }
+
+  return view;
+}

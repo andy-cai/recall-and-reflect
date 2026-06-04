@@ -1,0 +1,82 @@
+// Fetch client. All endpoints are local (same origin).
+
+async function jfetch(method, url, body) {
+  const opts = { method, headers: {} };
+  if (body !== undefined) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const res = await fetch(url, opts);
+  const data = res.status === 204 ? null : await res.json().catch(() => null);
+  if (!res.ok) {
+    const err = new Error((data && data.error) || `HTTP ${res.status}`);
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+  return data;
+}
+
+// Async generator yielding text chunks from a streaming endpoint.
+export async function* streamText(url, body) {
+  const res = await fetch(url, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = new Error('stream failed');
+    err.status = res.status;
+    throw err;
+  }
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = dec.decode(value, { stream: true });
+    if (chunk) yield chunk;
+  }
+}
+
+export const api = {
+  // dashboards
+  today: () => jfetch('GET', '/api/today'),
+  stats: () => jfetch('GET', '/api/stats'),
+
+  // settings + llm
+  getSettings: () => jfetch('GET', '/api/settings'),
+  updateSettings: (b) => jfetch('PUT', '/api/settings', b),
+  llmStatus: () => jfetch('GET', '/api/llm/status'),
+
+  // capture
+  captureCards: (transcript, n = 4) => jfetch('POST', '/api/capture/cards', { transcript, n }),
+  followupStream: (messages) => streamText('/api/capture/followup', { messages }),
+
+  // learnings + cards
+  listLearnings: (search = '', tag = null) => {
+    const p = new URLSearchParams();
+    if (search) p.set('search', search);
+    if (tag) p.set('tag', tag);
+    const qs = p.toString();
+    return jfetch('GET', '/api/learnings' + (qs ? `?${qs}` : ''));
+  },
+  getLearning: (id) => jfetch('GET', `/api/learnings/${id}`),
+  createLearning: (b) => jfetch('POST', '/api/learnings', b),
+  updateLearning: (id, b) => jfetch('PUT', `/api/learnings/${id}`, b),
+  deleteLearning: (id) => jfetch('DELETE', `/api/learnings/${id}`),
+  addCard: (id, b) => jfetch('POST', `/api/learnings/${id}/cards`, b),
+  updateCard: (id, b) => jfetch('PUT', `/api/cards/${id}`, b),
+  deleteCard: (id) => jfetch('DELETE', `/api/cards/${id}`),
+  suspendCard: (id, suspended) => jfetch('POST', `/api/cards/${id}/suspend`, { suspended }),
+
+  // review
+  queue: (tag = null, learning_id = null) => {
+    const p = new URLSearchParams();
+    if (tag) p.set('tag', tag);
+    if (learning_id) p.set('learning_id', learning_id);
+    const qs = p.toString();
+    return jfetch('GET', '/api/review/queue' + (qs ? `?${qs}` : ''));
+  },
+  grade: (question_id, recall) => jfetch('POST', '/api/review/grade', { question_id, recall }),
+  answer: (b) => jfetch('POST', '/api/review/answer', b),
+  undo: () => jfetch('POST', '/api/review/undo'),
+};
