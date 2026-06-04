@@ -1,0 +1,9 @@
+# Recall & Reflect — local-first spaced repetition
+# Pure-Python runtime; the frontend has no build step.
+
+fastapi>=0.115        # API + static serving
+uvicorn>=0.30         # ASGI server (plain; no C-extension extras needed)
+httpx>=0.27           # talks to local Ollama
+pydantic>=2.7         # structured LLM output validation
+apscheduler>=3.10     # gentle due-review reminder scheduler
+winotify>=1.1 ; sys_platform == "win32"   # Windows toast notifications
