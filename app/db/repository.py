@@ -78,6 +78,11 @@ class Repository:
         self.db.execute("UPDATE learnings SET notes = ? WHERE id = ?",
                         ((notes or None), learning_id))
 
+    def set_card_due(self, question_id: int, next_at: datetime) -> None:
+        """Pre-schedule a (still-new) card's first appearance — used to ease in bulk topics."""
+        self.db.execute("UPDATE questions SET next_review_at = ? WHERE id = ?",
+                        (to_iso(next_at), question_id))
+
     def get_learning(self, learning_id: int) -> Optional[Learning]:
         row = self.db.fetch_one("SELECT * FROM learnings WHERE id = ?", (learning_id,))
         return self._learning(row) if row else None
@@ -124,11 +129,11 @@ class Repository:
     def update_learning(
         self, learning_id: int, title: str, content: str,
         reflection: Optional[str] = None, subject: Optional[str] = None,
-        tags: Optional[list[str]] = None,
+        tags: Optional[list[str]] = None, notes: Optional[str] = None,
     ) -> None:
         self.db.execute(
-            "UPDATE learnings SET title = ?, content = ?, reflection = ?, subject = ? WHERE id = ?",
-            (title, content, reflection, (subject or None), learning_id),
+            "UPDATE learnings SET title = ?, content = ?, reflection = ?, subject = ?, notes = ? WHERE id = ?",
+            (title, content, reflection, (subject or None), (notes or None), learning_id),
         )
         if tags is not None:
             self.set_learning_tags(learning_id, tags)

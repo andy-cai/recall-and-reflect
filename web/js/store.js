@@ -30,6 +30,20 @@ export function add(node, children) {
 
 export function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
 
+// A small ⓘ icon that toggles an explanatory popover on click.
+export function infoTip(text) {
+  const pop = el('span', { class: 'info-pop' }, text);
+  const tip = el('span', { class: 'info-tip', role: 'button', tabindex: '0', 'aria-label': 'More info' }, 'i', pop);
+  function onDoc(e) { if (!tip.contains(e.target)) { tip.classList.remove('open'); document.removeEventListener('click', onDoc, true); } }
+  tip.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const opening = !tip.classList.contains('open');
+    document.querySelectorAll('.info-tip.open').forEach(t => t.classList.remove('open'));
+    if (opening) { tip.classList.add('open'); setTimeout(() => document.addEventListener('click', onDoc, true), 0); }
+  });
+  return tip;
+}
+
 export function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

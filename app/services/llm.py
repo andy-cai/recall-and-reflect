@@ -103,6 +103,15 @@ class SubjectAssigns(BaseModel):
     items: list[SubjectAssign] = Field(default_factory=list)
 
 
+class TopicItem(BaseModel):
+    title: str = Field(default="", description="short topic title (a concept worth remembering)")
+    note: str = Field(default="", description="optional one-line note from the text, else empty")
+
+
+class TopicList(BaseModel):
+    topics: list[TopicItem] = Field(default_factory=list)
+
+
 # ---------- prompts ----------
 
 _CAPTURE_SYSTEM = """You are a sharp, warm study partner helping someone lock in something they just learned.
@@ -158,6 +167,13 @@ _SUBJECT_SYSTEM = """You file study notes into broad subject areas (e.g. "Machin
 Return concise areas in Title Case, 1–3 words. STRONGLY prefer reusing an existing
 subject when one reasonably fits; invent a new area only when none do, and reuse the
 SAME new area across related notes. Never return an empty subject."""
+
+_SPLIT_SYSTEM = """You extract distinct STUDY TOPICS from a block of text the learner pasted.
+
+Each topic is a concise title (a concept, skill, result, or fact worth remembering on
+its own), plus an optional one-line note ONLY if the text says something specific about
+it. Split granularly enough that each could be reviewed separately, but never invent
+topics that aren't in the text. Output only the structured object."""
 
 
 class LLMService:
@@ -349,6 +365,19 @@ class LLMService:
         valid = {it["id"] for it in items}
         return [{"id": a.id, "subject": a.subject.strip()}
                 for a in result.items if a.id in valid and a.subject.strip()]
+
+    def split_topics(self, text: str) -> list[dict]:
+        messages = [
+            {"role": "system", "content": _SPLIT_SYSTEM},
+            {"role": "user", "content": f"Text:\n---\n{text[:4000]}\n---\nExtract the study topics."},
+        ]
+        result = self._complete_json(messages, TopicList, temperature=0.2)
+        out = []
+        for t in result.topics:
+            title = t.title.strip()
+            if title:
+                out.append({"title": title, "note": t.note.strip()})
+        return out
 
 
 _service: Optional[LLMService] = None

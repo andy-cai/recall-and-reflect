@@ -3,6 +3,12 @@ import { el, clear, toast, agoDate, relDate, state } from '../store.js';
 import { api } from '../api.js';
 import { navigate, refreshBadge } from '../app.js';
 
+function parseConversation(raw) {
+  if (!raw) return [];
+  try { const a = JSON.parse(raw); return Array.isArray(a) ? a.filter(m => m && m.content) : []; }
+  catch { return []; }
+}
+
 export async function render({ rest } = {}) {
   if (rest && rest[0]) return detail(Number(rest[0]));
   return list();
@@ -167,8 +173,9 @@ async function detail(id) {
 
   const subjectNames = (await api.subjects().catch(() => ({ names: [] }))).names || [];
   const titleInput = el('input', { class: 'input', value: L.title, style: { fontSize: '20px', fontWeight: '600' } });
+  const llmOk = !!(state.llm && state.llm.available);
   const contentArea = el('textarea', { class: 'input', rows: '4' }); contentArea.value = L.content || '';
-  const reflectionArea = el('textarea', { class: 'input', rows: '3' }); reflectionArea.value = L.reflection || '';
+  const notesArea = el('textarea', { class: 'input', rows: '3', placeholder: 'Add notes over time — corrections, links, fresh examples…' }); notesArea.value = L.notes || '';
   const tagsInput = el('input', { class: 'input', value: (L.tags || []).join(', ') });
   const subjectList = el('datalist', { id: 'subj-list-d' }, ...subjectNames.map(n => el('option', { value: n })));
   const subjectInput = el('input', { class: 'input', value: L.subject || '', placeholder: 'e.g. Machine Learning', list: 'subj-list-d' });
@@ -177,15 +184,31 @@ async function detail(id) {
     el('div', { class: 'field' }, el('label', { class: 'lbl' }, 'Title'), titleInput),
     el('div', { class: 'field' }, el('label', { class: 'lbl' }, 'Subject / area'), subjectInput, subjectList),
     el('div', { class: 'field' }, el('label', { class: 'lbl' }, 'What you learned'), contentArea),
-    el('div', { class: 'field' }, el('label', { class: 'lbl' }, 'Reflection notes'), reflectionArea),
+    el('div', { class: 'field' }, el('label', { class: 'lbl' }, 'My notes'), notesArea),
     el('div', { class: 'field' }, el('label', { class: 'lbl' }, 'Tags'), tagsInput),
     el('div', { class: 'row', style: { justifyContent: 'flex-end' } },
       el('button', { class: 'btn btn-primary', onClick: saveMeta }, 'Save'))));
 
+  // capture conversation (read-only, collapsed)
+  const convo = parseConversation(L.conversation);
+  if (convo.length) {
+    const chev = el('span', { class: 'muted', style: { fontSize: '12px' } }, '▸');
+    const log = el('div', { class: 'chat-log', style: { marginTop: '12px' } });
+    for (const m of convo) log.append(el('div', { class: 'msg ' + (m.role === 'user' ? 'user' : 'ai') }, m.content));
+    const body = el('div', { style: { display: 'none' } }, log);
+    let open = false;
+    const toggle = el('button', { class: 'btn btn-ghost', style: { width: '100%', justifyContent: 'space-between', padding: '10px 12px' },
+      onClick: () => { open = !open; body.style.display = open ? '' : 'none'; chev.textContent = open ? '▾' : '▸'; } },
+      el('span', {}, `Capture conversation · ${convo.length} message${convo.length !== 1 ? 's' : ''}`), chev);
+    view.append(el('div', { class: 'card', style: { marginTop: '16px', padding: '6px' } }, toggle, body));
+  }
+
   // cards
   view.append(el('div', { class: 'row spread', style: { margin: '24px 0 12px' } },
-    el('div', { class: 'eyebrow' }, `${data.cards.length} card${data.cards.length !== 1 ? 's' : ''}`),
-    el('button', { class: 'btn', style: { padding: '6px 12px' }, onClick: addCard }, '+ Add card')));
+    el('div', { class: 'eyebrow' }, `${data.cards.length} prompt${data.cards.length !== 1 ? 's' : ''}`),
+    el('div', { class: 'row', style: { gap: '8px' } },
+      llmOk ? el('button', { class: 'btn', style: { padding: '6px 12px' }, onClick: genMore }, '✨ Generate more') : null,
+      el('button', { class: 'btn', style: { padding: '6px 12px' }, onClick: addCard }, '+ Add'))));
 
   const cardList = el('div', { class: 'stack' });
   view.append(cardList);
@@ -198,7 +221,7 @@ async function detail(id) {
     const stateLabel = c.suspended ? 'suspended' : (c.next_review_at ? relDate(c.next_review_at) : 'new');
     node.append(
       el('div', { class: 'row spread', style: { marginBottom: '8px' } },
-        el('span', { class: 'tag' }, c.card_type === 'cloze' ? 'cloze' : 'basic'),
+        el('span', { class: 'tag' }, c.card_type === 'cloze' ? 'cloze' : (c.card_type === 'recall' ? 'free recall' : 'question')),
         el('span', { class: 'muted', style: { fontSize: '12px' } }, `due ${stateLabel} · S=${c.stability}`)),
       el('div', { class: 'field', style: { marginBottom: '8px' } }, el('label', { class: 'lbl' }, 'Question'), q),
       el('div', { class: 'field', style: { marginBottom: '10px' } }, el('label', { class: 'lbl' }, 'Answer'), a),
@@ -212,11 +235,22 @@ async function detail(id) {
   async function saveMeta() {
     await api.updateLearning(id, {
       title: titleInput.value.trim(), content: contentArea.value.trim(),
-      reflection: reflectionArea.value.trim() || null,
+      reflection: L.reflection || null,
       subject: subjectInput.value.trim() || null,
+      notes: notesArea.value.trim() || null,
       tags: tagsInput.value.split(',').map(t => t.trim()).filter(Boolean),
     });
     toast('Saved');
+  }
+  async function genMore(e) {
+    const btn = e.currentTarget, orig = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Thinking…';
+    try {
+      const r = await api.generateMore(id);
+      toast(r.added ? `Added ${r.added} question${r.added !== 1 ? 's' : ''}` : 'No new questions');
+      refreshBadge(); await reloadCards();
+    } catch (err) { toast(err.status === 503 ? 'Start Ollama to generate' : 'Generation failed'); }
+    btn.disabled = false; btn.textContent = orig;
   }
   async function addCard() {
     const res = await api.addCard(id, { type: 'basic', question: 'New question', answer: 'Answer' });

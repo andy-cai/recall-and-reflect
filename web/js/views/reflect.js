@@ -2,7 +2,7 @@
 // follow-ups, then sets the topic up for review. Every topic gets a free-recall prompt
 // by default ("recall it in your own words"); a few optional detail questions are tucked
 // away. No flashcard authoring required.
-import { el, clear, toast, state } from '../store.js';
+import { el, clear, toast, state, infoTip } from '../store.js';
 import { api } from '../api.js';
 import { navigate, refreshBadge } from '../app.js';
 
@@ -30,6 +30,8 @@ export async function render() {
       ? 'Talk a topic through — explaining it yourself is what makes it stick.'
       : 'AI is offline — jot the topic down; you can talk it through later.')));
 
+  const chatWrap = el('div', {});
+
   // ---------- topic panel ----------
   const titleInput = el('input', { class: 'input', placeholder: 'Topic (auto-filled)' });
   const tagsInput = el('input', { class: 'input', placeholder: 'tags, comma separated' });
@@ -52,7 +54,8 @@ export async function render() {
     onClick: () => { toggleDetails(true); detailList.append(makeEditor({ type: 'basic' })); } }, '+ add a question');
   const detailBody = el('div', { style: { display: 'none', marginTop: '8px' } }, detailList, addQBtn);
   const detailHeader = el('button', { class: 'btn btn-ghost', style: { width: '100%', justifyContent: 'space-between', padding: '8px 10px' },
-    onClick: () => toggleDetails() }, el('span', {}, 'Detail questions ', detailCount), chev);
+    onClick: () => toggleDetails() }, el('span', {}, 'Detail questions ', detailCount,
+      infoTip('Optional. Your main review is recalling this topic in your own words — these just drill specific details. Edit or remove any.')), chev);
   const detailDisclosure = el('div', { style: { border: '1px solid var(--border)', borderRadius: '10px', padding: '4px', margin: '0 0 12px' } }, detailHeader, detailBody);
 
   function updateCount() { detailCount.textContent = editors.length ? `· ${editors.length}` : ''; }
@@ -186,19 +189,109 @@ export async function render() {
     composer.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSend(); } });
 
     addMsg('ai', GREETING);
-    view.append(el('div', { class: 'reflect-grid' },
+    chatWrap.append(el('div', { class: 'reflect-grid' },
       el('div', { class: 'chat' }, log,
         el('div', { class: 'composer' }, composer, el('div', { class: 'stack', style: { gap: '6px' } }, sendBtn, makeBtn))),
       topicPanel));
     setTimeout(() => composer.focus(), 50);
   } else {
     contentArea = el('textarea', { class: 'input', rows: '6', placeholder: 'What’s the topic? Describe it in your own words — context, examples, why it matters.' });
-    view.append(el('div', { class: 'reflect-grid' },
+    chatWrap.append(el('div', { class: 'reflect-grid' },
       el('div', { class: 'stack' },
         el('div', { class: 'field' }, el('label', { class: 'lbl' }, 'The topic'), contentArea),
         el('p', { class: 'muted', style: { fontSize: '13px' } }, 'Tip: start Ollama (qwen2.5:7b) to talk it through and auto-prep questions.')),
       topicPanel));
   }
 
+  // ---------- quick add (bulk) ----------
+  const quickWrap = el('div', { style: { display: 'none' } });
+  buildQuickAdd(quickWrap, subjectNames, llmOk);
+
+  const chatBtn = el('button', { class: 'chip on', onClick: () => setMode('chat') }, llmOk ? 'Reflect' : 'Write');
+  const quickBtn = el('button', { class: 'chip', onClick: () => setMode('quick') }, 'Quick add');
+  function setMode(m) {
+    chatBtn.classList.toggle('on', m === 'chat');
+    quickBtn.classList.toggle('on', m === 'quick');
+    chatWrap.style.display = m === 'chat' ? '' : 'none';
+    quickWrap.style.display = m === 'quick' ? '' : 'none';
+  }
+  view.append(el('div', { class: 'row', style: { gap: '7px', marginBottom: '16px' } }, chatBtn, quickBtn));
+  view.append(chatWrap, quickWrap);
+
   return view;
+}
+
+function buildQuickAdd(root, subjectNames, llmOk) {
+  const subjList = el('datalist', { id: 'subj-list-q' }, ...subjectNames.map(n => el('option', { value: n })));
+  const subjectInput = el('input', { class: 'input', placeholder: 'Subject for all (optional)', list: 'subj-list-q' });
+  const tagsInput = el('input', { class: 'input', placeholder: 'tags for all (optional)' });
+  const perDay = el('input', { class: 'input', type: 'number', value: '8', style: { maxWidth: '84px' } });
+  const text = el('textarea', { class: 'input', rows: '9',
+    placeholder: 'One topic per line. Add a note after — or : if you like.\n\nQ-factor of SDOF systems — higher Q = sharper resonance, slower decay\nNyquist stability criterion\nPluralism in global power balances' });
+  const countLbl = el('span', { class: 'muted' }, '');
+  const addBtn = el('button', { class: 'btn btn-primary' }, 'Add topics');
+
+  const lines = () => text.value.split('\n').map(l => l.trim()).filter(Boolean);
+  const parseItems = () => lines().map(l => {
+    const m = l.match(/^(.*?)\s+[—:-]\s+(.*)$/);
+    return m ? { title: m[1].trim(), note: m[2].trim() } : { title: l, note: '' };
+  });
+  const updateCount = () => {
+    const n = lines().length;
+    countLbl.textContent = n ? `${n} topic${n !== 1 ? 's' : ''}` : '';
+    addBtn.textContent = n ? `Add ${n} topic${n !== 1 ? 's' : ''}` : 'Add topics';
+  };
+  text.addEventListener('input', updateCount);
+  addBtn.addEventListener('click', async () => {
+    const items = parseItems();
+    if (!items.length) { toast('Add at least one topic.'); return; }
+    addBtn.disabled = true; addBtn.textContent = 'Adding…';
+    try {
+      const res = await api.bulkTopics({ items, subject: subjectInput.value.trim() || null,
+        tags: tagsInput.value.split(',').map(t => t.trim()).filter(Boolean),
+        per_day: Math.max(1, parseInt(perDay.value, 10) || 8) });
+      toast(`Added ${res.created} topic${res.created !== 1 ? 's' : ''} — easing in ${perDay.value}/day`);
+      refreshBadge(); navigate('#/library');
+    } catch (e) { toast('Add failed: ' + e.message); addBtn.disabled = false; updateCount(); }
+  });
+
+  root.append(el('div', { class: 'card stack' },
+    el('div', { class: 'row spread' }, el('div', { class: 'eyebrow' }, 'Add topics in bulk'), countLbl),
+    el('p', { class: 'muted', style: { fontSize: '13px', marginTop: '-4px' } },
+      'One per line — each becomes a topic with a free-recall prompt. They ease into review a few per day.'),
+    text,
+    el('div', { class: 'row wrap', style: { gap: '12px' } },
+      el('div', { class: 'field', style: { flex: '1', minWidth: '150px' } }, el('label', { class: 'lbl' }, 'Subject (all)'), subjectInput, subjList),
+      el('div', { class: 'field', style: { flex: '1', minWidth: '150px' } }, el('label', { class: 'lbl' }, 'Tags (all)'), tagsInput),
+      el('div', { class: 'field' }, el('label', { class: 'lbl' }, 'New / day', infoTip('How many of these topics become due each day, so a big batch eases into your routine gradually instead of all at once.')), perDay)),
+    el('div', { class: 'row', style: { justifyContent: 'flex-end' } }, addBtn)));
+
+  if (llmOk) {
+    const splitText = el('textarea', { class: 'input', rows: '4', placeholder: 'Paste an outline or messy notes…' });
+    const splitBtn = el('button', { class: 'btn' }, '✨ Split into topics');
+    splitBtn.addEventListener('click', async () => {
+      const t = splitText.value.trim();
+      if (!t) { toast('Paste some text first.'); return; }
+      splitBtn.disabled = true; splitBtn.textContent = 'Thinking…';
+      try {
+        const res = await api.splitTopics(t);
+        const tops = res.topics || [];
+        if (!tops.length) { toast('No topics found.'); }
+        else {
+          const add = tops.map(x => x.note ? `${x.title} — ${x.note}` : x.title).join('\n');
+          text.value = (text.value.trim() ? text.value.trim() + '\n' : '') + add;
+          updateCount();
+          toast(`Pulled out ${tops.length} — review & save above`);
+        }
+      } catch (e) { toast(e.status === 503 ? 'Start Ollama to use AI split' : 'Split failed'); }
+      splitBtn.disabled = false; splitBtn.textContent = '✨ Split into topics';
+    });
+    root.append(el('div', { class: 'card stack', style: { marginTop: '16px' } },
+      el('div', { class: 'eyebrow' }, 'Or let AI split a paste'),
+      el('p', { class: 'muted', style: { fontSize: '13px', marginTop: '-4px' } },
+        'Paste an outline or notes; the local model pulls out a topic list into the box above.'),
+      splitText,
+      el('div', { class: 'row', style: { justifyContent: 'flex-end' } }, splitBtn)));
+  }
+  updateCount();
 }

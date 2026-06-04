@@ -1,5 +1,6 @@
 """Learnings + cards CRUD, and saving a captured learning."""
 
+from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter
@@ -122,6 +123,7 @@ class LearningUpdate(BaseModel):
     content: str
     reflection: Optional[str] = None
     subject: Optional[str] = None
+    notes: Optional[str] = None
     tags: list[str] = []
 
 
@@ -129,8 +131,32 @@ class LearningUpdate(BaseModel):
 def update_learning(learning_id: int, body: LearningUpdate):
     repo = Repository()
     repo.update_learning(learning_id, body.title.strip(), body.content.strip(),
-                         reflection=body.reflection, subject=body.subject, tags=body.tags)
+                         reflection=body.reflection, subject=body.subject,
+                         tags=body.tags, notes=body.notes)
     return {"ok": True}
+
+
+@router.post("/learnings/{learning_id}/generate")
+def generate_more(learning_id: int):
+    """Generate a few more recall questions for an existing topic (on demand)."""
+    repo = Repository()
+    llm = get_llm()
+    learning = repo.get_learning(learning_id)
+    if not learning:
+        return JSONResponse({"error": "not_found"}, status_code=404)
+    if not llm.status()["available"]:
+        return JSONResponse({"error": "no_local_model"}, status_code=503)
+    transcript = f"Topic: {learning.title}\n\n{learning.content or ''}\n\n{learning.reflection or ''}".strip()
+    try:
+        cards = llm.generate_cards(transcript, n=3, basic_only=True)
+    except OllamaError as e:
+        return JSONResponse({"error": str(e)}, status_code=502)
+    added = 0
+    for c in cards:
+        if c.get("type") == "basic" and c.get("question") and c.get("answer"):
+            repo.create_question(learning_id, c["question"], c["answer"], card_type="basic")
+            added += 1
+    return {"added": added}
 
 
 @router.delete("/learnings/{learning_id}")
@@ -217,3 +243,53 @@ def assign_subjects(body: AssignReq):
     for a in body.assignments:
         repo.set_subject(a.id, a.subject.strip() or None)
     return {"updated": len(body.assignments)}
+
+
+# ---------- bulk add topics ----------
+
+class BulkItem(BaseModel):
+    title: str
+    note: str = ""
+
+
+class BulkReq(BaseModel):
+    items: list[BulkItem]
+    subject: Optional[str] = None
+    tags: list[str] = []
+    per_day: int = 8   # ease-in: how many become due each day
+
+
+@router.post("/topics/bulk")
+def bulk_topics(body: BulkReq):
+    """Create many topics fast. Each gets a free-recall card; due dates are staggered
+    so a big backlog eases into review over days instead of all at once."""
+    repo = Repository()
+    per_day = max(1, min(100, body.per_day))
+    now = datetime.now()
+    created = 0
+    for i, it in enumerate(t for t in body.items if t.title.strip()):
+        title = it.title.strip()
+        lid = repo.create_learning(title, it.note.strip(), subject=body.subject, tags=body.tags)
+        cid = repo.create_recall_card(lid, title, it.note.strip())
+        offset = i // per_day
+        if offset > 0:
+            repo.set_card_due(cid, now + timedelta(days=offset))
+        created += 1
+    return {"created": created}
+
+
+class SplitReq(BaseModel):
+    text: str
+
+
+@router.post("/topics/split")
+def split_topics(body: SplitReq):
+    """Use the local model to extract a list of topics from pasted text (for approval)."""
+    llm = get_llm()
+    if not llm.status()["available"]:
+        return JSONResponse({"error": "no_local_model"}, status_code=503)
+    try:
+        topics = llm.split_topics(body.text)
+    except OllamaError as e:
+        return JSONResponse({"error": str(e)}, status_code=502)
+    return {"topics": topics}

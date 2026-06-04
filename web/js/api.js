@@ -57,6 +57,11 @@ export const api = {
   suggestSubjects: () => jfetch('POST', '/api/subjects/suggest'),
   assignSubjects: (assignments) => jfetch('POST', '/api/subjects/assign', { assignments }),
 
+  // bulk add
+  bulkTopics: (payload) => jfetch('POST', '/api/topics/bulk', payload),
+  splitTopics: (text) => jfetch('POST', '/api/topics/split', { text }),
+  generateMore: (id) => jfetch('POST', `/api/learnings/${id}/generate`),
+
   // learnings + cards
   listLearnings: (search = '', tag = null) => {
     const p = new URLSearchParams();

@@ -1,4 +1,4 @@
-import { el, toast, applyTheme, state } from '../store.js';
+import { el, toast, applyTheme, state, infoTip } from '../store.js';
 import { api } from '../api.js';
 import { refreshBadge } from '../app.js';
 
@@ -47,7 +47,7 @@ export async function render() {
   view.append(el('div', { class: 'card' },
     field('Daily review target', targetInput, 'A gentle goal for reviews per day.'),
     el('div', { style: { padding: '14px 0', borderBottom: '1px solid var(--border)' } },
-      el('div', { class: 'row spread' }, el('div', { style: { fontWeight: '560' } }, 'Target retention'), retLabel),
+      el('div', { class: 'row spread' }, el('div', { style: { fontWeight: '560' } }, 'Target retention', infoTip('The chance you want of recalling a topic when it comes due. Higher = more frequent reviews. FSRS uses this to time each one; 90% is the sweet spot.')), retLabel),
       el('div', { style: { margin: '8px 0' } }, retSlider), retNote),
     field('AI model (local)', el('div', { class: 'row', style: { gap: '10px' } }, llmStatus, modelSel), 'Runs entirely on your machine via Ollama. Cloud models are blocked.'),
     field('Theme', themeSel),

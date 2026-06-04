@@ -1,5 +1,5 @@
 // Recall — effortful review. Free recall → confidence → reveal → AI grade + poke → rate.
-import { el, clear, toast, state } from '../store.js';
+import { el, clear, toast, state, infoTip } from '../store.js';
 import { api } from '../api.js';
 import { navigate, refreshBadge } from '../app.js';
 
@@ -83,7 +83,8 @@ export async function render({ params } = {}) {
     stage.append(
       el('div', { class: 'stack', style: { marginTop: '18px' } },
         recallInput,
-        el('div', { class: 'muted center', style: { fontSize: '12px' } }, 'How sure are you, before you peek?'),
+        el('div', { class: 'muted center', style: { fontSize: '12px' } }, 'How sure are you, before you peek?',
+          infoTip('Committing to a confidence first makes recall more effortful — and being surprised by a confident miss helps the correction stick (the hypercorrection effect).')),
         confRow,
         hintBox,
         el('div', { class: 'row', style: { justifyContent: 'center', gap: '10px', marginTop: '4px' } }, hintBtn, revealBtn)));
