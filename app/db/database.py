@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS learnings (
     content TEXT NOT NULL,
     reflection TEXT,                       -- elaboration captured during the chat
     subject TEXT,                          -- primary area / project (a note's "home")
+    conversation TEXT,                     -- raw capture transcript (JSON)
+    notes TEXT,                            -- free notes added over time
     created_at TEXT NOT NULL,
     is_active INTEGER NOT NULL DEFAULT 1
 );
@@ -116,6 +118,10 @@ class Database:
         cols = {r["name"] for r in conn.execute("PRAGMA table_info(learnings)")}
         if "subject" not in cols:
             conn.execute("ALTER TABLE learnings ADD COLUMN subject TEXT")
+        if "conversation" not in cols:
+            conn.execute("ALTER TABLE learnings ADD COLUMN conversation TEXT")
+        if "notes" not in cols:
+            conn.execute("ALTER TABLE learnings ADD COLUMN notes TEXT")
 
     @contextmanager
     def get_connection(self):

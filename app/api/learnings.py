@@ -25,8 +25,10 @@ class LearningIn(BaseModel):
     content: str = ""
     reflection: Optional[str] = None
     subject: Optional[str] = None
+    conversation: Optional[str] = None
     tags: list[str] = []
     cards: list[CardIn] = []
+    recall_card: bool = True   # auto-add a free-recall prompt for the topic
 
 
 def _derive_title(content: str) -> str:
@@ -57,8 +59,11 @@ def create_learning(body: LearningIn):
     repo = Repository()
     title = body.title.strip() or _derive_title(body.content)
     lid = repo.create_learning(title, body.content.strip(), body.reflection,
-                              subject=body.subject, tags=body.tags)
+                              subject=body.subject, tags=body.tags, conversation=body.conversation)
     n = _persist_cards(repo, lid, body.cards)
+    if body.recall_card:
+        repo.create_recall_card(lid, title, body.content.strip())
+        n += 1
     return {"id": lid, "title": title, "cards": n}
 
 
@@ -95,6 +100,7 @@ def get_learning(learning_id: int):
         "learning": {
             "id": learning.id, "title": learning.title, "content": learning.content,
             "reflection": learning.reflection, "subject": learning.subject or "",
+            "conversation": learning.conversation, "notes": learning.notes or "",
             "tags": learning.tags,
             "created_at": learning.created_at.isoformat() if learning.created_at else None,
         },

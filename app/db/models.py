@@ -12,6 +12,8 @@ class Learning:
     content: str = ""
     reflection: Optional[str] = None
     subject: Optional[str] = None
+    conversation: Optional[str] = None
+    notes: Optional[str] = None
     created_at: Optional[datetime] = None
     is_active: bool = True
     tags: list[str] = field(default_factory=list)

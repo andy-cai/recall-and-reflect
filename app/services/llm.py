@@ -131,6 +131,15 @@ examples. Answers concise and unambiguous. Vary the cognitive angle (recall,
 application, contrast). NEVER copy the conversation, speaker labels, or multiple lines
 into a cloze source — it must be a single clean sentence. Output only the structured object."""
 
+_CARDS_BASIC_SYSTEM = """You turn a short study conversation into a few open questions that test ACTIVE RECALL of the key ideas about a topic.
+
+Produce ONLY "basic" question/answer pairs (never fill-in-the-blank / cloze). Each question:
+- targets one important idea, cause, distinction, or application from the conversation,
+- is answerable in a sentence or two and invites explanation (favor "why"/"how"),
+- avoids trivia and yes/no phrasing.
+
+Write clear, specific answers in the learner's own framing. Output only the structured object."""
+
 _GRADE_SYSTEM = """You grade a learner's free-recall answer against a reference answer, then nudge them.
 
 Grade ONLY against the reference. Reward correct meaning even if the wording differs or
@@ -285,16 +294,16 @@ class LLMService:
         messages = [{"role": "system", "content": _CAPTURE_SYSTEM}, *history]
         yield from self._chat_stream(messages, temperature=0.6)
 
-    def generate_cards(self, transcript: str, n: int = 4) -> list[dict]:
+    def generate_cards(self, transcript: str, n: int = 4, basic_only: bool = False) -> list[dict]:
         messages = [
-            {"role": "system", "content": _CARDS_SYSTEM},
-            {"role": "user", "content": f"Aim for about {n} cards.\n\nConversation:\n---\n{transcript}\n---"},
+            {"role": "system", "content": _CARDS_BASIC_SYSTEM if basic_only else _CARDS_SYSTEM},
+            {"role": "user", "content": f"Aim for about {n} questions.\n\nConversation:\n---\n{transcript}\n---"},
         ]
         result = self._complete_json(messages, CardSet, temperature=0.4)
         out: list[dict] = []
         for c in result.cards:
             ctype = (c.type or "basic").strip().lower()
-            if ctype == "cloze" and c.source.strip():
+            if ctype == "cloze" and not basic_only and c.source.strip():
                 # a cloze is one sentence — drop any leaked transcript / extra lines
                 src = c.source.strip().split("\n")[0].strip()
                 if "{{c" in src:

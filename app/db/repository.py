@@ -42,6 +42,8 @@ class Repository:
             content=row["content"],
             reflection=row["reflection"],
             subject=row["subject"],
+            conversation=row["conversation"],
+            notes=row["notes"],
             created_at=from_iso(row["created_at"]),
             is_active=bool(row["is_active"]),
             tags=self.get_tags_for_learning(row["id"]),
@@ -52,16 +54,29 @@ class Repository:
     def create_learning(
         self, title: str, content: str, reflection: Optional[str] = None,
         subject: Optional[str] = None, tags: Optional[list[str]] = None,
+        conversation: Optional[str] = None,
     ) -> int:
         now = to_iso(datetime.now())
         lid = self.db.execute(
-            "INSERT INTO learnings (title, content, reflection, subject, created_at, is_active) "
-            "VALUES (?, ?, ?, ?, ?, 1)",
-            (title, content, reflection, (subject or None), now),
+            "INSERT INTO learnings (title, content, reflection, subject, conversation, created_at, is_active) "
+            "VALUES (?, ?, ?, ?, ?, ?, 1)",
+            (title, content, reflection, (subject or None), (conversation or None), now),
         )
         if tags:
             self.set_learning_tags(lid, tags)
         return lid
+
+    def create_recall_card(self, learning_id: int, title: str, content: str) -> int:
+        """The default 'free recall' prompt for a topic — recall it in your own words."""
+        question = f"Recall everything you can about: {title}"
+        return self.create_question(
+            learning_id=learning_id, question=question,
+            answer=(content or "").strip(), card_type="recall",
+        )
+
+    def set_notes(self, learning_id: int, notes: Optional[str]) -> None:
+        self.db.execute("UPDATE learnings SET notes = ? WHERE id = ?",
+                        ((notes or None), learning_id))
 
     def get_learning(self, learning_id: int) -> Optional[Learning]:
         row = self.db.fetch_one("SELECT * FROM learnings WHERE id = ?", (learning_id,))

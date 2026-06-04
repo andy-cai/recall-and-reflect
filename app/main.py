@@ -3,7 +3,7 @@
 import threading
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 
 from app.api import capture, learnings, review, settings as settings_api, stats
@@ -35,6 +35,15 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title=APP_NAME, version=APP_VERSION, lifespan=lifespan)
+
+
+@app.middleware("http")
+async def no_store(request: Request, call_next):
+    """Local single-user app — never let the browser cache stale JS/CSS/JSON."""
+    resp = await call_next(request)
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
 
 app.include_router(capture.router)
 app.include_router(review.router)

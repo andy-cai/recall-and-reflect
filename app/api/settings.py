@@ -23,7 +23,7 @@ def get_settings():
         "daily_target": repo.get_daily_target(),
         "desired_retention": repo.get_desired_retention(),
         "notifications": str(repo.get_setting("notifications", "1")) == "1",
-        "theme": repo.get_setting("theme", "light"),
+        "theme": repo.get_setting("theme", "dark"),
         "model": status["model"] or repo.get_setting("model", DEFAULT_MODEL),
         "llm": status,
     }

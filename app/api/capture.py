@@ -50,7 +50,7 @@ def cards(req: CardsReq):
     if not llm.status()["available"]:
         return JSONResponse({"error": "no_local_model"}, status_code=503)
     try:
-        generated = llm.generate_cards(req.transcript, n=max(1, min(8, req.n)))
+        generated = llm.generate_cards(req.transcript, n=max(1, min(8, req.n)), basic_only=True)
     except OllamaError as e:
         return JSONResponse({"error": str(e)}, status_code=502)
     return {"cards": generated}

@@ -102,8 +102,6 @@ function buildShell() {
 
   const nav = el('nav', { class: 'sidebar' });
   nav.append(el('div', { class: 'brand' },
-    el('span', { class: 'mark', html:
-      `<svg viewBox="0 0 32 32" width="28" height="28"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M9 22V10h6a4 4 0 0 1 0 8h-3l4 4M21 10v12" stroke="white" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>` }),
     el('div', {}, el('b', {}, 'Recall'), ' ', el('span', {}, '& Reflect'))));
 
   for (const key of NAV) {
@@ -129,14 +127,14 @@ function buildShell() {
 }
 
 async function boot() {
-  applyTheme(localStorage.getItem('rr-theme') || 'light');
+  applyTheme(localStorage.getItem('rr-theme') || 'dark');
   buildShell();
   try {
     const s = await api.getSettings();
     state.settings = s;
     state.llm = s.llm;
-    localStorage.setItem('rr-theme', s.theme || 'light');
-    applyTheme(s.theme || 'light');
+    localStorage.setItem('rr-theme', s.theme || 'dark');
+    applyTheme(s.theme || 'dark');
   } catch {}
   window.addEventListener('hashchange', route);
   route();
