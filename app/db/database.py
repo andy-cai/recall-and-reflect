@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS learnings (
     title TEXT NOT NULL,
     content TEXT NOT NULL,
     reflection TEXT,                       -- elaboration captured during the chat
+    subject TEXT,                          -- primary area / project (a note's "home")
     created_at TEXT NOT NULL,
     is_active INTEGER NOT NULL DEFAULT 1
 );
@@ -106,7 +107,15 @@ class Database:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         with self.get_connection() as conn:
             conn.executescript(SCHEMA)
+            self._migrate(conn)
             conn.commit()
+
+    @staticmethod
+    def _migrate(conn) -> None:
+        """Idempotent, additive migrations for DBs created by older schemas."""
+        cols = {r["name"] for r in conn.execute("PRAGMA table_info(learnings)")}
+        if "subject" not in cols:
+            conn.execute("ALTER TABLE learnings ADD COLUMN subject TEXT")
 
     @contextmanager
     def get_connection(self):

@@ -90,6 +90,19 @@ class Grade(BaseModel):
     poke: str = Field(default="", description="one short Socratic question; never reveal the answer")
 
 
+class SubjectGuess(BaseModel):
+    subject: str = Field(default="", description="one concise subject area, Title Case, 1-3 words")
+
+
+class SubjectAssign(BaseModel):
+    id: int = Field(description="the note id")
+    subject: str = Field(default="", description="subject area for this note, Title Case")
+
+
+class SubjectAssigns(BaseModel):
+    items: list[SubjectAssign] = Field(default_factory=list)
+
+
 # ---------- prompts ----------
 
 _CAPTURE_SYSTEM = """You are a sharp, warm study partner helping someone lock in something they just learned.
@@ -128,6 +141,14 @@ reference, and do not be harsh about phrasing.
 Then ALWAYS write ONE short Socratic "poke" (never leave it empty): a single question
 that pushes them toward the gap they missed, or — if they nailed it — one level deeper
 (a "why", an edge case, or an application). Never reveal the answer. Keep it to one sentence."""
+
+
+_SUBJECT_SYSTEM = """You file study notes into broad subject areas (e.g. "Machine Learning",
+"Spanish", "Microeconomics", "Anatomy", "Personal Finance").
+
+Return concise areas in Title Case, 1–3 words. STRONGLY prefer reusing an existing
+subject when one reasonably fits; invent a new area only when none do, and reuse the
+SAME new area across related notes. Never return an empty subject."""
 
 
 class LLMService:
@@ -298,6 +319,27 @@ class LLMService:
         if verdict not in ("correct", "partial", "wrong"):
             verdict = "partial"
         return {"verdict": verdict, "missing": grade.missing.strip(), "poke": grade.poke.strip()}
+
+    def suggest_subject(self, text: str, existing: list[str]) -> str:
+        ex = ", ".join(existing) if existing else "(none yet)"
+        messages = [
+            {"role": "system", "content": _SUBJECT_SYSTEM},
+            {"role": "user", "content": f"Existing subjects: {ex}\n\nNote:\n{text[:1500]}\n\nReturn the single best subject area."},
+        ]
+        return self._complete_json(messages, SubjectGuess, temperature=0.2).subject.strip()
+
+    def suggest_subjects(self, items: list[dict], existing: list[str]) -> list[dict]:
+        ex = ", ".join(existing) if existing else "(none yet)"
+        listing = "\n".join(f"- [{it['id']}] {it['title']}" for it in items)
+        messages = [
+            {"role": "system", "content": _SUBJECT_SYSTEM},
+            {"role": "user", "content": f"Existing subjects: {ex}\n\nAssign each note a subject area "
+                f"(reuse existing where sensible; use the SAME area for related notes):\n{listing}"},
+        ]
+        result = self._complete_json(messages, SubjectAssigns, temperature=0.2)
+        valid = {it["id"] for it in items}
+        return [{"id": a.id, "subject": a.subject.strip()}
+                for a in result.items if a.id in valid and a.subject.strip()]
 
 
 _service: Optional[LLMService] = None

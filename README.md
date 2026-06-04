@@ -41,6 +41,7 @@ you just write cards manually and self-grade reviews.
 |-------|--------------|
 | **Reflect** | Free-flow chat → 2–3 generative follow-ups (skippable) → draft cards you edit → save. |
 | **Recall** | Free recall (type it) → confidence → AI grade + one Socratic poke → rate (1–4). |
+| **Organize** | Each note gets a **Subject** (its home area). The Library's *Explore* view groups concepts by subject, and the local AI can suggest subjects for an uncategorized backlog (you approve). |
 | **Schedule** | FSRS sets each card's next review to hit your target retention (default 90%). |
 
 ## Stack

@@ -34,6 +34,7 @@ function svg(paths) {
 }
 
 let mainEl, currentCleanup = null;
+let routeSeq = 0;
 const navButtons = {};
 let dueBadgeEl = null, llmDotEl = null;
 
@@ -51,6 +52,7 @@ function parseHash() {
 }
 
 async function route() {
+  const seq = ++routeSeq;
   const { name, rest, params } = parseHash();
   const entry = ROUTES[name] || ROUTES.today;
 
@@ -62,18 +64,20 @@ async function route() {
 
   try {
     const node = await entry.mod.render({ rest, params });
+    if (seq !== routeSeq) return;  // a newer navigation superseded this one
     clear(mainEl);
     mainEl.append(node);
     if (node._cleanup) currentCleanup = node._cleanup;
     mainEl.scrollTop = 0;
   } catch (e) {
+    if (seq !== routeSeq) return;
     clear(mainEl);
     mainEl.append(el('div', { class: 'view empty' },
       el('div', { class: 'icon' }, '⚠️'),
       el('h2', {}, 'Something went wrong'),
       el('p', { class: 'muted' }, String(e.message || e))));
   }
-  refreshBadge();
+  if (seq === routeSeq) refreshBadge();
 }
 
 export async function refreshBadge() {

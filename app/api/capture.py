@@ -4,6 +4,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
+from app.db.repository import Repository
 from app.services.llm import OllamaError, get_llm
 
 router = APIRouter(prefix="/api/capture", tags=["capture"])
@@ -53,3 +54,20 @@ def cards(req: CardsReq):
     except OllamaError as e:
         return JSONResponse({"error": str(e)}, status_code=502)
     return {"cards": generated}
+
+
+class SubjectReq(BaseModel):
+    transcript: str
+
+
+@router.post("/subject")
+def suggest_subject(req: SubjectReq):
+    """Suggest a subject area for what was just captured (prefers existing subjects)."""
+    llm = get_llm()
+    if not llm.status()["available"]:
+        return JSONResponse({"error": "no_local_model"}, status_code=503)
+    try:
+        subject = llm.suggest_subject(req.transcript, Repository().subject_names())
+    except OllamaError as e:
+        return JSONResponse({"error": str(e)}, status_code=502)
+    return {"subject": subject}

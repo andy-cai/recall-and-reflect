@@ -32,6 +32,9 @@ export async function render() {
   const draftList = el('div', {});
   const titleInput = el('input', { class: 'input', placeholder: 'Title (auto-filled)' });
   const tagsInput = el('input', { class: 'input', placeholder: 'tags, comma separated' });
+  const subjectNames = (await api.subjects().catch(() => ({ names: [] }))).names || [];
+  const subjectList = el('datalist', { id: 'subj-list' }, ...subjectNames.map(n => el('option', { value: n })));
+  const subjectInput = el('input', { class: 'input', placeholder: 'Subject / area', list: 'subj-list' });
   const saveBtn = el('button', { class: 'btn btn-primary btn-block', onClick: save }, 'Save learning');
 
   function placeholder() {
@@ -71,6 +74,9 @@ export async function render() {
     el('div', { class: 'row', style: { gap: '8px', margin: '6px 0 14px' } },
       el('button', { class: 'btn', style: { flex: '1', padding: '7px' }, onClick: () => draftList.append(makeEditor({ type: 'basic' })) }, '+ Basic'),
       el('button', { class: 'btn', style: { flex: '1', padding: '7px' }, onClick: () => draftList.append(makeEditor({ type: 'cloze' })) }, '+ Cloze')),
+    el('div', { class: 'field', style: { marginBottom: '10px' } },
+      el('label', { class: 'lbl' }, 'Subject', el('span', { class: 'muted', style: { fontWeight: '400' } }, '  · its home area')),
+      subjectInput, subjectList),
     el('div', { class: 'field', style: { marginBottom: '10px' } }, el('label', { class: 'lbl' }, 'Title'), titleInput),
     el('div', { class: 'field', style: { marginBottom: '14px' } }, el('label', { class: 'lbl' }, 'Tags'), tagsInput),
     saveBtn);
@@ -87,7 +93,7 @@ export async function render() {
     if (!content.trim() && !title) { toast('Write what you learned first.'); return; }
     saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
     try {
-      const res = await api.createLearning({ title, content, reflection: reflection || null, tags, cards });
+      const res = await api.createLearning({ title, content, reflection: reflection || null, subject: subjectInput.value.trim() || null, tags, cards });
       toast(`Saved “${res.title}” · ${res.cards} card${res.cards !== 1 ? 's' : ''}`);
       refreshBadge();
       navigate('#/library/' + res.id);
@@ -105,6 +111,10 @@ export async function render() {
     clear(draftList);
     draftList.append(el('div', { class: 'row', style: { padding: '10px 2px' } }, el('span', { class: 'spin' }), el('span', { class: 'muted' }, ' drafting cards…')));
     const transcript = convo.map(m => (m.role === 'user' ? 'Learner' : 'Partner') + ': ' + m.content).join('\n\n');
+    // suggest a subject in parallel — fills in when ready, only if the user hasn't typed one
+    api.captureSubject(transcript).then(r => {
+      if (r && r.subject && !subjectInput.value.trim()) subjectInput.value = r.subject;
+    }).catch(() => {});
     try {
       const res = await api.captureCards(transcript, 4);
       renderDraft(res.cards);

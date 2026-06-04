@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from app.core.cloze import extract_cloze_cards
 from app.db.repository import Repository
+from app.services.llm import OllamaError, get_llm
 
 router = APIRouter(prefix="/api", tags=["learnings"])
 
@@ -23,6 +24,7 @@ class LearningIn(BaseModel):
     title: str = ""
     content: str = ""
     reflection: Optional[str] = None
+    subject: Optional[str] = None
     tags: list[str] = []
     cards: list[CardIn] = []
 
@@ -54,7 +56,8 @@ def _persist_cards(repo: Repository, learning_id: int, cards: list[CardIn]) -> i
 def create_learning(body: LearningIn):
     repo = Repository()
     title = body.title.strip() or _derive_title(body.content)
-    lid = repo.create_learning(title, body.content.strip(), body.reflection, body.tags)
+    lid = repo.create_learning(title, body.content.strip(), body.reflection,
+                              subject=body.subject, tags=body.tags)
     n = _persist_cards(repo, lid, body.cards)
     return {"id": lid, "title": title, "cards": n}
 
@@ -68,6 +71,7 @@ def list_learnings(search: str = "", tag: Optional[str] = None):
             {
                 "id": it["learning"].id,
                 "title": it["learning"].title,
+                "subject": it["learning"].subject or "",
                 "created_at": it["learning"].created_at.isoformat() if it["learning"].created_at else None,
                 "tags": it["learning"].tags,
                 "card_count": it["card_count"],
@@ -76,6 +80,7 @@ def list_learnings(search: str = "", tag: Optional[str] = None):
             for it in items
         ],
         "tags": repo.all_tags(),
+        "subjects": repo.subjects_summary(),
     }
 
 
@@ -89,7 +94,8 @@ def get_learning(learning_id: int):
     return {
         "learning": {
             "id": learning.id, "title": learning.title, "content": learning.content,
-            "reflection": learning.reflection, "tags": learning.tags,
+            "reflection": learning.reflection, "subject": learning.subject or "",
+            "tags": learning.tags,
             "created_at": learning.created_at.isoformat() if learning.created_at else None,
         },
         "cards": [
@@ -109,6 +115,7 @@ class LearningUpdate(BaseModel):
     title: str
     content: str
     reflection: Optional[str] = None
+    subject: Optional[str] = None
     tags: list[str] = []
 
 
@@ -116,7 +123,7 @@ class LearningUpdate(BaseModel):
 def update_learning(learning_id: int, body: LearningUpdate):
     repo = Repository()
     repo.update_learning(learning_id, body.title.strip(), body.content.strip(),
-                         body.reflection, body.tags)
+                         reflection=body.reflection, subject=body.subject, tags=body.tags)
     return {"ok": True}
 
 
@@ -158,3 +165,49 @@ class SuspendReq(BaseModel):
 def suspend_card(card_id: int, body: SuspendReq):
     Repository().set_suspended(card_id, body.suspended)
     return {"ok": True}
+
+
+# ---------- subjects ----------
+
+@router.get("/subjects")
+def list_subjects():
+    repo = Repository()
+    return {"subjects": repo.subjects_summary(), "names": repo.subject_names()}
+
+
+@router.post("/subjects/suggest")
+def suggest_subjects():
+    """One LLM pass proposing a subject for each uncategorized note (for approval)."""
+    repo = Repository()
+    llm = get_llm()
+    if not llm.status()["available"]:
+        return JSONResponse({"error": "no_local_model"}, status_code=503)
+    items = repo.uncategorized_learnings()
+    if not items:
+        return {"suggestions": []}
+    batch = items[:40]
+    try:
+        guesses = llm.suggest_subjects(
+            [{"id": i["id"], "title": i["title"]} for i in batch], repo.subject_names())
+    except OllamaError as e:
+        return JSONResponse({"error": str(e)}, status_code=502)
+    by_id = {g["id"]: g["subject"] for g in guesses}
+    return {"suggestions": [
+        {"id": i["id"], "title": i["title"], "subject": by_id.get(i["id"], "")} for i in batch]}
+
+
+class Assignment(BaseModel):
+    id: int
+    subject: str = ""
+
+
+class AssignReq(BaseModel):
+    assignments: list[Assignment]
+
+
+@router.post("/subjects/assign")
+def assign_subjects(body: AssignReq):
+    repo = Repository()
+    for a in body.assignments:
+        repo.set_subject(a.id, a.subject.strip() or None)
+    return {"updated": len(body.assignments)}

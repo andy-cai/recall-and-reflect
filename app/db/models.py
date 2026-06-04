@@ -11,6 +11,7 @@ class Learning:
     title: str = ""
     content: str = ""
     reflection: Optional[str] = None
+    subject: Optional[str] = None
     created_at: Optional[datetime] = None
     is_active: bool = True
     tags: list[str] = field(default_factory=list)

@@ -45,10 +45,11 @@ def _serialize(q: Question, title: str, retention: float) -> dict:
 
 
 @router.get("/queue")
-def queue(tag: Optional[str] = None, learning_id: Optional[int] = None, limit: int = 200):
+def queue(tag: Optional[str] = None, learning_id: Optional[int] = None,
+          subject: Optional[str] = None, limit: int = 200):
     repo = Repository()
     retention = repo.get_desired_retention()
-    due = repo.get_due_questions(limit=limit, tag=tag, learning_id=learning_id)
+    due = repo.get_due_questions(limit=limit, tag=tag, learning_id=learning_id, subject=subject)
 
     titles: dict[int, str] = {}
     for q in due:

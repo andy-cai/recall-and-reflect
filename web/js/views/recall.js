@@ -15,7 +15,7 @@ function hintFor(ans, level) {
 
 export async function render({ params } = {}) {
   const llmOk = !!(state.llm && state.llm.available);
-  const data = await api.queue(params?.tag || null, params?.learning || null);
+  const data = await api.queue({ tag: params?.tag || null, learning_id: params?.learning || null, subject: params?.subject });
   const cards = data.cards;
 
   const view = el('div', { class: 'view' });

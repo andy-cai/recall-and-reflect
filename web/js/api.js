@@ -49,7 +49,13 @@ export const api = {
 
   // capture
   captureCards: (transcript, n = 4) => jfetch('POST', '/api/capture/cards', { transcript, n }),
+  captureSubject: (transcript) => jfetch('POST', '/api/capture/subject', { transcript }),
   followupStream: (messages) => streamText('/api/capture/followup', { messages }),
+
+  // subjects
+  subjects: () => jfetch('GET', '/api/subjects'),
+  suggestSubjects: () => jfetch('POST', '/api/subjects/suggest'),
+  assignSubjects: (assignments) => jfetch('POST', '/api/subjects/assign', { assignments }),
 
   // learnings + cards
   listLearnings: (search = '', tag = null) => {
@@ -69,10 +75,11 @@ export const api = {
   suspendCard: (id, suspended) => jfetch('POST', `/api/cards/${id}/suspend`, { suspended }),
 
   // review
-  queue: (tag = null, learning_id = null) => {
+  queue: ({ tag = null, learning_id = null, subject = null } = {}) => {
     const p = new URLSearchParams();
     if (tag) p.set('tag', tag);
     if (learning_id) p.set('learning_id', learning_id);
+    if (subject !== null && subject !== undefined) p.set('subject', subject);
     const qs = p.toString();
     return jfetch('GET', '/api/review/queue' + (qs ? `?${qs}` : ''));
   },

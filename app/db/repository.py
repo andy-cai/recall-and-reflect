@@ -41,6 +41,7 @@ class Repository:
             title=row["title"],
             content=row["content"],
             reflection=row["reflection"],
+            subject=row["subject"],
             created_at=from_iso(row["created_at"]),
             is_active=bool(row["is_active"]),
             tags=self.get_tags_for_learning(row["id"]),
@@ -50,13 +51,13 @@ class Repository:
 
     def create_learning(
         self, title: str, content: str, reflection: Optional[str] = None,
-        tags: Optional[list[str]] = None,
+        subject: Optional[str] = None, tags: Optional[list[str]] = None,
     ) -> int:
         now = to_iso(datetime.now())
         lid = self.db.execute(
-            "INSERT INTO learnings (title, content, reflection, created_at, is_active) "
-            "VALUES (?, ?, ?, ?, 1)",
-            (title, content, reflection, now),
+            "INSERT INTO learnings (title, content, reflection, subject, created_at, is_active) "
+            "VALUES (?, ?, ?, ?, ?, 1)",
+            (title, content, reflection, (subject or None), now),
         )
         if tags:
             self.set_learning_tags(lid, tags)
@@ -107,17 +108,60 @@ class Repository:
 
     def update_learning(
         self, learning_id: int, title: str, content: str,
-        reflection: Optional[str] = None, tags: Optional[list[str]] = None,
+        reflection: Optional[str] = None, subject: Optional[str] = None,
+        tags: Optional[list[str]] = None,
     ) -> None:
         self.db.execute(
-            "UPDATE learnings SET title = ?, content = ?, reflection = ? WHERE id = ?",
-            (title, content, reflection, learning_id),
+            "UPDATE learnings SET title = ?, content = ?, reflection = ?, subject = ? WHERE id = ?",
+            (title, content, reflection, (subject or None), learning_id),
         )
         if tags is not None:
             self.set_learning_tags(learning_id, tags)
 
+    def set_subject(self, learning_id: int, subject: Optional[str]) -> None:
+        self.db.execute(
+            "UPDATE learnings SET subject = ? WHERE id = ?",
+            ((subject or None), learning_id),
+        )
+
     def delete_learning(self, learning_id: int) -> None:
         self.db.execute("DELETE FROM learnings WHERE id = ?", (learning_id,))
+
+    # ---------- subjects ----------
+
+    def subjects_summary(self) -> list[dict]:
+        rows = self.db.fetch_all(
+            """
+            SELECT COALESCE(NULLIF(TRIM(l.subject), ''), '') AS subj,
+                   COUNT(DISTINCT l.id) AS learnings,
+                   COUNT(q.id) AS cards,
+                   SUM(CASE WHEN q.suspended = 0
+                         AND (q.next_review_at IS NULL OR q.next_review_at <= ?)
+                       THEN 1 ELSE 0 END) AS due
+            FROM learnings l
+            LEFT JOIN questions q ON q.learning_id = l.id
+            WHERE l.is_active = 1
+            GROUP BY subj
+            ORDER BY (subj = '') ASC, learnings DESC, subj COLLATE NOCASE
+            """,
+            (to_iso(datetime.now()),),
+        )
+        return [{"name": r["subj"], "learnings": r["learnings"],
+                 "cards": r["cards"] or 0, "due": r["due"] or 0} for r in rows]
+
+    def subject_names(self) -> list[str]:
+        rows = self.db.fetch_all(
+            "SELECT DISTINCT subject FROM learnings WHERE is_active = 1 "
+            "AND subject IS NOT NULL AND TRIM(subject) <> '' ORDER BY subject COLLATE NOCASE"
+        )
+        return [r["subject"] for r in rows]
+
+    def uncategorized_learnings(self) -> list[dict]:
+        rows = self.db.fetch_all(
+            "SELECT id, title, content FROM learnings WHERE is_active = 1 "
+            "AND (subject IS NULL OR TRIM(subject) = '') ORDER BY created_at DESC"
+        )
+        return [{"id": r["id"], "title": r["title"], "content": r["content"]} for r in rows]
 
     # ---------- tags ----------
 
@@ -193,7 +237,7 @@ class Repository:
 
     def get_due_questions(
         self, limit: int = 200, tag: Optional[str] = None,
-        learning_id: Optional[int] = None,
+        learning_id: Optional[int] = None, subject: Optional[str] = None,
     ) -> list[Question]:
         clauses = [
             "q.suspended = 0",
@@ -201,6 +245,12 @@ class Repository:
             "(q.next_review_at IS NULL OR q.next_review_at <= ?)",
         ]
         params: list = [to_iso(datetime.now())]
+        if subject is not None:
+            if subject == "":
+                clauses.append("(l.subject IS NULL OR TRIM(l.subject) = '')")
+            else:
+                clauses.append("l.subject = ? COLLATE NOCASE")
+                params.append(subject)
         if tag:
             clauses.append(
                 "q.learning_id IN (SELECT lt.learning_id FROM learning_tags lt "
