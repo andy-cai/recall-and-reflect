@@ -96,6 +96,7 @@ class AnswerReq(BaseModel):
     confidence: Optional[int] = None
     ai_verdict: Optional[str] = None
     elapsed_ms: Optional[int] = None
+    bury: bool = True   # false for topic-scoped practice sessions
 
 
 @router.post("/answer")
@@ -109,7 +110,7 @@ def answer(req: AnswerReq):
 
     result = repo.apply_review(
         q, req.rating, recall_text=req.recall, confidence=req.confidence,
-        ai_verdict=req.ai_verdict, elapsed_ms=req.elapsed_ms,
+        ai_verdict=req.ai_verdict, elapsed_ms=req.elapsed_ms, bury_siblings=req.bury,
     )
     return {
         "interval_days": result.interval_days,

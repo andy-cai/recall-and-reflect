@@ -22,6 +22,7 @@ def get_settings():
     return {
         "daily_target": repo.get_daily_target(),
         "desired_retention": repo.get_desired_retention(),
+        "new_per_day": repo.get_new_per_day(),
         "notifications": str(repo.get_setting("notifications", "1")) == "1",
         "theme": repo.get_setting("theme", "dark"),
         "model": status["model"] or repo.get_setting("model", DEFAULT_MODEL),
@@ -32,6 +33,7 @@ def get_settings():
 class SettingsUpdate(BaseModel):
     daily_target: Optional[int] = None
     desired_retention: Optional[float] = None
+    new_per_day: Optional[int] = None
     notifications: Optional[bool] = None
     theme: Optional[str] = None
     model: Optional[str] = None
@@ -42,6 +44,8 @@ def update_settings(body: SettingsUpdate):
     repo = Repository()
     if body.daily_target is not None:
         repo.set_setting("daily_target", max(1, min(500, body.daily_target)))
+    if body.new_per_day is not None:
+        repo.set_setting("new_per_day", max(1, min(100, body.new_per_day)))
     if body.desired_retention is not None:
         repo.set_setting("desired_retention", max(0.7, min(0.97, body.desired_retention)))
     if body.notifications is not None:

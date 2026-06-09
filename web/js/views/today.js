@@ -16,15 +16,36 @@ export async function render() {
     el('h1', {}, greeting()),
     el('p', { class: 'sub' }, dateStr)));
 
-  // Hero — the single clear next action
+  // Hero — name what's at risk; the pull is "Mohr's circle is at 38%", not "18 due".
   let hero;
-  if (t.due > 0) {
+  const risk = t.at_risk || [];
+  if (t.due > 0 && risk.length) {
+    const rescueN = Math.min(3, t.due);
+    hero = el('div', { class: 'card' },
+      el('div', { class: 'row spread', style: { marginBottom: '12px' } },
+        el('div', { class: 'eyebrow' }, 'About to slip'),
+        el('span', { class: 'muted', style: { fontSize: '12px' } }, 'recall chance right now')),
+      ...risk.map(r => el('div', { class: 'risk-item' },
+        el('div', { class: 'gauge' }, el('i', { class: r.retrievability >= 0.55 ? 'warm' : '', style: { width: Math.round(r.retrievability * 100) + '%' } })),
+        el('span', {}, r.label),
+        el('span', { class: 'pct' }, '~' + Math.round(r.retrievability * 100) + '%'))),
+      el('div', { class: 'row spread', style: { marginTop: '14px' } },
+        el('span', { class: 'muted', style: { fontSize: '12.5px' } },
+          t.due > risk.length ? `+${t.due - risk.length} more due today` : 'that’s everything due'),
+        el('div', { class: 'row', style: { gap: '8px' } },
+          el('button', { class: 'btn', onClick: () => navigate('#/recall') }, `Review all ${t.due}`),
+          el('button', { class: 'btn btn-primary', onClick: () => navigate(`#/recall?limit=${rescueN}`) },
+            `Rescue these ${rescueN} first →`))));
+  } else if (t.due > 0) {
+    // due cards but nothing scored yet (all new) — keep the classic hero
     hero = el('div', { class: 'hero' },
       el('div', { class: 'big', style: { color: 'var(--accent)' } }, String(t.due)),
       el('div', { class: 'lead' },
         el('h2', {}, `review${t.due !== 1 ? 's' : ''} ready to recall`),
         el('p', { class: 'muted' }, 'A few minutes of effortful recall is the whole game.')),
-      el('button', { class: 'btn btn-primary btn-lg', onClick: () => navigate('#/recall') }, 'Start recall →'));
+      el('div', { class: 'stack', style: { gap: '8px' } },
+        el('button', { class: 'btn btn-primary btn-lg', onClick: () => navigate('#/recall') }, 'Start recall →'),
+        el('button', { class: 'btn', onClick: () => navigate('#/recall?limit=3') }, 'Just 3 · ~60s')));
   } else {
     hero = el('div', { class: 'hero' },
       el('div', { class: 'big', style: { color: 'var(--good)' } }, '✓'),

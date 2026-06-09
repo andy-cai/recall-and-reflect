@@ -35,7 +35,9 @@ def _consistency(by_day: dict[str, int], window: int = 14) -> int:
 @router.get("/today")
 def today():
     repo = Repository()
-    by_day = repo.reviews_by_day(365)
+    # Streak/consistency/heatmap count *activity* (reviews + captures):
+    # a day spent reflecting is showing up, not a dead day.
+    by_day = repo.activity_by_day(365)
     return {
         "due": repo.get_due_count(),
         "reviews_today": repo.reviews_today(),
@@ -44,6 +46,7 @@ def today():
         "consistency": _consistency(by_day),
         "heatmap": by_day,
         "totals": repo.total_counts(),
+        "at_risk": repo.at_risk_cards(3),
         "llm": get_llm().status(),
     }
 
@@ -52,17 +55,18 @@ def today():
 def stats():
     repo = Repository()
     by_day = repo.reviews_by_day(365)
+    activity = repo.activity_by_day(365)
     retention = repo.retention_rate(30)
     return {
         "totals": repo.total_counts(),
         "retention_30": round(retention * 100, 1) if retention is not None else None,
         "reviews_by_day": by_day,
-        "heatmap": by_day,
+        "heatmap": activity,
         "maturity": repo.maturity_breakdown(),
         "forecast": repo.due_forecast(14),
         "reviews_today": repo.reviews_today(),
         "daily_target": repo.get_daily_target(),
-        "streak": _streak(by_day),
-        "consistency": _consistency(by_day),
+        "streak": _streak(activity),
+        "consistency": _consistency(activity),
         "desired_retention": repo.get_desired_retention(),
     }

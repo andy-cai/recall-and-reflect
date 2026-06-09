@@ -293,6 +293,42 @@ textarea.input { min-height: 92px; line-height: 1.5; }
 .rate-btn .name.again { color: var(--again); } .rate-btn .name.hard { color: var(--hard); }
 .rate-btn .name.good { color: var(--good); } .rate-btn .name.easy { color: var(--easy); }
 
+/* AI-suggested rating (Enter takes it; 1–4 always work) */
+.rate-btn { position: relative; }
+.rate-btn.suggested.again { border-color: var(--again); box-shadow: 0 0 0 3px color-mix(in srgb, var(--again) 24%, transparent); }
+.rate-btn.suggested.hard  { border-color: var(--hard);  box-shadow: 0 0 0 3px color-mix(in srgb, var(--hard) 24%, transparent); }
+.rate-btn.suggested.good  { border-color: var(--good);  box-shadow: 0 0 0 3px color-mix(in srgb, var(--good) 24%, transparent); }
+.rate-btn .sug { position: absolute; top: -9px; left: 50%; transform: translateX(-50%); white-space: nowrap;
+  font-size: 9.5px; font-weight: 800; letter-spacing: .08em; border-radius: 999px; padding: 2px 8px; }
+.rate-btn.again .sug { background: var(--again); color: #2b0f06; }
+.rate-btn.hard .sug  { background: var(--hard);  color: #241a06; }
+.rate-btn.good .sug  { background: var(--good);  color: #10210d; }
+
+/* Hypercorrection banner — a confident miss gets a follow-up today */
+.hyper { display: flex; gap: 10px; align-items: center; border-radius: 11px; padding: 11px 14px; margin-top: 14px;
+  background: var(--again-weak); border: 1px solid color-mix(in srgb, var(--again) 45%, transparent);
+  font-size: 13.5px; color: var(--text-soft); text-align: left; }
+.hyper b { color: var(--again); }
+
+/* Key-idea rubric rows (topic recall reveal) */
+.idea { display: flex; gap: 11px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; text-align: left; }
+.idea + .idea { margin-top: 6px; }
+.idea .mark { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 12px; font-weight: 800; margin-top: 1px; }
+.idea.hit   { background: var(--good-weak); }  .idea.hit .mark   { background: var(--good); color: #10210d; }
+.idea.part  { background: var(--hard-weak); }  .idea.part .mark  { background: var(--hard); color: #241a06; }
+.idea.miss  { background: var(--again-weak); } .idea.miss .mark  { background: var(--again); color: #2b0f06; }
+.idea .t { font-size: 14.5px; }
+
+/* Today: about-to-slip list */
+.risk-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px;
+  background: var(--surface-2); font-size: 13.5px; }
+.risk-item + .risk-item { margin-top: 7px; }
+.risk-item .pct { margin-left: auto; color: var(--muted); font-size: 12.5px; }
+.gauge { flex: none; width: 54px; height: 6px; border-radius: 3px; background: var(--border-strong); overflow: hidden; }
+.gauge i { display: block; height: 100%; background: var(--again); }
+.gauge i.warm { background: var(--hard); }
+
 .kbd { font-size: 11px; font-family: ui-monospace, monospace; background: var(--surface-2);
   border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; color: var(--text-soft); }
 

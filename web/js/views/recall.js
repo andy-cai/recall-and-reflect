@@ -15,7 +15,8 @@ function hintFor(ans, level) {
 
 export async function render({ params } = {}) {
   const llmOk = !!(state.llm && state.llm.available);
-  const data = await api.queue({ tag: params?.tag || null, learning_id: params?.learning || null, subject: params?.subject });
+  const data = await api.queue({ tag: params?.tag || null, learning_id: params?.learning || null,
+    subject: params?.subject, limit: params?.limit || null });
   const cards = data.cards;
 
   const view = el('div', { class: 'view' });
@@ -44,20 +45,21 @@ export async function render({ params } = {}) {
   wrap.append(stage);
 
   let idx = 0, revealed = false, confidence = null, hints = 0, cardStart = 0, verdict = null;
-  let reviewedCount = 0, correctish = 0, lastRecall = '';
+  let reviewedCount = 0, correctish = 0, lastRecall = '', suggested = null, rateGrid = null;
 
-  const total = cards.length;
+  function total() { return cards.length; }  // grows if a confident miss is re-queued
 
   function updateProgress() {
-    progLabel.textContent = `${Math.min(idx + 1, total)} / ${total}`;
-    progBar.firstChild.style.width = (idx / total * 100) + '%';
+    progLabel.textContent = `${Math.min(idx + 1, total())} / ${total()}`;
+    progBar.firstChild.style.width = (idx / total() * 100) + '%';
   }
 
   function current() { return cards[idx]; }
 
   function showCard() {
-    if (idx >= total) return finish();
-    revealed = false; confidence = null; hints = 0; verdict = null; cardStart = Date.now();
+    if (idx >= total()) return finish();
+    revealed = false; confidence = null; hints = 0; verdict = null; suggested = null; rateGrid = null;
+    cardStart = Date.now();
     updateProgress();
     clear(stage);
     const c = current();
@@ -130,7 +132,7 @@ export async function render({ params } = {}) {
     const gradeSlot = el('div', {});
     stage.append(gradeSlot);
 
-    const rateGrid = buildRateGrid(c);
+    rateGrid = buildRateGrid(c);
     stage.append(rateGrid);
     stage.append(el('div', { class: 'row', style: { justifyContent: 'center', gap: '14px', marginTop: '12px' } },
       el('span', { class: 'muted', style: { fontSize: '12px' } }, 'Rate honestly — ', el('span', { class: 'kbd' }, '1'), '–', el('span', { class: 'kbd' }, '4')),
@@ -144,22 +146,26 @@ export async function render({ params } = {}) {
         const g = await api.grade(c.id, recallText);
         verdict = g.verdict;
         clear(gradeSlot);
-        const hyper = confidence === 3 && verdict === 'wrong';
         const vbadge = el('div', { class: 'center', style: { marginTop: '14px' } },
           el('span', { class: 'verdict ' + verdict }, verdict === 'correct' ? '✓ Got it' : verdict === 'partial' ? '◐ Partial' : '✕ Missed it'));
-        if (hyper) {
-          answerBox.classList.add('hypercorrect');
-          vbadge.append(el('div', { class: 'muted', style: { fontSize: '12.5px', marginTop: '6px' } }, 'You were certain — worth a closer look.'));
-        }
         gradeSlot.append(vbadge);
         if (g.missing && verdict !== 'correct') {
           gradeSlot.append(el('div', { class: 'muted center', style: { fontSize: '13px', marginTop: '6px' } }, 'Missing: ' + g.missing));
+        }
+        // Confident miss → hypercorrection: call it out and re-queue for this session.
+        if (confidence === 3 && verdict === 'wrong') {
+          answerBox.classList.add('hypercorrect');
+          gradeSlot.append(el('div', { class: 'hyper' }, '⚡',
+            el('div', {}, 'You were ', el('b', {}, 'certain'), ' and missed it — these stick hardest once corrected. ',
+              el('b', {}, 'It returns at the end of this session.'))));
+          if (!c.requeued) cards.push({ ...c, requeued: true });
         }
         if (g.poke) {
           gradeSlot.append(el('div', { class: 'poke' },
             el('div', { class: 'lbl' }, 'Push yourself'),
             el('div', { class: 'q' }, g.poke)));
         }
+        markSuggested(verdict);
       } catch {
         clear(gradeSlot);
       }
@@ -167,6 +173,17 @@ export async function render({ params } = {}) {
       gradeSlot.append(el('div', { class: 'muted center', style: { fontSize: '12.5px', marginTop: '12px' } },
         'Self-grade: how close were you?'));
     }
+  }
+
+  // Pre-highlight the rating consistent with the AI verdict (the honest default).
+  // Easy is never auto-suggested; Enter takes the suggestion, 1–4 always work.
+  function markSuggested(v) {
+    suggested = v === 'wrong' ? 1 : v === 'partial' ? 2 : 3;
+    if (!rateGrid) return;
+    const btn = rateGrid.children[suggested - 1];
+    btn.classList.add('suggested');
+    btn.append(el('span', { class: 'sug' },
+      `AI suggests · ${v === 'correct' ? '✓ got it' : v === 'partial' ? '◐ partial' : '✕ missed'} · Enter`));
   }
 
   function buildRateGrid(c) {
@@ -193,6 +210,7 @@ export async function render({ params } = {}) {
       question_id: c.id, rating: r,
       recall: lastRecall, confidence, ai_verdict: verdict,
       elapsed_ms: Date.now() - cardStart,
+      bury: !params?.learning,   // topic practice reviews siblings on purpose
     };
     revealed = false; // guard against double
     try { await api.answer(payload); } catch (e) { toast('Could not save: ' + e.message); }
@@ -215,7 +233,7 @@ export async function render({ params } = {}) {
 
   function finish() {
     clear(stage);
-    progLabel.textContent = `${total} / ${total}`;
+    progLabel.textContent = `${total()} / ${total()}`;
     progBar.firstChild.style.width = '100%';
     const acc = reviewedCount ? Math.round(correctish / reviewedCount * 100) : 0;
     stage.append(el('div', { class: 'empty' },
@@ -240,6 +258,7 @@ export async function render({ params } = {}) {
       else if (e.key.toLowerCase() === 'z') { e.preventDefault(); doUndo(); }
     } else {
       if (['1', '2', '3', '4'].includes(e.key)) { e.preventDefault(); rate(Number(e.key)); }
+      else if (e.key === 'Enter' && suggested) { e.preventDefault(); rate(suggested); }
       else if (e.key.toLowerCase() === 'z') { e.preventDefault(); doUndo(); }
     }
   }

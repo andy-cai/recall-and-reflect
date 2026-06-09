@@ -10,6 +10,9 @@ export async function render() {
   // daily target
   const targetInput = el('input', { class: 'input', type: 'number', min: '1', max: '500', value: String(s.daily_target), style: { maxWidth: '120px' } });
 
+  // new cards per day
+  const newPerDayInput = el('input', { class: 'input', type: 'number', min: '1', max: '100', value: String(s.new_per_day ?? 10), style: { maxWidth: '120px' } });
+
   // desired retention
   const retVal = Math.round((s.desired_retention || 0.9) * 100);
   const retLabel = el('b', {}, retVal + '%');
@@ -46,6 +49,7 @@ export async function render() {
 
   view.append(el('div', { class: 'card' },
     field('Daily review target', targetInput, 'A gentle goal for reviews per day.'),
+    field('New topics per day', newPerDayInput, 'Caps how many brand-new cards enter review daily, so a big capture spree eases in instead of flooding tomorrow.'),
     el('div', { style: { padding: '14px 0', borderBottom: '1px solid var(--border)' } },
       el('div', { class: 'row spread' }, el('div', { style: { fontWeight: '560' } }, 'Target retention', infoTip('The chance you want of recalling a topic when it comes due. Higher = more frequent reviews. FSRS uses this to time each one; 90% is the sweet spot.')), retLabel),
       el('div', { style: { margin: '8px 0' } }, retSlider), retNote),
@@ -66,6 +70,7 @@ export async function render() {
     try {
       await api.updateSettings({
         daily_target: +targetInput.value,
+        new_per_day: +newPerDayInput.value,
         desired_retention: +retSlider.value / 100,
         notifications: notif,
         theme: themeSel.value,
