@@ -1,8 +1,11 @@
 """FSRS-4.5 spaced-repetition scheduler.
 
-The open FSRS-4.5 algorithm with default weights trained on a large review corpus.
-State of the art for personal use; weights could be fitted later once enough review
+The open FSRS-4.5 algorithm with its published default weights (trained on a large
+review corpus). FSRS-4.5's forgetting curve is R = (1 + 19/81 · t/S)^-0.5, anchored
+so that R(S) = 0.90 exactly; weights and curve must always move together — they are
+fitted jointly. Weights can be refitted to the user's own review log once enough
 history exists. Reference: https://github.com/open-spaced-repetition/fsrs4anki
+Behavior is pinned by tests/test_fsrs.py.
 """
 
 import math
@@ -26,14 +29,19 @@ class State(IntEnum):
 
 
 DEFAULT_WEIGHTS = (
-    0.4072, 1.1829, 3.1262, 15.4722,
-    7.2102, 0.5316, 1.0651, 0.0234,
-    1.616, 0.1544, 1.0824, 1.9813,
-    0.0953, 0.2975, 2.2042, 0.2407, 2.9466,
+    0.4872, 1.4003, 3.7145, 13.8206,
+    5.1618, 1.2298, 0.8975, 0.031,
+    1.6474, 0.1367, 1.0461, 2.1072,
+    0.0793, 0.3246, 1.587, 0.2272, 2.8755,
 )
 
 DEFAULT_RETENTION = 0.90
 MAX_INTERVAL_DAYS = 36500
+
+# FSRS-4.5 forgetting-curve constants: R(t) = (1 + FACTOR * t / S) ** DECAY.
+# FACTOR is chosen so that R(S) = 0.9 exactly: (1 + 19/81) ** -0.5 == 0.9.
+DECAY = -0.5
+FACTOR = 19.0 / 81.0
 
 
 @dataclass
@@ -70,7 +78,12 @@ def _init_difficulty(rating: Rating, w) -> float:
 def _retrievability(stability: float, elapsed_days: float) -> float:
     if stability <= 0:
         return 1.0
-    return (1 + elapsed_days / (9 * stability)) ** -1
+    return (1 + FACTOR * elapsed_days / stability) ** DECAY
+
+
+def retrievability(stability: float, elapsed_days: float) -> float:
+    """Current recall probability of a card (public: used for at-risk ranking)."""
+    return _retrievability(stability, max(0.0, elapsed_days))
 
 
 def _next_recall_stability(d: float, s: float, r: float, rating: Rating, w) -> float:
@@ -106,7 +119,8 @@ def _next_difficulty(d: float, rating: Rating, w) -> float:
 
 
 def _next_interval(stability: float, retention: float) -> int:
-    interval = max(1, round(9 * stability * (1 / retention - 1)))
+    # Inverse of the forgetting curve: the t at which R(t) drops to `retention`.
+    interval = max(1, round(stability / FACTOR * (retention ** (1 / DECAY) - 1)))
     return min(interval, MAX_INTERVAL_DAYS)
 
 

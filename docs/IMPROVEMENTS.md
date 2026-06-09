@@ -320,6 +320,19 @@ One new table (`embeddings`), one service module, no privacy change.
 
 ## 5. Suggested order of attack
 
+### Design decisions (June 2026, from `docs/mockups/prompt-ui.html`)
+
+- Topic-recall reveal: **1A Checklist** — recall on top, vertical ✓/◐/✕ key-idea list.
+- Rating: **2A Suggested glow** — 4-button grid kept; verdict-consistent button glows,
+  `Enter` takes the suggestion, Easy is never auto-suggested.
+- Capture: **3A Chat + live rubric** — Socratic chat with an editable key-ideas panel
+  that fills as you talk (stretch-connection chips arrive with the embeddings layer).
+- Today: **6B At-risk list** — named memories with retrievability gauges,
+  "Rescue these 3 first" + a *Just 3* floor.
+- People cards: face-forward first card, story-forward as the optional second.
+- Mobile/PWA: deferred — Windows-local for now.
+
+
 **Now (correctness + leverage, ~days each):**
 1. `py-fsrs` swap + scheduler tests (§1.1)
 2. KaTeX rendering (§2.1)
