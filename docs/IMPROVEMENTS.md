@@ -214,7 +214,7 @@ chat's existing machinery pointed at review instead of capture — high value, l
 
 ## 3. Habit architecture — meet the habit where it lives
 
-### 3.1 The phone problem (the big architecture call)
+### 3.1 The phone problem (deferred — decision June 2026: stay Windows-local for now)
 
 The app is `127.0.0.1`-only with **Windows-only** toast reminders. Habits form around
 stable contextual cues (Wood & Neal 2007), and the most available cue surface — the
@@ -329,11 +329,10 @@ One new table (`embeddings`), one service module, no privacy change.
 
 **Next (the retention architecture):**
 6. Key-idea rubrics for topic recall — flagship (§2.2)
-7. PWA + responsive review + Web Push + Tailscale docs (§3.1)
-8. Backlog triage + welcome-back ramp + new/day limit (§1.4)
-9. Image cards + image occlusion (§2.3)
-10. People cards (§2.4)
-11. Bedtime session + implementation-intention onboarding (§3.4, §3.2)
+7. Backlog triage + welcome-back ramp + new/day limit (§1.4)
+8. Image cards + image occlusion (§2.3)
+9. People cards (§2.4)
+10. Bedtime session + implementation-intention onboarding (§3.4, §3.2)
 
 **Later (depth):**
 12. Embedding layer: connections, contrast cards, semantic search (§3.6)

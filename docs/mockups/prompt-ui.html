@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recall &amp; Reflect — Prompt UI mockups</title>
+<style>
+  :root {
+    --accent:#d59a52; --accent-hover:#e4ab63; --accent-weak:#2d2a1b; --accent-text:#1c1407;
+    --bg:#131d16; --surface:#1b271e; --surface-2:#243027; --border:#2f3b32; --border-strong:#3d4b40;
+    --text:#ece3d1; --text-soft:#c4bca7; --muted:#8b9182;
+    --good:#87ba6c; --good-weak:#1f2c1a; --hard:#cf9f49; --hard-weak:#2b2414;
+    --again:#d4775a; --again-weak:#2e1d16; --easy:#6fa9a0; --easy-weak:#15241f;
+    --radius:14px; --radius-sm:9px;
+    --shadow:0 1px 2px rgba(0,0,0,.22), 0 8px 24px rgba(0,0,0,.30);
+    --font:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"Inter",sans-serif;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:var(--font); background:var(--bg); color:var(--text);
+         font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3 { font-weight:640; letter-spacing:-.02em; margin:0; line-height:1.2; }
+  .wrap { max-width:880px; margin:0 auto; padding:40px 24px 120px; }
+  .muted { color:var(--muted); } .soft { color:var(--text-soft); }
+  .eyebrow { font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+          box-shadow:var(--shadow); padding:22px; }
+  .row { display:flex; align-items:center; gap:12px; } .spread { justify-content:space-between; }
+
+  /* page chrome */
+  .pagehead { margin-bottom:14px; }
+  .pagehead h1 { font-size:25px; }
+  .pagehead p { color:var(--muted); margin:8px 0 0; max-width:620px; }
+  .toc { position:sticky; top:0; z-index:10; background:color-mix(in srgb, var(--bg) 88%, transparent);
+         backdrop-filter:blur(8px); padding:12px 0; margin:18px 0 34px; border-bottom:1px solid var(--border);
+         display:flex; gap:8px; flex-wrap:wrap; }
+  .toc a { color:var(--text-soft); text-decoration:none; font-size:13px; font-weight:560;
+           padding:6px 11px; border:1px solid var(--border-strong); border-radius:99px; background:var(--surface); }
+  .toc a:hover { color:var(--accent); border-color:var(--accent); }
+
+  section { margin:56px 0; }
+  .sec-head h2 { font-size:19px; }
+  .sec-head .why { font-size:13px; color:var(--muted); margin:6px 0 0; max-width:640px; }
+  .why b { color:var(--text-soft); font-weight:600; }
+
+  /* variant tabs */
+  .vtabs { display:flex; gap:7px; margin:16px 0 14px; flex-wrap:wrap; }
+  .vtab { padding:7px 13px; border-radius:99px; border:1px solid var(--border-strong); background:var(--surface);
+          color:var(--text-soft); font-weight:560; font-size:13px; cursor:pointer; font-family:inherit; }
+  .vtab.on { background:var(--accent-weak); color:var(--accent); border-color:var(--accent); }
+  .pane { display:none; } .pane.on { display:block; animation:rise .18s ease; }
+  @keyframes rise { from{opacity:0; transform:translateY(5px)} to{opacity:1; transform:none} }
+  .pane-note { font-size:12.5px; color:var(--muted); margin:12px 2px 0; }
+  .pane-note b { color:var(--text-soft); }
+
+  /* review primitives (mirrors app styles) */
+  .q-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+            box-shadow:var(--shadow); padding:26px 28px; text-align:center; }
+  .q-card .src { font-size:12px; color:var(--muted); margin-bottom:10px; }
+  .q-card .q { font-size:19px; font-weight:600; }
+  .input { width:100%; background:var(--surface-2); border:1px solid var(--border-strong); color:var(--text);
+           border-radius:11px; padding:11px 13px; font-size:14.5px; resize:vertical; }
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:10px 16px;
+         border-radius:11px; border:1px solid var(--border-strong); background:var(--surface); color:var(--text);
+         font-weight:560; cursor:pointer; font-family:inherit; font-size:14px; }
+  .btn-primary { background:var(--accent); border-color:var(--accent); color:var(--accent-text); }
+  .btn-ghost { border-color:transparent; background:none; color:var(--text-soft); }
+  .kbd { font-size:11px; border:1px solid var(--border-strong); border-bottom-width:2px; border-radius:5px;
+         padding:1px 6px; color:var(--muted); background:var(--surface-2); }
+
+  /* rubric rows */
+  .idea { display:flex; gap:11px; align-items:flex-start; padding:10px 12px; border-radius:10px; }
+  .idea + .idea { margin-top:6px; }
+  .idea .mark { flex:none; width:22px; height:22px; border-radius:50%; display:grid; place-items:center;
+                font-size:12px; font-weight:800; margin-top:1px; }
+  .idea.hit   { background:var(--good-weak); }  .idea.hit .mark   { background:var(--good); color:#10210d; }
+  .idea.part  { background:var(--hard-weak); }  .idea.part .mark  { background:var(--hard); color:#241a06; }
+  .idea.miss  { background:var(--again-weak); } .idea.miss .mark  { background:var(--again); color:#2b0f06; }
+  .idea .t { font-size:14px; } .idea .d { font-size:12.5px; color:var(--muted); margin-top:1px; }
+  .idea .d em { color:var(--text-soft); font-style:normal; }
+
+  .recall-quote { background:var(--surface-2); border:1px solid var(--border); border-radius:11px;
+                  padding:13px 15px; font-size:14px; color:var(--text-soft); }
+  .recall-quote mark { background:color-mix(in srgb, var(--good) 28%, transparent); color:var(--text);
+                       border-radius:3px; padding:0 2px; }
+
+  .poke { border:1px dashed var(--accent); border-radius:11px; padding:13px 15px; margin-top:14px;
+          background:var(--accent-weak); }
+  .poke .lbl { font-size:10.5px; font-weight:800; letter-spacing:.1em; color:var(--accent); text-transform:uppercase; }
+  .poke .q { font-size:14px; margin-top:4px; }
+
+  .hyper { display:flex; gap:10px; align-items:center; border-radius:11px; padding:11px 14px; margin-top:14px;
+           background:var(--again-weak); border:1px solid color-mix(in srgb, var(--again) 45%, transparent);
+           font-size:13.5px; color:var(--text-soft); }
+  .hyper b { color:var(--again); }
+
+  /* rate grid */
+  .rate-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:9px; margin-top:18px; }
+  .rate-btn { position:relative; border-radius:12px; border:1px solid var(--border-strong); background:var(--surface);
+              padding:12px 8px 10px; text-align:center; cursor:pointer; font-family:inherit; }
+  .rate-btn .name { display:block; font-weight:640; font-size:14px; }
+  .rate-btn .iv { display:block; font-size:11.5px; color:var(--muted); margin-top:2px; }
+  .rate-btn .name.again{color:var(--again)} .rate-btn .name.hard{color:var(--hard)}
+  .rate-btn .name.good{color:var(--good)} .rate-btn .name.easy{color:var(--easy)}
+  .rate-btn.suggested { border-color:var(--hard); box-shadow:0 0 0 3px color-mix(in srgb, var(--hard) 25%, transparent); }
+  .rate-btn .sug { position:absolute; top:-9px; left:50%; transform:translateX(-50%); white-space:nowrap;
+                   font-size:9.5px; font-weight:800; letter-spacing:.08em; background:var(--hard); color:#241a06;
+                   border-radius:99px; padding:2px 8px; }
+
+  /* chat */
+  .chat { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; }
+  .msg { max-width:85%; padding:10px 14px; border-radius:13px; font-size:14px; margin-bottom:10px; }
+  .msg.ai { background:var(--surface-2); border:1px solid var(--border); }
+  .msg.user { background:var(--accent-weak); margin-left:auto; }
+  .chip { display:inline-flex; align-items:center; gap:6px; font-size:12.5px; padding:5px 11px; border-radius:99px;
+          border:1px solid var(--border-strong); color:var(--text-soft); background:var(--surface-2); cursor:pointer; }
+  .chip.link { border-style:dashed; border-color:var(--easy); color:var(--easy); }
+
+  .twocol { display:grid; grid-template-columns:1.5fr 1fr; gap:16px; align-items:start; }
+  @media (max-width:760px){ .twocol{grid-template-columns:1fr} .rate-grid{grid-template-columns:repeat(2,1fr)} }
+
+  .panel-list .pi { display:flex; gap:9px; align-items:flex-start; padding:8px 10px; border-radius:9px;
+                    background:var(--surface-2); font-size:13px; }
+  .panel-list .pi + .pi { margin-top:7px; }
+  .panel-list .pi .h { color:var(--accent); font-weight:700; flex:none; }
+
+  /* cornell */
+  .cornell { display:grid; grid-template-columns:200px 1fr; border:1px solid var(--border-strong);
+             border-radius:var(--radius); overflow:hidden; }
+  .cornell .cue { background:var(--surface-2); border-right:1px solid var(--border-strong); padding:14px; }
+  .cornell .notes { padding:14px 16px; background:var(--surface); min-height:230px; }
+  .cornell .summary { grid-column:1 / -1; border-top:1px solid var(--border-strong);
+                      background:var(--accent-weak); padding:12px 16px; font-size:13.5px; }
+  .cue .ci { font-size:12.5px; color:var(--accent); padding:5px 0; border-bottom:1px dashed var(--border-strong); }
+
+  /* steps */
+  .step { display:flex; gap:12px; padding:11px 13px; border-radius:10px; background:var(--surface-2);
+          border:1px solid var(--border); font-size:14px; }
+  .step + .step { margin-top:8px; }
+  .step .n { flex:none; width:20px; height:20px; border-radius:50%; background:var(--accent-weak);
+             color:var(--accent); display:grid; place-items:center; font-size:11px; font-weight:800; }
+  .step.veiled { color:transparent; text-shadow:0 0 14px rgba(236,227,209,.55); user-select:none; }
+  .step.veiled .n { color:var(--accent); text-shadow:none; }
+
+  .math { font-family:"Cambria Math",Georgia,serif; font-style:italic; font-size:1.06em; }
+  .math sub,.math sup { font-size:.72em; }
+
+  /* people */
+  .face { width:120px; height:120px; border-radius:18px; background:linear-gradient(145deg,#43564a,#2a3a30);
+          display:grid; place-items:center; font-size:44px; margin:0 auto 12px; }
+  .assoc { border-radius:11px; padding:12px 14px; background:var(--easy-weak);
+           border:1px solid color-mix(in srgb, var(--easy) 40%, transparent); font-size:13.5px; }
+  .assoc .lbl { font-size:10.5px; font-weight:800; letter-spacing:.1em; color:var(--easy); text-transform:uppercase; }
+
+  /* today */
+  .hero { display:flex; align-items:center; gap:22px; background:var(--surface); border:1px solid var(--border);
+          border-radius:var(--radius); box-shadow:var(--shadow); padding:26px 28px; }
+  .hero .big { font-size:46px; font-weight:740; letter-spacing:-.03em; color:var(--accent); }
+  .hero .lead { flex:1; } .hero h3 { font-size:18px; }
+  .risk-item { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:10px;
+               background:var(--surface-2); font-size:13.5px; }
+  .risk-item + .risk-item { margin-top:7px; }
+  .gauge { flex:none; width:54px; height:6px; border-radius:3px; background:var(--border-strong); overflow:hidden; }
+  .gauge i { display:block; height:100%; background:var(--again); }
+  .save-line { display:flex; gap:9px; align-items:center; margin-top:14px; padding:10px 13px; border-radius:10px;
+               background:var(--good-weak); font-size:13px; color:var(--text-soft); }
+  .save-line b { color:var(--good); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="pagehead">
+    <div class="eyebrow">Recall &amp; Reflect · design preview</div>
+    <h1 style="margin-top:8px">Prompt UI — options to test</h1>
+    <p>Five prompt moments, each with selectable variants (tabs). Same design tokens as the live app.
+       Content is your real material so you can judge how it reads. Math is faked with HTML here;
+       the build uses locally-vendored KaTeX.</p>
+  </div>
+
+  <nav class="toc">
+    <a href="#s1">1 · Recall reveal</a>
+    <a href="#s2">2 · Rating &amp; hypercorrection</a>
+    <a href="#s3">3 · Capture / Reflect</a>
+    <a href="#s4">4 · Technical cards</a>
+    <a href="#s5">5 · People cards</a>
+    <a href="#s6">6 · Today / session entry</a>
+  </nav>
+
+  <!-- ============ 1 · RECALL REVEAL ============ -->
+  <section id="s1">
+    <div class="sec-head">
+      <h2>1 · Topic recall — the rubric reveal</h2>
+      <p class="why">You free-recall a topic, then instead of a wall of text, grading lands per <b>key idea</b>
+         (successive relearning). The question is how the reveal is laid out.</p>
+    </div>
+
+    <div class="vtabs" data-group="g1">
+      <button class="vtab on" data-pane="g1-a">A · Checklist</button>
+      <button class="vtab" data-pane="g1-b">B · Side-by-side</button>
+      <button class="vtab" data-pane="g1-c">C · Squeeze (one more?)</button>
+    </div>
+
+    <!-- A: checklist -->
+    <div class="pane on" id="g1-a">
+      <div class="q-card">
+        <div class="src">from · Ductile failure theories</div>
+        <div class="q">Recall everything you can about: ductile failure theories</div>
+      </div>
+      <div style="margin-top:14px">
+        <div class="eyebrow" style="margin-bottom:8px">Your recall</div>
+        <div class="recall-quote">
+          <mark>Von Mises is distortion energy</mark> — compute σ<sub>VM</sub> from the stress components and compare to yield.
+          <mark>Tresca is max shear, (σ₁−σ₃)/2</mark>, and <mark>Tresca is more conservative</mark>. Both for ductile materials.
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px; padding:16px">
+        <div class="row spread" style="margin-bottom:10px">
+          <div class="eyebrow">Key ideas · 3 of 5</div>
+          <span class="muted" style="font-size:12px">◐ Partial</span>
+        </div>
+        <div class="idea hit"><span class="mark">✓</span><div><div class="t">Von Mises = distortion-energy criterion (σ<span class="math">VM</span> vs S<sub>y</sub>)</div></div></div>
+        <div class="idea hit"><span class="mark">✓</span><div><div class="t">Tresca = max shear stress, τ<sub>max</sub> = (σ₁−σ₃)/2</div></div></div>
+        <div class="idea hit"><span class="mark">✓</span><div><div class="t">Tresca is the more conservative of the two</div></div></div>
+        <div class="idea miss"><span class="mark">✕</span><div><div class="t">They disagree most in pure shear — Tresca predicts failure at ~15% lower load</div>
+          <div class="d">You didn't mention <em>where</em> they diverge.</div></div></div>
+        <div class="idea miss"><span class="mark">✕</span><div><div class="t">Use Coulomb-Mohr instead when S<sub>ut</sub> ≠ S<sub>uc</sub></div>
+          <div class="d">The escape hatch for asymmetric materials.</div></div></div>
+        <div class="poke">
+          <div class="lbl">Push yourself</div>
+          <div class="q">A shaft in pure torsion: which theory says it fails first, and what's the ratio between their predictions?</div>
+        </div>
+      </div>
+      <p class="pane-note"><b>Why this layout:</b> one vertical scan; misses are visually loud; each ✕ idea quietly gets its
+         own boosted schedule. Lowest reading cost of the three.</p>
+    </div>
+
+    <!-- B: side-by-side -->
+    <div class="pane" id="g1-b">
+      <div class="q-card">
+        <div class="src">from · Ductile failure theories</div>
+        <div class="q">Recall everything you can about: ductile failure theories</div>
+      </div>
+      <div class="twocol" style="margin-top:14px">
+        <div class="card" style="padding:16px">
+          <div class="eyebrow" style="margin-bottom:8px">Your recall</div>
+          <div class="recall-quote" style="border:none; background:none; padding:0">
+            <mark>Von Mises is distortion energy</mark> — compute σ<sub>VM</sub> from the stress components and
+            compare to yield. <mark>Tresca is max shear, (σ₁−σ₃)/2</mark>, and <mark>Tresca is more
+            conservative</mark>. Both for ductile materials.
+          </div>
+          <div class="muted" style="font-size:12px; margin-top:10px">Highlights = matched to an idea →</div>
+        </div>
+        <div class="card" style="padding:16px">
+          <div class="eyebrow" style="margin-bottom:8px">Key ideas</div>
+          <div class="idea hit" style="padding:7px 9px"><span class="mark">✓</span><div class="t" style="font-size:13px">Von Mises = distortion energy</div></div>
+          <div class="idea hit" style="padding:7px 9px"><span class="mark">✓</span><div class="t" style="font-size:13px">Tresca: (σ₁−σ₃)/2</div></div>
+          <div class="idea hit" style="padding:7px 9px"><span class="mark">✓</span><div class="t" style="font-size:13px">Tresca more conservative</div></div>
+          <div class="idea miss" style="padding:7px 9px"><span class="mark">✕</span><div class="t" style="font-size:13px">Pure shear = max disagreement (~15%)</div></div>
+          <div class="idea miss" style="padding:7px 9px"><span class="mark">✕</span><div class="t" style="font-size:13px">Coulomb-Mohr when S<sub>ut</sub> ≠ S<sub>uc</sub></div></div>
+        </div>
+      </div>
+      <p class="pane-note"><b>Why this layout:</b> your words stay on screen next to the rubric — strongest for
+         calibration ("what did I <i>actually</i> say?"), at the cost of more screen and shorter idea text.</p>
+    </div>
+
+    <!-- C: squeeze -->
+    <div class="pane" id="g1-c">
+      <div class="q-card">
+        <div class="src">from · Ductile failure theories</div>
+        <div class="q">Recall everything you can about: ductile failure theories</div>
+      </div>
+      <div class="card" style="margin-top:14px; padding:16px">
+        <div class="idea hit"><span class="mark">✓</span><div class="t">Von Mises = distortion energy — got it</div></div>
+        <div class="idea hit"><span class="mark">✓</span><div class="t">Tresca = (σ₁−σ₃)/2, more conservative — got it</div></div>
+        <div style="border-top:1px dashed var(--border-strong); margin:12px 0"></div>
+        <div class="msg ai" style="max-width:100%">There are <b>2 more ideas</b> in this topic. Before I show them —
+          anything else you can dig up? <span class="muted">(Where do the two theories disagree most?)</span></div>
+        <textarea class="input" rows="2" placeholder="One more push… or reveal."></textarea>
+        <div class="row" style="justify-content:flex-end; gap:9px; margin-top:10px">
+          <button class="btn btn-ghost">Reveal the rest · <span class="kbd">Space</span></button>
+          <button class="btn btn-primary">Submit</button>
+        </div>
+      </div>
+      <p class="pane-note"><b>Why this layout:</b> a second retrieval attempt with a category cue before reveal —
+         the most retrieval per session (effortful-retrieval research), but adds a step to every topic card.
+         Could be reserved for cards you marked <i>Certain</i>.</p>
+    </div>
+  </section>
+
+  <!-- ============ 2 · RATING ============ -->
+  <section id="s2">
+    <div class="sec-head">
+      <h2>2 · Rating — AI suggestion &amp; the hypercorrection moment</h2>
+      <p class="why">Self-grading drifts optimistic. The AI verdict pre-selects an honest default, and a
+         <b>confident miss</b> gets called out and re-queued today. Question: how loud should each be?</p>
+    </div>
+
+    <div class="vtabs" data-group="g2">
+      <button class="vtab on" data-pane="g2-a">A · Suggested glow</button>
+      <button class="vtab" data-pane="g2-b">B · One-tap confirm</button>
+    </div>
+
+    <div class="pane on" id="g2-a">
+      <div class="hyper">⚡ <div>You rated yourself <b>Certain</b> and missed it — these stick hardest once corrected.
+        <b>It returns at the end of today's session.</b></div></div>
+      <div class="rate-grid">
+        <button class="rate-btn"><span class="name again">Again</span><span class="iv">&lt;10m</span></button>
+        <button class="rate-btn suggested"><span class="sug">AI suggests · ◐ partial</span><span class="name hard">Hard</span><span class="iv">3d</span></button>
+        <button class="rate-btn"><span class="name good">Good</span><span class="iv">9d</span></button>
+        <button class="rate-btn"><span class="name easy">Easy</span><span class="iv">23d</span></button>
+      </div>
+      <div class="muted center" style="font-size:12px; margin-top:10px">All four stay live — <span class="kbd">1</span>–<span class="kbd">4</span> as always. <span class="kbd">Enter</span> takes the suggestion.</div>
+      <p class="pane-note"><b>Why:</b> keeps the familiar 4-button grid; the suggestion is a visual default, not a decision made for you.</p>
+    </div>
+
+    <div class="pane" id="g2-b">
+      <div class="hyper">⚡ <div>Confident miss — <b>back at the end of today's session.</b></div></div>
+      <div class="card" style="margin-top:12px; padding:16px; text-align:center">
+        <div class="muted" style="font-size:12.5px; margin-bottom:10px">Recall was <b style="color:var(--hard)">◐ partial</b> → scheduling as</div>
+        <button class="btn btn-primary" style="min-width:200px; background:var(--hard); border-color:var(--hard)">Hard · next in 3d &nbsp;<span class="kbd" style="background:none; color:#241a06; border-color:#241a06">Enter</span></button>
+        <div class="row" style="justify-content:center; gap:8px; margin-top:12px">
+          <button class="btn btn-ghost" style="font-size:12.5px">Again <span class="kbd">1</span></button>
+          <button class="btn btn-ghost" style="font-size:12.5px">Good <span class="kbd">3</span></button>
+          <button class="btn btn-ghost" style="font-size:12.5px">Easy <span class="kbd">4</span></button>
+        </div>
+      </div>
+      <p class="pane-note"><b>Why:</b> one keystroke per card when you agree with the AI — fastest sessions,
+         strongest anti-drift. Overrides demoted to ghost buttons. Riskier: you may rubber-stamp the model.</p>
+    </div>
+  </section>
+
+  <!-- ============ 3 · CAPTURE ============ -->
+  <section id="s3">
+    <div class="sec-head">
+      <h2>3 · Capture — where key ideas come from</h2>
+      <p class="why">Reflect already makes you generate. Now the conversation must also distill the
+         <b>key-idea rubric</b> that future grading uses — and surface <b>stretch connections</b> to things you already know.</p>
+    </div>
+
+    <div class="vtabs" data-group="g3">
+      <button class="vtab on" data-pane="g3-a">A · Chat + live rubric</button>
+      <button class="vtab" data-pane="g3-b">B · Cornell capture</button>
+    </div>
+
+    <!-- A -->
+    <div class="pane on" id="g3-a">
+      <div class="twocol">
+        <div class="chat">
+          <div class="msg user">Hall-Petch: yield strength goes up as grain size goes down, σ<sub>y</sub> = σ₀ + k/√d. Finer grains = more boundaries = stronger.</div>
+          <div class="msg ai">Why do more boundaries make it <i>stronger</i> — what is the boundary physically doing to a dislocation?</div>
+          <div class="msg user">Dislocations pile up at boundaries — they can't cross easily, so you need more stress to keep deforming.</div>
+          <div class="msg ai">Good. One edge case: does σ<sub>y</sub> = σ₀ + k/√d keep working as d → nanometers?</div>
+          <div class="row" style="gap:7px; margin-top:6px; flex-wrap:wrap">
+            <span class="chip link">⚯ Possible link: Luder's bands &amp; upper/lower yield — connect?</span>
+            <span class="chip link">⚯ Possible link: heat treatment / grain growth</span>
+          </div>
+          <textarea class="input" rows="1" style="margin-top:12px" placeholder="Reply, or tap a link to riff on it…"></textarea>
+        </div>
+        <div class="card" style="padding:16px">
+          <div class="row spread" style="margin-bottom:10px">
+            <div class="eyebrow">Key ideas · building</div><span class="muted" style="font-size:11.5px">editable</span>
+          </div>
+          <div class="panel-list">
+            <div class="pi"><span class="h">1</span><span>σ<sub>y</sub> = σ₀ + k/√d — finer grains → higher yield</span></div>
+            <div class="pi"><span class="h">2</span><span>Mechanism: boundaries block dislocations → pile-ups</span></div>
+            <div class="pi"><span class="h">3</span><span>Breaks down at nano grain sizes (inverse Hall-Petch)</span></div>
+            <div class="pi" style="opacity:.55"><span class="h">+</span><span>add an idea…</span></div>
+          </div>
+          <div class="muted" style="font-size:12px; margin-top:12px">These are what you'll be graded against at review. Trim ruthlessly.</div>
+          <button class="btn btn-primary" style="width:100%; margin-top:12px">Save topic</button>
+        </div>
+      </div>
+      <p class="pane-note"><b>Why:</b> the rubric assembles in plain sight while you talk — you see exactly what
+         future-you is accountable for, and can edit it before saving. Connection chips are optional one-tap elaborations.</p>
+    </div>
+
+    <!-- B -->
+    <div class="pane" id="g3-b">
+      <div class="cornell">
+        <div class="cue">
+          <div class="eyebrow" style="margin-bottom:8px">Cues → cards</div>
+          <div class="ci">Hall-Petch equation?</div>
+          <div class="ci">Why do boundaries strengthen?</div>
+          <div class="ci">When does it break down?</div>
+          <div class="ci" style="opacity:.5">+ cue…</div>
+        </div>
+        <div class="notes">
+          <div class="eyebrow" style="margin-bottom:8px">Notes</div>
+          <p class="soft" style="font-size:14px">σ<sub>y</sub> = σ₀ + k/√d. Finer grains → more grain boundary area →
+          dislocations pile up at boundaries and need more stress to transmit slip into the next grain.
+          At nanocrystalline sizes the trend inverts (boundary sliding takes over)…</p>
+        </div>
+        <div class="summary"><b style="color:var(--accent)">Summary (your gist — becomes the recall reference):</b>
+          <span class="soft">Smaller grains strengthen metals because boundaries block dislocation motion; σ₀ + k/√d, until nano scales invert it.</span></div>
+      </div>
+      <p class="pane-note"><b>Why:</b> literal Cornell method — notes pane, cue column (each cue auto-drafts a card),
+         summary row (your one-sentence gist becomes the free-recall reference). More structure, less conversation;
+         the AI fills the cue column instead of chatting. Best when you're transcribing from a textbook rather than thinking aloud.</p>
+    </div>
+  </section>
+
+  <!-- ============ 4 · TECHNICAL ============ -->
+  <section id="s4">
+    <div class="sec-head">
+      <h2>4 · Technical cards — equations &amp; derivations</h2>
+      <p class="why">Equation cards should test <b>meaning, conditions, and use</b> — not just symbol recall
+         (your "neuroplastic questioning": how, why, when does it fail). Derivations reveal stepwise.</p>
+    </div>
+
+    <div class="vtabs" data-group="g4">
+      <button class="vtab on" data-pane="g4-a">A · Equation, three angles</button>
+      <button class="vtab" data-pane="g4-b">B · Derivation step-reveal</button>
+    </div>
+
+    <div class="pane on" id="g4-a">
+      <div class="q-card">
+        <div class="src">from · Buckling failure · angle 2 of 3</div>
+        <div class="q">P<span class="math">cr</span> = π²EI / (KL)² — <span style="color:var(--accent)">why</span> does doubling the unsupported length cut capacity by 4×?</div>
+      </div>
+      <div class="row" style="gap:7px; margin-top:12px; justify-content:center; flex-wrap:wrap">
+        <span class="chip">angle 1 · state it ✓ 12d ago</span>
+        <span class="chip" style="border-color:var(--accent); color:var(--accent)">angle 2 · why (today)</span>
+        <span class="chip">angle 3 · when does it fail? · due 6d</span>
+      </div>
+      <textarea class="input" rows="2" style="margin-top:12px" placeholder="Because the buckled mode shape…"></textarea>
+      <p class="pane-note"><b>Why:</b> each equation is a small family — <i>state it / why is it true / where does it
+         break</i> — scheduled independently, so you never just pattern-match the formula. The chip row shows which angle
+         today is testing.</p>
+    </div>
+
+    <div class="pane" id="g4-b">
+      <div class="q-card">
+        <div class="src">from · Transient heat transfer</div>
+        <div class="q">Derive the lumped-capacitance response T(t) — step through it</div>
+      </div>
+      <div class="card" style="margin-top:14px; padding:16px">
+        <div class="step"><span class="n">1</span><span>Check Bi = hL<sub>c</sub>/k ≪ 0.1 → temperature ~uniform in body</span></div>
+        <div class="step"><span class="n">2</span><span>Energy balance: ρVc · dT/dt = −hA(T − T<sub>∞</sub>)</span></div>
+        <div class="step veiled"><span class="n">3</span><span>Substitute θ = T − T∞, separate variables, integrate</span></div>
+        <div class="step veiled"><span class="n">4</span><span>θ/θi = exp(−hA t / ρVc) = exp(−bt)</span></div>
+        <div class="row" style="justify-content:center; margin-top:14px; gap:10px">
+          <button class="btn btn-primary">What comes next? — reveal step 3 · <span class="kbd">Space</span></button>
+          <button class="btn btn-ghost">I'm stuck — hint</button>
+        </div>
+      </div>
+      <p class="pane-note"><b>Why:</b> every veiled step is a retrieval attempt ("what comes next?"), not a re-read.
+         Misses on a step mark that step for drilling. Works for derivations, procedures (HPPC test sequence),
+         and process chains (sand-casting defects diagnosis).</p>
+    </div>
+  </section>
+
+  <!-- ============ 5 · PEOPLE ============ -->
+  <section id="s5">
+    <div class="sec-head">
+      <h2>5 · People cards — names, faces, stories</h2>
+      <p class="why">The original expanding-rehearsal study was face-name learning. The card stores <b>your own</b>
+         vivid association (you generate it at capture — the app only prompts).</p>
+    </div>
+
+    <div class="vtabs" data-group="g5">
+      <button class="vtab on" data-pane="g5-a">A · Face-forward</button>
+      <button class="vtab" data-pane="g5-b">B · Story-forward</button>
+    </div>
+
+    <div class="pane on" id="g5-a">
+      <div class="q-card">
+        <div class="face">🧑‍🔧</div>
+        <div class="q">Who is this?</div>
+        <div class="muted" style="font-size:12.5px; margin-top:6px">met at · MFE battery test bay, May</div>
+      </div>
+      <div class="card" style="margin-top:14px; padding:16px">
+        <div class="eyebrow" style="margin-bottom:8px">Reveal</div>
+        <div style="font-size:17px; font-weight:640">Priya — HV pack lead</div>
+        <div class="soft" style="font-size:13.5px; margin-top:4px">Story: walked you through the tin-whisker short on the BMS board; runs the iTECH bidirectional supply.</div>
+        <div class="assoc" style="margin-top:10px"><div class="lbl">Your association</div>
+          "Priya = <i>prying</i> open the pack — picture her with a crowbar at the HV bay."</div>
+      </div>
+      <p class="pane-note"><b>Why:</b> photo (or emoji placeholder) as the cue mimics the real retrieval situation —
+         a face in front of you, name needed. One extra fact per review keeps the story alive.</p>
+    </div>
+
+    <div class="pane" id="g5-b">
+      <div class="q-card">
+        <div class="src">people · MFE</div>
+        <div class="q">HV pack lead. Tin-whisker short on the BMS board. Runs the iTECH supply.<br>
+          <span style="color:var(--accent)">Name — and your association?</span></div>
+      </div>
+      <textarea class="input" rows="2" style="margin-top:12px" placeholder="Name + the image you built…"></textarea>
+      <p class="pane-note"><b>Why:</b> story → name is the harder direction and trains the introduction-to-memory
+         pathway you actually use mid-conversation ("I know what we talked about… who <i>is</i> she?").
+         Best as the <i>second</i> card of each person, face-forward being the first.</p>
+    </div>
+  </section>
+
+  <!-- ============ 6 · TODAY ============ -->
+  <section id="s6">
+    <div class="sec-head">
+      <h2>6 · Today — session entry &amp; the visible payoff</h2>
+      <p class="why">Lowering activation energy ("Just 3"), naming what's at risk, and showing the save.
+         Bedtime session appears in the evening only.</p>
+    </div>
+
+    <div class="vtabs" data-group="g6">
+      <button class="vtab on" data-pane="g6-a">A · Dual entry</button>
+      <button class="vtab" data-pane="g6-b">B · At-risk list</button>
+    </div>
+
+    <div class="pane on" id="g6-a">
+      <div class="hero">
+        <div class="big">18</div>
+        <div class="lead">
+          <h3>reviews ready to recall</h3>
+          <p class="muted" style="font-size:13.5px">5 most at risk go first. Reflecting counts toward your day too.</p>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px">
+          <button class="btn btn-primary">Start recall →</button>
+          <button class="btn">Just 3 · ~60s</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px; padding:14px 18px">
+        <div class="row spread">
+          <div><div style="font-weight:580; font-size:14px">🌙 Wind-down at 10:15pm</div>
+            <div class="muted" style="font-size:12.5px">5 things worth sleeping on — today's misses + new captures.</div></div>
+          <button class="btn btn-ghost">Edit</button>
+        </div>
+      </div>
+      <div class="save-line">✦ Yesterday you rescued <b>7 fading memories</b> — median knowledge half-life is up to <b>26 days</b>.</div>
+      <p class="pane-note"><b>Why:</b> the full session stays the hero; "Just 3" is the always-available floor that
+         keeps bad days from becoming zero days.</p>
+    </div>
+
+    <div class="pane" id="g6-b">
+      <div class="card" style="padding:18px">
+        <div class="row spread" style="margin-bottom:12px">
+          <div class="eyebrow">About to slip</div>
+          <span class="muted" style="font-size:12px">retrievability now</span>
+        </div>
+        <div class="risk-item"><div class="gauge"><i style="width:38%"></i></div> Mohr's circle sign convention <span class="muted" style="margin-left:auto">~38%</span></div>
+        <div class="risk-item"><div class="gauge"><i style="width:52%"></i></div> σ<sub>hoop</sub> = Pr/t — thin-wall condition <span class="muted" style="margin-left:auto">~52%</span></div>
+        <div class="risk-item"><div class="gauge"><i style="width:61%; background:var(--hard)"></i></div> Priya — HV pack lead <span class="muted" style="margin-left:auto">~61%</span></div>
+        <div class="row" style="justify-content:space-between; margin-top:14px">
+          <span class="muted" style="font-size:12.5px">+15 more due today</span>
+          <button class="btn btn-primary">Rescue these 3 first →</button>
+        </div>
+      </div>
+      <p class="pane-note"><b>Why:</b> names the stakes per memory — "Mohr's circle is at 38%" is a far stronger pull
+         than "18 due." Costs more visual budget and shows scarier numbers on bad weeks.</p>
+    </div>
+  </section>
+
+  <div class="card" style="margin-top:64px; background:var(--surface-2)">
+    <div class="eyebrow" style="margin-bottom:8px">How to read this</div>
+    <p class="soft" style="font-size:13.5px">Variants aren't mutually exclusive across sections — e.g. Checklist reveal (1A)
+    + Suggested glow (2A) + Chat-with-rubric (3A) compose into one coherent flow. Within a section, pick one to build first;
+    nothing prevents adding a second as a setting later.</p>
+  </div>
+
+</div>
+<script>
+  document.querySelectorAll('.vtabs').forEach(tabs => {
+    tabs.querySelectorAll('.vtab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabs.querySelectorAll('.vtab').forEach(b => b.classList.toggle('on', b === btn));
+        const section = tabs.parentElement;
+        section.querySelectorAll('.pane').forEach(p =>
+          p.classList.toggle('on', p.id === btn.dataset.pane));
+      });
+    });
+  });
+</script>
+</body>
+</html>
