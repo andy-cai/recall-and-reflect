@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from app.core.cloze import extract_cloze_cards
 from app.db.repository import Repository
+from app.services.cloud import CloudError, get_cloud
 from app.services.embeddings import get_embeddings
 from app.services.llm import OllamaError, get_llm
 
@@ -302,6 +303,59 @@ def update_card(card_id: int, body: CardUpdate):
 def delete_card(card_id: int):
     Repository().delete_question(card_id)
     return {"ok": True}
+
+
+class RefineReq(BaseModel):
+    feedback: str = ""
+    use_cloud: bool = False   # explicit per-click opt-in
+
+
+@router.post("/cards/{card_id}/refine")
+def refine_card(card_id: int, body: RefineReq):
+    """Rewrite a card from the learner's feedback. Local model by default;
+    Claude only when the user explicitly clicked the cloud action."""
+    repo = Repository()
+    q = repo.get_question(card_id)
+    if not q:
+        return JSONResponse({"error": "not_found"}, status_code=404)
+    learning = repo.get_learning(q.learning_id)
+    topic = learning.title if learning else ""
+    content = learning.content if learning else ""
+    style = get_llm().gen_style
+
+    if body.use_cloud:
+        try:
+            card = get_cloud().refine_card(topic, content, q.question, q.answer,
+                                           body.feedback, style)
+        except CloudError as e:
+            return JSONResponse({"error": str(e)}, status_code=502)
+        return {**card, "source": "cloud"}
+
+    llm = get_llm()
+    if not llm.status()["available"]:
+        return JSONResponse({"error": "no_local_model"}, status_code=503)
+    try:
+        card = llm.refine_card(topic, content, q.question, q.answer, body.feedback)
+    except OllamaError as e:
+        return JSONResponse({"error": str(e)}, status_code=502)
+    return {**card, "source": "local"}
+
+
+class BuryReq(BaseModel):
+    days: int = 1
+
+
+@router.post("/cards/{card_id}/bury")
+def bury_card(card_id: int, body: BuryReq):
+    """Push a card out N days without rating it ('not today')."""
+    repo = Repository()
+    q = repo.get_question(card_id)
+    if not q:
+        return JSONResponse({"error": "not_found"}, status_code=404)
+    days = max(1, min(30, body.days))
+    target = (datetime.now() + timedelta(days=days)).replace(hour=4, minute=0, second=0, microsecond=0)
+    repo.set_card_due(card_id, target)
+    return {"ok": True, "next_review_at": target.isoformat()}
 
 
 class SuspendReq(BaseModel):

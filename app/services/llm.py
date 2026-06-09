@@ -13,8 +13,8 @@ import httpx
 from pydantic import BaseModel, Field
 
 from app.config import (
-    CLOUD_MODEL_MARKERS, DEFAULT_MODEL, OLLAMA_BASE_URL, OLLAMA_CONNECT_TIMEOUT,
-    OLLAMA_KEEP_ALIVE, OLLAMA_TIMEOUT,
+    CLOUD_MODEL_MARKERS, DEFAULT_GEN_STYLE, DEFAULT_MODEL, OLLAMA_BASE_URL,
+    OLLAMA_CONNECT_TIMEOUT, OLLAMA_KEEP_ALIVE, OLLAMA_TIMEOUT,
 )
 
 _THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
@@ -226,6 +226,14 @@ know the topic. Your job is to make their explanation earn its clarity:
 Never lecture. Never correct them with facts. Never reveal that you know anything.
 One or two sentences max per turn."""
 
+REFINE_SYSTEM = """You improve ONE spaced-repetition card based on the learner's feedback about it.
+
+You get the topic context, the current question/answer, and what the learner disliked.
+Rewrite the card to address the feedback while keeping it a focused active-recall
+prompt: one idea, answerable in a sentence or two, why/how/when-it-fails phrasing
+preferred over definitions. Keep what the feedback didn't complain about. Output only
+the structured object with the improved question and answer."""
+
 _FOCUS_SYSTEM = """The learner tells you what they want to prioritize in their reviews (an exam, a project,
 a vague theme). Match their request against their ACTUAL subjects and topic titles.
 
@@ -254,7 +262,14 @@ class LLMService:
     def __init__(self, model: str = DEFAULT_MODEL):
         self.preferred = model
         self.fast_preferred: str = ""   # optional smaller model for grading/classifying
+        self.gen_style: str = DEFAULT_GEN_STYLE  # user-editable question/answer style
         self._resolved: Optional[str] = None
+
+    def set_gen_style(self, style: str) -> None:
+        self.gen_style = (style or "").strip() or DEFAULT_GEN_STYLE
+
+    def _styled(self, system: str) -> str:
+        return f"{system}\n\nSTYLE (follow strictly):\n{self.gen_style}"
 
     # ---------- model discovery (local only) ----------
 
@@ -370,6 +385,19 @@ class LLMService:
         model = self.resolve_fast_model() if fast else self.resolve_model()
         if not model:
             raise OllamaError("No local model available.")
+        try:
+            return self._complete_json_once(model, messages, schema, temperature, num_predict)
+        except OllamaError as e:
+            # A token cap can truncate the JSON mid-object (verbose models,
+            # long rubrics). Retry once uncapped before giving up.
+            if num_predict and "parse" in str(e).lower():
+                return self._complete_json_once(model, messages, schema, temperature, 0)
+            raise
+
+    def _complete_json_once(
+        self, model: str, messages: list[dict], schema: type[BaseModel],
+        temperature: float, num_predict: int,
+    ) -> BaseModel:
         options = {"temperature": temperature}
         if num_predict:
             options["num_predict"] = num_predict   # cap tail latency
@@ -387,7 +415,7 @@ class LLMService:
         except httpx.HTTPError as e:
             raise OllamaError(f"Ollama request failed: {e}")
         if not content:
-            raise OllamaError("Empty response from model.")
+            raise OllamaError("Empty response from model (possibly truncated by the token cap).")
         try:
             return schema.model_validate_json(content)
         except Exception:
@@ -397,7 +425,7 @@ class LLMService:
                     return schema.model_validate_json(match.group())
                 except Exception:
                     pass
-            raise OllamaError("Could not parse structured output.")
+            raise OllamaError("Could not parse structured output (model output may be truncated).")
 
     # ---------- high-level features ----------
 
@@ -407,7 +435,7 @@ class LLMService:
 
     def generate_cards(self, transcript: str, n: int = 4, basic_only: bool = False) -> list[dict]:
         messages = [
-            {"role": "system", "content": _CARDS_BASIC_SYSTEM if basic_only else _CARDS_SYSTEM},
+            {"role": "system", "content": self._styled(_CARDS_BASIC_SYSTEM if basic_only else _CARDS_SYSTEM)},
             {"role": "user", "content": f"Aim for about {n} questions.\n\nConversation:\n---\n{transcript}\n---"},
         ]
         result = self._complete_json(messages, CardSet, temperature=0.4, num_predict=700)
@@ -427,7 +455,7 @@ class LLMService:
 
     def extract_key_ideas(self, transcript: str) -> list[str]:
         messages = [
-            {"role": "system", "content": _IDEAS_SYSTEM},
+            {"role": "system", "content": self._styled(_IDEAS_SYSTEM)},
             {"role": "user", "content": f"Conversation:\n---\n{transcript[:4000]}\n---\nDistill the key ideas."},
         ]
         result = self._complete_json(messages, KeyIdeaList, temperature=0.3, num_predict=450)
@@ -443,7 +471,7 @@ class LLMService:
             {"role": "system", "content": _RUBRIC_GRADE_SYSTEM},
             {"role": "user", "content": prompt},
         ]
-        grade = self._complete_json(messages, RubricGrade, temperature=0.1, num_predict=400, fast=True)
+        grade = self._complete_json(messages, RubricGrade, temperature=0.1, num_predict=700, fast=True)
         results = ["miss"] * len(ideas)
         for item in grade.items:
             if 0 <= item.index < len(ideas):
@@ -453,7 +481,7 @@ class LLMService:
 
     def drill_question(self, topic: str, idea: str) -> dict:
         messages = [
-            {"role": "system", "content": _DRILL_SYSTEM},
+            {"role": "system", "content": self._styled(_DRILL_SYSTEM)},
             {"role": "user", "content": f"Topic: {topic}\nKey idea they keep missing: {idea}\n\nWrite the drill question."},
         ]
         result = self._complete_json(messages, GenCard, temperature=0.4, num_predict=220)
@@ -470,7 +498,7 @@ class LLMService:
             {"role": "system", "content": _GRADE_SYSTEM},
             {"role": "user", "content": prompt},
         ]
-        grade = self._complete_json(messages, Grade, temperature=0.1, num_predict=250, fast=True)
+        grade = self._complete_json(messages, Grade, temperature=0.1, num_predict=400, fast=True)
         verdict = grade.verdict.strip().lower()
         if verdict not in ("correct", "partial", "wrong"):
             verdict = "partial"
@@ -504,7 +532,7 @@ class LLMService:
             f"Concept B: {b['title']}\n{(b.get('content') or '')[:800]}\n\n"
             "Write the contrast card."
         )
-        messages = [{"role": "system", "content": _CONTRAST_SYSTEM},
+        messages = [{"role": "system", "content": self._styled(_CONTRAST_SYSTEM)},
                     {"role": "user", "content": prompt}]
         result = self._complete_json(messages, GenCard, temperature=0.4, num_predict=260)
         if not (result.question.strip() and result.answer.strip()):
@@ -516,6 +544,16 @@ class LLMService:
         system = _STUDENT_SYSTEM + f"\n\nThe topic being taught to you: {topic}"
         messages = [{"role": "system", "content": system}, *history]
         yield from self._chat_stream(messages, temperature=0.7, num_predict=120)
+
+    def refine_card(self, topic: str, content: str, question: str, answer: str,
+                    feedback: str) -> dict:
+        prompt = build_refine_prompt(topic, content, question, answer, feedback)
+        messages = [{"role": "system", "content": self._styled(REFINE_SYSTEM)},
+                    {"role": "user", "content": prompt}]
+        result = self._complete_json(messages, GenCard, temperature=0.4, num_predict=500)
+        if not (result.question.strip() and result.answer.strip()):
+            raise OllamaError("Model returned no usable card.")
+        return {"question": result.question.strip(), "answer": result.answer.strip()}
 
     def interpret_focus(self, text: str, subjects: list[str], topics: list[dict]) -> dict:
         """Map a free-text 'what I want to prioritize' onto actual subjects/topic ids."""
@@ -548,6 +586,16 @@ class LLMService:
             if title:
                 out.append({"title": title, "note": t.note.strip()})
         return out
+
+
+def build_refine_prompt(topic: str, content: str, question: str, answer: str,
+                        feedback: str) -> str:
+    """Shared by the local model and the opt-in cloud path."""
+    return (
+        f"Topic: {topic}\n\nTopic notes:\n{(content or '')[:1500]}\n\n"
+        f"Current question:\n{question}\n\nCurrent answer:\n{answer}\n\n"
+        f"Learner's feedback about this card:\n{feedback or 'Make it sharper and more physical.'}"
+    )
 
 
 _service: Optional[LLMService] = None

@@ -35,6 +35,20 @@ export async function render() {
     ? el('span', { class: 'verdict correct' }, '● ' + s.llm.model)
     : el('span', { class: 'verdict wrong' }, '● offline');
 
+  // question style — appended to every generation prompt (cards, ideas, drills, rewrites)
+  const styleArea = el('textarea', { class: 'input', rows: '3' });
+  styleArea.value = s.gen_style || '';
+
+  // cloud assist (strictly opt-in, per-click)
+  const cloud = s.cloud || { enabled: false, models: [], key_present: false };
+  let cloudOn = !!cloud.enabled;
+  const cloudSw = el('div', { class: 'switch' + (cloudOn ? ' on' : ''), onClick: () => { cloudOn = !cloudOn; cloudSw.classList.toggle('on', cloudOn); } }, el('i'));
+  const cloudModelSel = el('select', { class: 'input', style: { maxWidth: '220px' } },
+    ...(cloud.models || []).map(m => el('option', { value: m, selected: m === cloud.model ? '' : null }, m)));
+  const cloudStatus = cloud.key_present
+    ? el('span', { class: 'verdict correct' }, '● key found')
+    : el('span', { class: 'verdict wrong' }, '● set ANTHROPIC_API_KEY');
+
   // theme
   const themeSel = el('select', { class: 'input', style: { maxWidth: '160px' } },
     ...['light', 'dark', 'system'].map(t => el('option', { value: t, selected: t === s.theme ? '' : null }, t[0].toUpperCase() + t.slice(1))));
@@ -59,7 +73,20 @@ export async function render() {
       el('div', { class: 'row spread' }, el('div', { style: { fontWeight: '560' } }, 'Target retention', infoTip('The chance you want of recalling a topic when it comes due. Higher = more frequent reviews. FSRS uses this to time each one; 90% is the sweet spot.')), retLabel),
       el('div', { style: { margin: '8px 0' } }, retSlider), retNote),
     field('AI model (local)', el('div', { class: 'row', style: { gap: '10px' } }, llmStatus, modelSel), 'Runs entirely on your machine via Ollama. Cloud models are blocked.'),
-    field('Fast model (grading)', fastSel, 'Snappier reviews: a small model (e.g. qwen2.5:3b or llama3.2:3b) grades recall and matches focus requests. Capture quality stays on the main model.'),
+    field('Fast model (grading)', fastSel, 'Snappier reviews: a small model (e.g. qwen3:4b) grades recall and matches focus requests. Capture quality stays on the main model.'),
+    el('div', { style: { padding: '14px 0', borderBottom: '1px solid var(--border)' } },
+      el('div', { style: { fontWeight: '560' } }, 'Question style'),
+      el('div', { class: 'muted', style: { fontSize: '12.5px', margin: '2px 0 8px' } },
+        'Applied to every generated question, answer, rubric and rewrite. Edit to taste.'),
+      styleArea),
+    el('div', { style: { padding: '14px 0', borderBottom: '1px solid var(--border)' } },
+      el('div', { class: 'row spread' },
+        el('div', {},
+          el('div', { style: { fontWeight: '560' } }, 'Cloud assist (Claude)'),
+          el('div', { class: 'muted', style: { fontSize: '12.5px', maxWidth: '420px' } },
+            'Off by default. When on, an “Improve with Claude” button appears on cards — only that card’s text is sent, only when you click. Reviews, capture and grading always stay local.')),
+        cloudSw),
+      el('div', { class: 'row', style: { gap: '10px', marginTop: '10px' } }, cloudStatus, cloudModelSel)),
     field('Theme', themeSel),
     field('Due reminders', sw, 'A gentle Windows notification when reviews pile up.'),
     el('div', { class: 'row', style: { justifyContent: 'flex-end', paddingTop: '16px' } }, saveBtn)));
@@ -82,6 +109,9 @@ export async function render() {
         theme: themeSel.value,
         model: modelSel.value,
         fast_model: fastSel.value,
+        gen_style: styleArea.value.trim(),
+        cloud_enabled: cloudOn,
+        cloud_model: cloudModelSel.value || undefined,
       });
       localStorage.setItem('rr-theme', themeSel.value);
       applyTheme(themeSel.value);

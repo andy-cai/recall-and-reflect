@@ -324,6 +324,10 @@ textarea.input { min-height: 92px; line-height: 1.5; }
 /* Math: TeX source fallback when KaTeX isn't vendored (tools/get_katex.py) */
 .math-src { font-family: "Cambria Math", "STIX Two Math", Georgia, serif; font-style: italic; }
 
+/* Per-card quiet actions during review (edit / skip) */
+.card-act { font-size: 12px; padding: 3px 8px; color: var(--muted); }
+.card-act:hover { color: var(--accent); }
+
 /* Connection chips (capture) — tappable links to topics you already know */
 .chip.link { border-style: dashed; border-color: var(--easy); color: var(--easy); }
 .chip.link:hover { background: var(--easy-weak); }

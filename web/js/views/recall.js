@@ -118,6 +118,13 @@ export async function render({ params } = {}) {
       el('div', { class: 'q' }, c.front));
     stage.append(qcard);
 
+    // quiet per-card actions: fix a bad question, or punt without rating
+    const editSlot = el('div', {});
+    stage.append(el('div', { class: 'row', style: { justifyContent: 'flex-end', gap: '4px', marginTop: '6px' } },
+      el('button', { class: 'btn-ghost card-act', onClick: () => toggleEditPanel(c, editSlot) }, '✎ Edit'),
+      el('button', { class: 'btn-ghost card-act', title: 'Skip without rating — stays due (S)', onClick: skipCard }, 'Skip ›')));
+    stage.append(editSlot);
+
     const recallInput = el('textarea', { class: 'input', rows: '3', placeholder: 'Try to recall it — type what you remember…' });
 
     const confRow = el('div', { class: 'confidence' },
@@ -168,6 +175,11 @@ export async function render({ params } = {}) {
     stage.append(el('div', { class: 'q-card' },
       el('div', { class: 'src' }, c.title ? `from · ${c.title}` : ''),
       el('div', { class: 'q' }, c.front)));
+    const editSlot = el('div', {});
+    stage.append(el('div', { class: 'row', style: { justifyContent: 'flex-end', gap: '4px', marginTop: '6px' } },
+      el('button', { class: 'btn-ghost card-act', onClick: () => toggleEditPanel(c, editSlot) }, '✎ Edit'),
+      el('button', { class: 'btn-ghost card-act', title: 'Skip without rating — stays due (S)', onClick: skipCard }, 'Skip ›')));
+    stage.append(editSlot);
 
     if (recallText) {
       stage.append(el('div', { class: 'card', style: { marginTop: '12px', textAlign: 'center' } },
@@ -254,8 +266,11 @@ export async function render({ params } = {}) {
             el('div', { class: 'q' }, g.poke)));
         }
         markSuggested(verdict);
-      } catch {
+      } catch (e) {
+        // never swallow the failure — say why and fall back to self-grading
         clear(gradeSlot);
+        gradeSlot.append(el('div', { class: 'muted center', style: { fontSize: '12.5px', marginTop: '12px' } },
+          `⚠ AI grade unavailable${e && e.message ? ` (${e.message})` : ''} — self-grade below.`));
       }
     } else if (!recallText) {
       gradeSlot.append(el('div', { class: 'muted center', style: { fontSize: '12.5px', marginTop: '12px' } },
@@ -310,6 +325,79 @@ export async function render({ params } = {}) {
     showCard();
   }
 
+  function skipCard() {
+    toast('Skipped — no rating recorded, it stays due.');
+    idx += 1;
+    showCard();
+  }
+
+  // ---------- edit / feedback panel (fix a bad question mid-review) ----------
+  function toggleEditPanel(c, slot) {
+    if (slot.firstChild) { clear(slot); return; }
+    if (c.card_type === 'cloze') {
+      slot.append(el('div', { class: 'muted', style: { fontSize: '12.5px', textAlign: 'right', padding: '6px 2px' } },
+        'Cloze cards are edited from their source in the Library.'));
+      return;
+    }
+    const cloudReady = !!(state.settings && state.settings.cloud && state.settings.cloud.ready);
+    const qIn = el('textarea', { class: 'input', rows: '2' }); qIn.value = c.front;
+    const aIn = el('textarea', { class: 'input', rows: '3' }); aIn.value = c.answer;
+    const fbIn = el('input', { class: 'input', placeholder: 'What’s wrong with it? — “too vague”, “ask for the mechanism, not the formula”…' });
+    const proposalSlot = el('div', {});
+
+    async function applyValues(q, a) {
+      try {
+        await api.updateCard(c.id, { question: q, answer: a });
+        c.front = q; c.answer = a;
+        toast('Card updated');
+        clear(slot);
+        showCard();
+      } catch (e) { toast('Save failed: ' + e.message); }
+    }
+
+    async function improve(useCloud, btn) {
+      const orig = btn.textContent;
+      btn.disabled = true; btn.textContent = 'Rewriting…';
+      try {
+        const r = await api.refineCard(c.id, { feedback: fbIn.value.trim(), use_cloud: useCloud });
+        clear(proposalSlot);
+        proposalSlot.append(el('div', { class: 'card', style: { marginTop: '10px', padding: '12px', borderColor: 'var(--easy)' } },
+          el('div', { class: 'eyebrow', style: { marginBottom: '8px' } },
+            r.source === 'cloud' ? '✨ Claude’s rewrite' : '✨ Rewrite'),
+          el('div', { style: { fontSize: '14px', fontWeight: '580' } }, r.question),
+          el('div', { class: 'soft', style: { fontSize: '13.5px', marginTop: '6px' } }, r.answer),
+          el('div', { class: 'row', style: { gap: '8px', marginTop: '10px', justifyContent: 'flex-end' } },
+            el('button', { class: 'btn-ghost', style: { fontSize: '13px' }, onClick: () => clear(proposalSlot) }, 'Discard'),
+            el('button', { class: 'btn btn-primary', style: { padding: '6px 12px', fontSize: '13px' },
+              onClick: () => applyValues(r.question, r.answer) }, 'Apply'))));
+        renderMathIn(proposalSlot);
+      } catch (e) {
+        toast((useCloud ? 'Cloud rewrite failed: ' : 'Rewrite failed: ') + e.message);
+      }
+      btn.disabled = false; btn.textContent = orig;
+    }
+
+    const localBtn = el('button', { class: 'btn', style: { padding: '6px 12px', fontSize: '13px' },
+      onClick: (e) => improve(false, e.currentTarget) }, '✨ Improve');
+    const cloudBtn = cloudReady ? el('button', { class: 'btn', style: { padding: '6px 12px', fontSize: '13px' },
+      onClick: (e) => improve(true, e.currentTarget) }, '✨ Improve with Claude') : null;
+
+    slot.append(el('div', { class: 'card stack', style: { marginTop: '8px', padding: '14px', textAlign: 'left' } },
+      el('div', { class: 'field' }, el('label', { class: 'lbl' }, 'Question'), qIn),
+      el('div', { class: 'field' }, el('label', { class: 'lbl' }, 'Answer / reference'), aIn),
+      el('div', { class: 'field' }, el('label', { class: 'lbl' }, 'Feedback for the AI rewrite (optional)'), fbIn),
+      el('div', { class: 'row wrap', style: { gap: '8px', justifyContent: 'flex-end' } },
+        localBtn, cloudBtn,
+        el('button', { class: 'btn-ghost', style: { fontSize: '13px' }, title: 'Push it out a day without rating',
+          onClick: async () => { await api.buryCard(c.id, 1); toast('Not today — back tomorrow.'); clear(slot); skipCard(); } }, 'Not today'),
+        el('button', { class: 'btn-ghost', style: { fontSize: '13px' },
+          onClick: async () => { await api.suspendCard(c.id, true); toast('Suspended.'); refreshBadge(); clear(slot); skipCard(); } }, 'Suspend'),
+        el('button', { class: 'btn btn-primary', style: { padding: '6px 12px', fontSize: '13px' },
+          onClick: () => applyValues(qIn.value.trim(), aIn.value.trim()) }, 'Save')),
+      proposalSlot));
+    fbIn.focus();
+  }
+
   async function doUndo() {
     const res = await api.undo();
     if (!res || !res.question_id) { toast('Nothing to undo'); return; }
@@ -342,6 +430,7 @@ export async function render({ params } = {}) {
       return;
     }
     if (e.key === 'Escape') { navigate('#/today'); return; }
+    if (e.key.toLowerCase() === 's') { e.preventDefault(); skipCard(); return; }
     if (!revealed) {
       if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); reveal(); }
       else if (e.key.toLowerCase() === 'h') { e.preventDefault(); stage._showHint && stage._showHint(); }

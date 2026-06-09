@@ -17,10 +17,26 @@ the edge of forgetting.
 
 ## Privacy
 
-Everything is on your machine. The app binds to `127.0.0.1` only, stores data in a
-local SQLite file under `data/` (which is git-ignored), and the only network calls it
-makes are to a **local** [Ollama](https://ollama.com) instance. Cloud LLM models are
-explicitly blocked so your notes can never leave the device.
+Everything runs on your machine by default. The app binds to `127.0.0.1` only, stores
+data in a local SQLite file under `data/` (git-ignored), and routine operation talks
+only to a **local** [Ollama](https://ollama.com) instance — Ollama cloud-proxy model
+tags are blocked.
+
+One explicit exception: **cloud assist** (off by default). If you set
+`ANTHROPIC_API_KEY` and flip the toggle in Settings, an "Improve with Claude" button
+appears on cards. It sends only that single card's text, only when you click it.
+Reviews, capture chat, grading, and embeddings never touch the cloud regardless.
+
+## Local models
+
+| VRAM | Main model | Fast model (grading) |
+|------|------------|----------------------|
+| 24 GB+ | `qwen3:30b-a3b` (MoE — fast and sharp) | `qwen3:4b` |
+| 12–16 GB | `qwen3:14b` (default) or `phi4:14b` (strong STEM) | `qwen3:4b` |
+| 8 GB | `qwen3:8b` or `qwen2.5:7b` | `qwen2.5:3b` |
+
+Reasoning models work too — `<think>` blocks are stripped automatically (at some
+latency cost). Pick models in Settings; the app falls back to whatever is installed.
 
 ## Quick start
 
@@ -98,7 +114,10 @@ python -m unittest discover tests
 
 ## Keyboard
 
-Review is keyboard-first: `Space` reveal · `1`/`2`/`3`/`4` rate · `H` hint · `Z` undo.
+Review is keyboard-first: `Space` reveal · `1`/`2`/`3`/`4` rate (`Enter` takes the AI
+suggestion) · `H` hint · `S` skip without rating · `Z` undo. Every card has quiet
+**✎ Edit / Skip** actions — fix a bad question inline, give feedback for an AI
+rewrite, punt it to tomorrow, or suspend it, without leaving the session.
 
 ## License
 

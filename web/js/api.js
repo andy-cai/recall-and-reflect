@@ -79,6 +79,8 @@ export const api = {
   updateCard: (id, b) => jfetch('PUT', `/api/cards/${id}`, b),
   deleteCard: (id) => jfetch('DELETE', `/api/cards/${id}`),
   suspendCard: (id, suspended) => jfetch('POST', `/api/cards/${id}/suspend`, { suspended }),
+  refineCard: (id, b) => jfetch('POST', `/api/cards/${id}/refine`, b),
+  buryCard: (id, days = 1) => jfetch('POST', `/api/cards/${id}/bury`, { days }),
 
   // review
   queue: ({ tag = null, learning_id = null, subject = null, limit = null, focus = null, mode = null } = {}) => {

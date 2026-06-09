@@ -7,8 +7,9 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from app.config import DEFAULT_MODEL
+from app.config import CLOUD_MODELS, DEFAULT_GEN_STYLE, DEFAULT_MODEL
 from app.db.repository import Repository
+from app.services.cloud import get_cloud
 from app.services.llm import OllamaError, get_llm
 
 router = APIRouter(prefix="/api", tags=["settings"])
@@ -27,6 +28,8 @@ def get_settings():
         "theme": repo.get_setting("theme", "dark"),
         "model": status["model"] or repo.get_setting("model", DEFAULT_MODEL),
         "fast_model": repo.get_setting("fast_model", ""),
+        "gen_style": repo.get_setting("gen_style", DEFAULT_GEN_STYLE),
+        "cloud": {**get_cloud().status(), "models": list(CLOUD_MODELS)},
         "llm": status,
     }
 
@@ -39,6 +42,9 @@ class SettingsUpdate(BaseModel):
     theme: Optional[str] = None
     model: Optional[str] = None
     fast_model: Optional[str] = None   # '' = use the main model for everything
+    gen_style: Optional[str] = None
+    cloud_enabled: Optional[bool] = None
+    cloud_model: Optional[str] = None
 
 
 @router.put("/settings")
@@ -67,6 +73,15 @@ def update_settings(body: SettingsUpdate):
             repo.set_setting("fast_model", body.fast_model)
         except OllamaError as e:
             return JSONResponse({"error": str(e)}, status_code=400)
+    if body.gen_style is not None:
+        get_llm().set_gen_style(body.gen_style)
+        repo.set_setting("gen_style", body.gen_style.strip() or DEFAULT_GEN_STYLE)
+    if body.cloud_enabled is not None:
+        get_cloud().set_enabled(body.cloud_enabled)
+        repo.set_setting("cloud_enabled", "1" if body.cloud_enabled else "0")
+    if body.cloud_model is not None:
+        get_cloud().set_model(body.cloud_model)
+        repo.set_setting("cloud_model", get_cloud().model)
     return {"ok": True}
 
 

@@ -10,6 +10,7 @@ from app.api import capture, learnings, review, settings as settings_api, stats,
 from app.config import APP_NAME, APP_VERSION, WEB_DIR
 from app.db.database import get_database
 from app.db.repository import Repository
+from app.services.cloud import get_cloud
 from app.services.llm import OllamaError, get_llm
 from app.services.notify import ReminderService
 
@@ -32,6 +33,13 @@ async def lifespan(app: FastAPI):
             get_llm().set_fast_model(saved_fast)
         except OllamaError:
             pass
+    saved_style = repo.get_setting("gen_style")
+    if saved_style:
+        get_llm().set_gen_style(saved_style)
+    get_cloud().set_enabled(str(repo.get_setting("cloud_enabled", "0")) == "1")
+    saved_cloud_model = repo.get_setting("cloud_model")
+    if saved_cloud_model:
+        get_cloud().set_model(saved_cloud_model)
     threading.Thread(target=get_llm().warm, daemon=True).start()  # warm model off the hot path
     global _reminder
     _reminder = ReminderService(Repository())

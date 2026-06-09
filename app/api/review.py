@@ -96,10 +96,15 @@ def grade(req: GradeReq):
         return JSONResponse({"error": "no_local_model"}, status_code=503)
 
     # Topic recall with a rubric → grade per key idea (successive relearning).
+    # If rubric grading fails (timeout, truncated/unparseable output), fall back
+    # to plain reference grading rather than failing the review.
     if q.card_type == "recall":
         ideas = repo.get_key_ideas(q.learning_id)
         if ideas:
-            return _grade_rubric(repo, llm, q, ideas, req.recall)
+            try:
+                return _grade_rubric(repo, llm, q, ideas, req.recall)
+            except OllamaError:
+                pass
 
     if q.card_type == "cloze" and q.cloze_source and q.cloze_index is not None:
         front = render_question(q.cloze_source, q.cloze_index)
@@ -117,10 +122,7 @@ def grade(req: GradeReq):
 def _grade_rubric(repo: Repository, llm, q: Question, ideas: list[dict], recall: str):
     learning = repo.get_learning(q.learning_id)
     topic = learning.title if learning else q.question
-    try:
-        graded = llm.grade_rubric(topic, [i["idea"] for i in ideas], recall)
-    except OllamaError as e:
-        return JSONResponse({"error": str(e)}, status_code=502)
+    graded = llm.grade_rubric(topic, [i["idea"] for i in ideas], recall)  # may raise OllamaError
 
     results = [
         {"id": idea["id"], "text": idea["idea"], "result": res}
