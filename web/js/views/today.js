@@ -1,6 +1,7 @@
 import { el, heatmapEl } from '../store.js';
 import { api } from '../api.js';
 import { navigate } from '../app.js';
+import { renderMathIn } from '../math.js';
 
 function greeting() {
   const h = new Date().getHours();
@@ -54,6 +55,7 @@ export async function render() {
         el('p', { class: 'muted' }, 'Nothing due right now. Learn something new and reflect on it.')),
       el('button', { class: 'btn btn-primary btn-lg', onClick: () => navigate('#/reflect') }, 'Reflect →'));
   }
+  renderMathIn(hero);
   view.append(hero);
 
   // Tiles

@@ -320,6 +320,9 @@ textarea.input { min-height: 92px; line-height: 1.5; }
 .idea.miss  { background: var(--again-weak); } .idea.miss .mark  { background: var(--again); color: #2b0f06; }
 .idea .t { font-size: 14.5px; }
 
+/* Math: TeX source fallback when KaTeX isn't vendored (tools/get_katex.py) */
+.math-src { font-family: "Cambria Math", "STIX Two Math", Georgia, serif; font-style: italic; }
+
 /* Today: about-to-slip list */
 .risk-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px;
   background: var(--surface-2); font-size: 13.5px; }

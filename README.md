@@ -39,10 +39,27 @@ you just write cards manually and self-grade reviews.
 
 | Stage | What happens |
 |-------|--------------|
-| **Reflect** | Free-flow chat → 2–3 generative follow-ups (skippable) → draft cards you edit → save. |
-| **Recall** | Free recall (type it) → confidence → AI grade + one Socratic poke → rate (1–4). |
+| **Reflect** | Free-flow chat → 2–3 generative follow-ups (skippable) → the AI distills editable **key ideas** (the rubric your recall is graded against) + optional detail questions → save. |
+| **Recall** | Free recall (type it) → confidence → AI grades **per key idea** (✓/◐/✕ checklist) + one Socratic poke → rate (1–4, with the verdict-consistent rating pre-highlighted — `Enter` takes it). Confident misses return at the end of the session and a bit sooner next time (hypercorrection). An idea missed twice in a row earns its own drill card. |
 | **Organize** | Each note gets a **Subject** (its home area). The Library's *Explore* view groups concepts by subject, and the local AI can suggest subjects for an uncategorized backlog (you approve). |
-| **Schedule** | FSRS sets each card's next review to hit your target retention (default 90%). |
+| **Schedule** | FSRS-4.5 sets each card's next review to hit your target retention (default 90%). The queue is shaped: most-at-risk first, one card per topic per session (remaining siblings are buried to tomorrow), new cards throttled by a per-day cap. |
+
+## Math
+
+Card text supports `$...$` / `$$...$$` TeX. To render it offline, vendor KaTeX once
+(needs internet for the download; never a CDN at runtime):
+
+```bat
+python tools\get_katex.py
+```
+
+Without it, math falls back to readable styled source.
+
+## Tests
+
+```bat
+python -m unittest discover tests
+```
 
 ## Stack
 

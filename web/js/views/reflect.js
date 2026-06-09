@@ -5,6 +5,7 @@
 import { el, clear, toast, state, infoTip } from '../store.js';
 import { api } from '../api.js';
 import { navigate, refreshBadge } from '../app.js';
+import { renderMathIn } from '../math.js';
 
 const MAX_Q = 2;
 const GREETING = "What do you want to remember? Describe the topic in your own words — I'll ask a couple of sharp questions, then set it up so you can recall it later.";
@@ -184,6 +185,7 @@ export async function render() {
       log.append(node); scrollDown();
       let t = null;
       return {
+        node,
         setText(v) { body.textContent = v; scrollDown(); },
         typing(on) {
           if (on && !t) { t = el('span', { class: 'typing' }, el('span'), el('span'), el('span')); node.append(t); }
@@ -201,6 +203,7 @@ export async function render() {
         for await (const chunk of api.followupStream(convo)) { m.typing(false); text += chunk; m.setText(text); }
       } catch { m.typing(false); m.setText('Let’s set this topic up.'); sendBtn.disabled = false; setupTopic(); return; }
       m.typing(false); text = text.trim(); sendBtn.disabled = false;
+      renderMathIn(m.node);
       if (!text) { setupTopic(); return; }
       convo.push({ role: 'assistant', content: text });
       asked += 1;
@@ -210,7 +213,7 @@ export async function render() {
     async function onSend() {
       const text = composer.value.trim();
       if (!text || phase === 'cards' || sendBtn.disabled) return;
-      addMsg('user', text);
+      renderMathIn(addMsg('user', text).node);
       convo.push({ role: 'user', content: text });
       composer.value = ''; composer.style.height = 'auto';
       makeBtn.style.display = '';

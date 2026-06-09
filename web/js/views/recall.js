@@ -2,6 +2,7 @@
 import { el, clear, toast, state, infoTip } from '../store.js';
 import { api } from '../api.js';
 import { navigate, refreshBadge } from '../app.js';
+import { renderMathIn } from '../math.js';
 
 const CONF = { 1: 'Guessing', 2: 'Pretty sure', 3: 'Certain' };
 
@@ -100,6 +101,7 @@ export async function render({ params } = {}) {
 
     stage._recallInput = recallInput;
     stage._hintBox = hintBox;
+    renderMathIn(qcard);
     setTimeout(() => recallInput.focus(), 30);
 
     function showHint() {
@@ -156,6 +158,7 @@ export async function render({ params } = {}) {
 
     const gradeSlot = el('div', {});
     stage.append(gradeSlot);
+    renderMathIn(stage);
 
     rateGrid = buildRateGrid(c);
     stage.append(rateGrid);
