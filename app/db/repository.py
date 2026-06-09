@@ -3,8 +3,8 @@
 from datetime import datetime, timedelta
 from typing import Optional
 
-from app.config import DEFAULT_DAILY_TARGET, DEFAULT_DESIRED_RETENTION
-from app.core.fsrs import CardState, Rating, ScheduleResult, State, schedule
+from app.config import DEFAULT_DAILY_TARGET, DEFAULT_DESIRED_RETENTION, DEFAULT_NEW_PER_DAY
+from app.core.fsrs import CardState, Rating, ScheduleResult, State, retrievability, schedule
 from app.db.database import Database, from_iso, get_database, to_iso
 from app.db.models import Learning, Question
 
@@ -259,12 +259,24 @@ class Repository:
         self, limit: int = 200, tag: Optional[str] = None,
         learning_id: Optional[int] = None, subject: Optional[str] = None,
     ) -> list[Question]:
+        """Build the review queue.
+
+        Beyond filtering to due cards, the queue is *shaped*:
+        - most-at-risk first (lowest current retrievability), new cards after;
+        - at most one card per learning per fetch, so sessions interleave topics
+          instead of running siblings back-to-back (the first sibling's answer
+          would prime the rest);
+        - new-card introductions are throttled by the new-per-day setting.
+        Topic-scoped practice (learning_id) skips the shaping — you asked for
+        exactly these cards.
+        """
+        now = datetime.now()
         clauses = [
             "q.suspended = 0",
             "l.is_active = 1",
             "(q.next_review_at IS NULL OR q.next_review_at <= ?)",
         ]
-        params: list = [to_iso(datetime.now())]
+        params: list = [to_iso(now)]
         if subject is not None:
             if subject == "":
                 clauses.append("(l.subject IS NULL OR TRIM(l.subject) = '')")
@@ -286,11 +298,72 @@ class Repository:
             SELECT q.* FROM questions q JOIN learnings l ON l.id = q.learning_id
             WHERE {where}
             ORDER BY q.next_review_at IS NULL, q.next_review_at ASC, q.id
-            LIMIT ?
+            LIMIT 1000
             """,
-            (*params, limit),
+            tuple(params),
         )
-        return [self._question(r) for r in rows]
+        pool = [self._question(r) for r in rows]
+        if learning_id:
+            return pool[:limit]
+
+        def risk(q: Question) -> tuple:
+            if q.state == int(State.NEW) or q.stability <= 0:
+                return (1, 0.0)
+            elapsed = 0.0
+            if q.last_reviewed_at is not None:
+                elapsed = (now - q.last_reviewed_at).total_seconds() / 86400
+            return (0, retrievability(q.stability, elapsed))
+
+        new_budget = max(0, self.get_new_per_day() - self.new_cards_today())
+        seen_learnings: set[int] = set()
+        out: list[Question] = []
+        for q in sorted(pool, key=risk):
+            if q.learning_id in seen_learnings:
+                continue
+            if q.state == int(State.NEW):
+                if new_budget <= 0:
+                    continue
+                new_budget -= 1
+            seen_learnings.add(q.learning_id)
+            out.append(q)
+            if len(out) >= limit:
+                break
+        return out
+
+    def new_cards_today(self) -> int:
+        row = self.db.fetch_one(
+            "SELECT COUNT(*) AS n FROM reviews WHERE state_before = 0 "
+            "AND date(reviewed_at) = date('now','localtime')"
+        )
+        return row["n"] if row else 0
+
+    def at_risk_cards(self, n: int = 3) -> list[dict]:
+        """The due cards closest to being forgotten (lowest retrievability),
+        for the Today screen's 'about to slip' list."""
+        now = datetime.now()
+        rows = self.db.fetch_all(
+            """
+            SELECT q.id, q.question, q.card_type, q.stability, q.last_reviewed_at,
+                   l.title, l.id AS lid
+            FROM questions q JOIN learnings l ON l.id = q.learning_id
+            WHERE q.suspended = 0 AND l.is_active = 1 AND q.state >= 1
+              AND q.stability > 0 AND q.next_review_at IS NOT NULL
+              AND q.next_review_at <= ?
+            """,
+            (to_iso(now),),
+        )
+        scored = []
+        for r in rows:
+            last = from_iso(r["last_reviewed_at"])
+            elapsed = (now - last).total_seconds() / 86400 if last else 0.0
+            scored.append({
+                "question_id": r["id"],
+                "learning_id": r["lid"],
+                "label": r["title"] if r["card_type"] == "recall" else r["question"],
+                "retrievability": round(retrievability(r["stability"], elapsed), 2),
+            })
+        scored.sort(key=lambda x: x["retrievability"])
+        return scored[:n]
 
     def get_due_count(self) -> int:
         row = self.db.fetch_one(
@@ -306,14 +379,19 @@ class Repository:
     def apply_review(
         self, q: Question, rating: int, recall_text: Optional[str] = None,
         confidence: Optional[int] = None, ai_verdict: Optional[str] = None,
-        elapsed_ms: Optional[int] = None,
+        elapsed_ms: Optional[int] = None, bury_siblings: bool = True,
     ) -> ScheduleResult:
         now = datetime.now()
         card = CardState(
             state=State(q.state), stability=q.stability, difficulty=q.difficulty,
             lapses=q.lapses, last_reviewed_at=q.last_reviewed_at,
         )
-        result = schedule(card, Rating(rating), now, self.get_desired_retention())
+        retention = self.get_desired_retention()
+        # Hypercorrection follow-up: a confident miss is highly correctable, but the
+        # correction itself decays — bring this card back a bit sooner than usual.
+        if confidence == 3 and ai_verdict == "wrong":
+            retention = min(0.97, retention + 0.04)
+        result = schedule(card, Rating(rating), now, retention)
 
         with self.db.get_connection() as conn:
             conn.execute(
@@ -342,7 +420,19 @@ class Repository:
                 ),
             )
             conn.commit()
+        if bury_siblings:
+            self._bury_siblings(q, now)
         return result
+
+    def _bury_siblings(self, q: Question, now: datetime) -> None:
+        """Push the learning's other due cards to tomorrow morning so siblings
+        never run in the same session (the first answer primes the rest)."""
+        tomorrow = (now + timedelta(days=1)).replace(hour=4, minute=0, second=0, microsecond=0)
+        self.db.execute(
+            "UPDATE questions SET next_review_at = ? WHERE learning_id = ? AND id != ? "
+            "AND suspended = 0 AND (next_review_at IS NULL OR next_review_at <= ?)",
+            (to_iso(tomorrow), q.learning_id, q.id, to_iso(now)),
+        )
 
     def undo_last_review(self) -> Optional[int]:
         row = self.db.fetch_one("SELECT * FROM reviews ORDER BY id DESC LIMIT 1")
@@ -383,6 +473,20 @@ class Repository:
             (start,),
         )
         return {r["d"]: r["n"] for r in rows}
+
+    def activity_by_day(self, days: int = 365) -> dict[str, int]:
+        """Reviews + captures per day. The habit is 'engage with memory' —
+        a day spent reflecting counts as showing up, not as a dead day."""
+        out = dict(self.reviews_by_day(days))
+        start = (datetime.now() - timedelta(days=days)).isoformat()
+        rows = self.db.fetch_all(
+            "SELECT date(created_at) AS d, COUNT(*) AS n FROM learnings "
+            "WHERE created_at >= ? GROUP BY d ORDER BY d",
+            (start,),
+        )
+        for r in rows:
+            out[r["d"]] = out.get(r["d"], 0) + r["n"]
+        return out
 
     def retention_rate(self, days: int = 30) -> Optional[float]:
         """Fraction of mature-ish reviews (card was already in REVIEW state) passed."""
@@ -445,3 +549,9 @@ class Repository:
             return float(self.get_setting("desired_retention", DEFAULT_DESIRED_RETENTION))
         except (TypeError, ValueError):
             return DEFAULT_DESIRED_RETENTION
+
+    def get_new_per_day(self) -> int:
+        try:
+            return int(self.get_setting("new_per_day", DEFAULT_NEW_PER_DAY))
+        except (TypeError, ValueError):
+            return DEFAULT_NEW_PER_DAY

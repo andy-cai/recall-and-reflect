@@ -45,6 +45,7 @@ OLLAMA_KEEP_ALIVE = "30m"      # keep the model warm between interactions
 # --- Spaced repetition defaults (overridable in Settings) ---
 DEFAULT_DAILY_TARGET = 20
 DEFAULT_DESIRED_RETENTION = 0.90   # FSRS target recall probability
+DEFAULT_NEW_PER_DAY = 10           # max brand-new cards introduced per day
 
 # --- Reminders ---
 NOTIFY_CHECK_INTERVAL_MIN = 30

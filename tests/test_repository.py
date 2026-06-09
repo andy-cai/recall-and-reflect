@@ -1,0 +1,138 @@
+"""Tests for queue shaping, sibling burying, hypercorrection, and activity stats.
+
+Uses a throwaway SQLite file per test. Run: python -m unittest discover tests
+"""
+
+import tempfile
+import unittest
+from datetime import datetime, timedelta
+from pathlib import Path
+
+from app.db.database import Database, to_iso
+from app.db.repository import Repository
+
+
+def days_ago(n: float) -> str:
+    return to_iso(datetime.now() - timedelta(days=n))
+
+
+class RepoCase(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        db = Database(Path(self._tmp.name) / "test.db")
+        db.initialize()
+        self.repo = Repository(db=db)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def make_topic(self, title: str, n_cards: int = 1) -> tuple[int, list[int]]:
+        lid = self.repo.create_learning(title, f"content of {title}")
+        qids = [
+            self.repo.create_question(lid, f"{title} q{i}", f"{title} a{i}")
+            for i in range(n_cards)
+        ]
+        return lid, qids
+
+    def set_reviewed(self, qid: int, stability: float, reviewed_days_ago: float,
+                     due_days_ago: float = 0.5):
+        """Make a card a REVIEW-state card that is currently due."""
+        self.repo.db.execute(
+            "UPDATE questions SET state = 2, stability = ?, difficulty = 5, "
+            "last_reviewed_at = ?, next_review_at = ? WHERE id = ?",
+            (stability, days_ago(reviewed_days_ago), days_ago(due_days_ago), qid),
+        )
+
+
+class TestQueueShaping(RepoCase):
+    def test_one_card_per_learning_per_fetch(self):
+        self.make_topic("Mohr's circle", n_cards=4)
+        queue = self.repo.get_due_questions()
+        self.assertEqual(len(queue), 1)
+
+    def test_learning_scoped_queue_keeps_all_cards(self):
+        lid, _ = self.make_topic("Mohr's circle", n_cards=4)
+        queue = self.repo.get_due_questions(learning_id=lid)
+        self.assertEqual(len(queue), 4)
+
+    def test_most_at_risk_reviews_come_first_then_new(self):
+        _, (q_fresh,) = self.make_topic("hoop stress")
+        _, (q_risky,) = self.make_topic("buckling")
+        self.make_topic("brand new topic")  # NEW card, never reviewed
+        self.set_reviewed(q_fresh, stability=10, reviewed_days_ago=1)    # high R
+        self.set_reviewed(q_risky, stability=10, reviewed_days_ago=40)   # low R
+        queue = self.repo.get_due_questions()
+        self.assertEqual([q.id for q in queue[:2]], [q_risky, q_fresh])
+        self.assertEqual(queue[2].state, 0)  # the new card rides last
+
+    def test_new_per_day_budget(self):
+        for i in range(5):
+            self.make_topic(f"topic {i}")
+        self.repo.set_setting("new_per_day", 2)
+        queue = self.repo.get_due_questions()
+        self.assertEqual(len(queue), 2)
+
+    def test_limit_caps_session(self):
+        for i in range(6):
+            self.make_topic(f"topic {i}")
+        queue = self.repo.get_due_questions(limit=3)
+        self.assertEqual(len(queue), 3)
+
+
+class TestBurying(RepoCase):
+    def test_review_buries_due_siblings_to_tomorrow(self):
+        lid, qids = self.make_topic("TTT diagrams", n_cards=3)
+        q = self.repo.get_question(qids[0])
+        self.assertEqual(self.repo.get_due_count(), 3)
+        self.repo.apply_review(q, rating=3)
+        self.assertEqual(self.repo.get_due_count(), 0)  # 1 scheduled out, 2 buried
+        for sib in qids[1:]:
+            nxt = self.repo.get_question(sib).next_review_at
+            self.assertIsNotNone(nxt)
+            self.assertGreater(nxt, datetime.now())
+            self.assertEqual(self.repo.get_question(sib).state, 0)  # still NEW
+
+    def test_bury_can_be_disabled_for_topic_practice(self):
+        lid, qids = self.make_topic("TTT diagrams", n_cards=3)
+        q = self.repo.get_question(qids[0])
+        self.repo.apply_review(q, rating=3, bury_siblings=False)
+        self.assertEqual(self.repo.get_due_count(), 2)
+
+    def test_bury_does_not_touch_other_learnings(self):
+        self.make_topic("other topic")
+        lid, qids = self.make_topic("TTT diagrams", n_cards=2)
+        self.repo.apply_review(self.repo.get_question(qids[0]), rating=3)
+        self.assertEqual(self.repo.get_due_count(), 1)
+
+
+class TestHypercorrection(RepoCase):
+    def test_confident_miss_shortens_next_interval(self):
+        _, (qa,) = self.make_topic("A")
+        _, (qb,) = self.make_topic("B")
+        self.set_reviewed(qa, stability=10, reviewed_days_ago=10)
+        self.set_reviewed(qb, stability=10, reviewed_days_ago=10)
+        plain = self.repo.apply_review(self.repo.get_question(qa), rating=2)
+        hyper = self.repo.apply_review(self.repo.get_question(qb), rating=2,
+                                       confidence=3, ai_verdict="wrong")
+        self.assertLess(hyper.interval_days, plain.interval_days)
+
+
+class TestActivity(RepoCase):
+    def test_capturing_counts_as_activity(self):
+        self.make_topic("captured today")
+        today = datetime.now().date().isoformat()
+        self.assertEqual(self.repo.reviews_by_day().get(today), None)
+        self.assertGreaterEqual(self.repo.activity_by_day().get(today, 0), 1)
+
+    def test_at_risk_lists_lowest_retrievability(self):
+        _, (qa,) = self.make_topic("fresh")
+        _, (qb,) = self.make_topic("slipping")
+        self.set_reviewed(qa, stability=10, reviewed_days_ago=1)
+        self.set_reviewed(qb, stability=10, reviewed_days_ago=60)
+        risk = self.repo.at_risk_cards(n=2)
+        self.assertEqual(risk[0]["label"], "slipping q0")
+        self.assertLess(risk[0]["retrievability"], risk[1]["retrievability"])
+
+
+if __name__ == "__main__":
+    unittest.main()
