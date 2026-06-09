@@ -42,6 +42,8 @@ you just write cards manually and self-grade reviews.
 | **Reflect** | Free-flow chat → 2–3 generative follow-ups (skippable) → the AI distills editable **key ideas** (the rubric your recall is graded against) + optional detail questions → save. |
 | **Recall** | Free recall (type it) → confidence → AI grades **per key idea** (✓/◐/✕ checklist) + one Socratic poke → rate (1–4, with the verdict-consistent rating pre-highlighted — `Enter` takes it). Confident misses return at the end of the session and a bit sooner next time (hypercorrection). An idea missed twice in a row earns its own drill card. |
 | **Organize** | Each note gets a **Subject** (its home area). The Library's *Explore* view groups concepts by subject, and the local AI can suggest subjects for an uncategorized backlog (you approve). |
+| **Focus** | Prioritize what matters now: star topics in the Library, focus a whole subject, or just tell Today *“vibrations final next week”* — the local model matches it to your real topics (you confirm). Focused topics jump every queue and claim the new-card budget first. |
+| **Rhythm** | Come back after days away to a **welcome-back ramp** (spread the pile over N days, keep today's most-at-risk). Evenings offer a small **wind-down session** — today's misses and new captures, timed for sleep consolidation. |
 | **Schedule** | FSRS-4.5 sets each card's next review to hit your target retention (default 90%). The queue is shaped: most-at-risk first, one card per topic per session (remaining siblings are buried to tomorrow), new cards throttled by a per-day cap. |
 
 ## Math
@@ -54,6 +56,16 @@ python tools\get_katex.py
 ```
 
 Without it, math falls back to readable styled source.
+
+## Performance
+
+Review grading is the latency-sensitive path. Two knobs:
+
+- **Fast model** (Settings): pull a small model (`ollama pull qwen2.5:3b`) and select it
+  as the fast model — it handles grading and focus-matching; capture quality stays on
+  the main model.
+- Every LLM call is token-capped (`num_predict`) so a rambling generation can't stall a
+  review. The model is kept warm (`keep_alive 30m`) and warmed at startup.
 
 ## Tests
 

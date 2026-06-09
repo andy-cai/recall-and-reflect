@@ -1,11 +1,84 @@
-import { el, heatmapEl } from '../store.js';
+import { el, clear, toast, heatmapEl } from '../store.js';
 import { api } from '../api.js';
-import { navigate } from '../app.js';
+import { navigate, refreshBadge } from '../app.js';
 import { renderMathIn } from '../math.js';
 
 function greeting() {
   const h = new Date().getHours();
   return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+}
+
+// Focus: prioritize topics — focused ones jump the queue and claim the
+// new-card budget first. Set it by telling the app what matters in plain words.
+function buildFocus(t) {
+  const wrap = el('div', { class: 'card', style: { marginTop: '16px' } });
+
+  function showActive() {
+    clear(wrap);
+    wrap.append(el('div', { class: 'row spread' },
+      el('div', {},
+        el('div', { style: { fontWeight: '580' } }, `★ Focusing ${t.focus.topics} topic${t.focus.topics !== 1 ? 's' : ''}`),
+        el('div', { class: 'muted', style: { fontSize: '13px' } },
+          t.focus.due > 0 ? `${t.focus.due} due — they go first in every session.` : 'Nothing due in focus right now — focused topics still go first.')),
+      el('div', { class: 'row', style: { gap: '8px' } },
+        t.focus.due > 0 ? el('button', { class: 'btn btn-primary', onClick: () => navigate('#/recall?focus=1') }, 'Review focus →') : null,
+        el('button', { class: 'btn btn-ghost', onClick: async () => { await api.focusClear(); t.focus = { topics: 0, due: 0 }; showInput(); toast('Focus cleared'); } }, 'Clear'))));
+  }
+
+  function showInput() {
+    clear(wrap);
+    const input = el('input', { class: 'input', placeholder: 'e.g. “vibrations final next week” or “battery + seals”…' });
+    const setBtn = el('button', { class: 'btn', onClick: submit }, 'Set focus');
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+    wrap.append(
+      el('div', { style: { fontWeight: '580', marginBottom: '4px' } }, 'Focus'),
+      el('div', { class: 'muted', style: { fontSize: '13px', marginBottom: '10px' } },
+        'Tell it what matters right now — matching topics jump to the front of every session.'),
+      el('div', { class: 'row', style: { gap: '8px' } }, input, setBtn));
+
+    async function submit() {
+      const text = input.value.trim();
+      if (!text) return;
+      setBtn.disabled = true; setBtn.textContent = 'Matching…';
+      try {
+        const m = await api.focusInterpret(text);
+        showConfirm(m);
+      } catch { toast('Could not match — try naming a subject or topic.'); }
+      setBtn.disabled = false; setBtn.textContent = 'Set focus';
+    }
+  }
+
+  function showConfirm(m) {
+    const subjects = m.subjects || [], learnings = m.learnings || [];
+    if (!subjects.length && !learnings.length) { toast('No matching topics found.'); return; }
+    clear(wrap);
+    const checks = [];
+    const rows = el('div', { class: 'stack', style: { gap: '6px', margin: '10px 0' } });
+    const mkRow = (label, payload) => {
+      const chk = el('input', { type: 'checkbox', checked: '', style: { width: '16px', height: '16px', accentColor: 'var(--accent)' } });
+      checks.push({ chk, payload });
+      rows.append(el('label', { class: 'row', style: { gap: '9px', cursor: 'pointer', fontSize: '13.5px' } }, chk, label));
+    };
+    for (const s of subjects) mkRow(`${s} (whole subject)`, { subject: s });
+    for (const l of learnings) mkRow(l.title, { id: l.id });
+    const applyBtn = el('button', { class: 'btn btn-primary', onClick: async () => {
+      const sel = checks.filter(c => c.chk.checked).map(c => c.payload);
+      const body = { subjects: sel.filter(p => p.subject).map(p => p.subject),
+                     learning_ids: sel.filter(p => p.id).map(p => p.id), priority: 1 };
+      if (!body.subjects.length && !body.learning_ids.length) { toast('Nothing selected'); return; }
+      const r = await api.focusApply(body);
+      t.focus = r.focus; refreshBadge(); showActive();
+      toast(`Focusing ${r.focus.topics} topic${r.focus.topics !== 1 ? 's' : ''}`);
+    } }, 'Focus these');
+    wrap.append(
+      el('div', { style: { fontWeight: '580' } }, 'Focus on:'),
+      rows,
+      el('div', { class: 'row', style: { gap: '8px', justifyContent: 'flex-end' } },
+        el('button', { class: 'btn btn-ghost', onClick: showInput }, 'Cancel'), applyBtn));
+  }
+
+  if (t.focus && t.focus.topics > 0) showActive(); else showInput();
+  return wrap;
 }
 
 export async function render() {
@@ -56,7 +129,36 @@ export async function render() {
       el('button', { class: 'btn btn-primary btn-lg', onClick: () => navigate('#/reflect') }, 'Reflect →'));
   }
   renderMathIn(hero);
+
+  // Welcome back — a wall of overdue cards kills the habit; offer a ramp instead.
+  if (t.gap_days >= 3 && t.due > t.daily_target * 2) {
+    const daysInput = el('input', { class: 'input', type: 'number', min: '2', max: '14', value: '5', style: { maxWidth: '70px' } });
+    const rampBtn = el('button', { class: 'btn btn-primary', onClick: async () => {
+      rampBtn.disabled = true;
+      const r = await api.ramp(Math.max(2, +daysInput.value || 5));
+      toast(`Spread ${r.moved} reviews over ${r.days} days — today stays focused.`);
+      refreshBadge(); navigate('#/today');
+    } }, 'Ease me back in');
+    view.append(el('div', { class: 'card', style: { marginBottom: '16px', borderColor: 'var(--accent)' } },
+      el('div', { style: { fontWeight: '580' } }, `Welcome back — ${t.due} reviews piled up while you were away.`),
+      el('div', { class: 'muted', style: { fontSize: '13px', margin: '4px 0 12px' } },
+        `Missing days doesn’t break the habit — quitting after them does. Keep today’s ${t.daily_target} most at-risk and spread the rest:`),
+      el('div', { class: 'row', style: { gap: '10px' } }, rampBtn, el('span', { class: 'muted', style: { fontSize: '13px' } }, 'over'), daysInput, el('span', { class: 'muted', style: { fontSize: '13px' } }, 'days'))));
+  }
+
   view.append(hero);
+
+  // Focus — prioritize topics by telling it what matters right now
+  view.append(buildFocus(t));
+
+  // Evening wind-down — a small pass before sleep consolidates today's material
+  if (new Date().getHours() >= 20) {
+    view.append(el('div', { class: 'card row spread', style: { marginTop: '16px' } },
+      el('div', {},
+        el('div', { style: { fontWeight: '580' } }, '🌙 Wind-down'),
+        el('div', { class: 'muted', style: { fontSize: '13.5px' } }, 'A few things worth sleeping on — today’s misses and new captures.')),
+      el('button', { class: 'btn', onClick: () => navigate('#/recall?mode=evening') }, 'Sleep on it →')));
+  }
 
   // Tiles
   const pct = t.daily_target ? Math.min(100, Math.round(t.reviews_today / t.daily_target * 100)) : 0;

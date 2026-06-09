@@ -26,6 +26,11 @@ export async function render() {
   const models = (s.llm && s.llm.models) || [];
   const modelSel = el('select', { class: 'input', style: { maxWidth: '260px' } },
     ...(models.length ? models : [s.model]).map(m => el('option', { value: m, selected: m === s.model ? '' : null }, m)));
+
+  // fast model — a smaller model for latency-sensitive calls (grading, matching)
+  const fastSel = el('select', { class: 'input', style: { maxWidth: '260px' } },
+    el('option', { value: '', selected: !s.fast_model ? '' : null }, 'Same as main model'),
+    ...models.map(m => el('option', { value: m, selected: m === s.fast_model ? '' : null }, m)));
   const llmStatus = s.llm && s.llm.available
     ? el('span', { class: 'verdict correct' }, '● ' + s.llm.model)
     : el('span', { class: 'verdict wrong' }, '● offline');
@@ -54,6 +59,7 @@ export async function render() {
       el('div', { class: 'row spread' }, el('div', { style: { fontWeight: '560' } }, 'Target retention', infoTip('The chance you want of recalling a topic when it comes due. Higher = more frequent reviews. FSRS uses this to time each one; 90% is the sweet spot.')), retLabel),
       el('div', { style: { margin: '8px 0' } }, retSlider), retNote),
     field('AI model (local)', el('div', { class: 'row', style: { gap: '10px' } }, llmStatus, modelSel), 'Runs entirely on your machine via Ollama. Cloud models are blocked.'),
+    field('Fast model (grading)', fastSel, 'Snappier reviews: a small model (e.g. qwen2.5:3b or llama3.2:3b) grades recall and matches focus requests. Capture quality stays on the main model.'),
     field('Theme', themeSel),
     field('Due reminders', sw, 'A gentle Windows notification when reviews pile up.'),
     el('div', { class: 'row', style: { justifyContent: 'flex-end', paddingTop: '16px' } }, saveBtn)));
@@ -75,6 +81,7 @@ export async function render() {
         notifications: notif,
         theme: themeSel.value,
         model: modelSel.value,
+        fast_model: fastSel.value,
       });
       localStorage.setItem('rr-theme', themeSel.value);
       applyTheme(themeSel.value);

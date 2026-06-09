@@ -22,7 +22,8 @@ function hintFor(c, level) {
 export async function render({ params } = {}) {
   const llmOk = !!(state.llm && state.llm.available);
   const data = await api.queue({ tag: params?.tag || null, learning_id: params?.learning || null,
-    subject: params?.subject, limit: params?.limit || null });
+    subject: params?.subject, limit: params?.limit || null,
+    focus: params?.focus || null, mode: params?.mode || null });
   const cards = data.cards;
 
   const view = el('div', { class: 'view' });

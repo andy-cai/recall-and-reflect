@@ -81,15 +81,24 @@ export const api = {
   suspendCard: (id, suspended) => jfetch('POST', `/api/cards/${id}/suspend`, { suspended }),
 
   // review
-  queue: ({ tag = null, learning_id = null, subject = null, limit = null } = {}) => {
+  queue: ({ tag = null, learning_id = null, subject = null, limit = null, focus = null, mode = null } = {}) => {
     const p = new URLSearchParams();
     if (tag) p.set('tag', tag);
     if (learning_id) p.set('learning_id', learning_id);
     if (subject !== null && subject !== undefined) p.set('subject', subject);
     if (limit) p.set('limit', limit);
+    if (focus) p.set('focus', '1');
+    if (mode) p.set('mode', mode);
     const qs = p.toString();
     return jfetch('GET', '/api/review/queue' + (qs ? `?${qs}` : ''));
   },
+  ramp: (days) => jfetch('POST', '/api/review/ramp', { days }),
+
+  // focus (priority topics)
+  focusInterpret: (text) => jfetch('POST', '/api/focus/interpret', { text }),
+  focusApply: (b) => jfetch('POST', '/api/focus/apply', b),
+  focusClear: () => jfetch('POST', '/api/focus/clear'),
+  setPriority: (id, priority) => jfetch('POST', `/api/learnings/${id}/priority`, { priority }),
   grade: (question_id, recall) => jfetch('POST', '/api/review/grade', { question_id, recall }),
   answer: (b) => jfetch('POST', '/api/review/answer', b),
   undo: () => jfetch('POST', '/api/review/undo'),

@@ -323,6 +323,13 @@ textarea.input { min-height: 92px; line-height: 1.5; }
 /* Math: TeX source fallback when KaTeX isn't vendored (tools/get_katex.py) */
 .math-src { font-family: "Cambria Math", "STIX Two Math", Georgia, serif; font-style: italic; }
 
+/* Focus star (Library rows) + focused-state buttons */
+.star { border: none; background: none; cursor: pointer; font-size: 17px; padding: 2px 4px;
+  color: var(--border-strong); flex: none; transition: color .12s, transform .08s; }
+.star:hover { color: var(--accent); transform: scale(1.15); }
+.star.on { color: var(--accent); }
+.btn.on-accent { border-color: var(--accent); color: var(--accent); background: var(--accent-weak); }
+
 /* Today: about-to-slip list */
 .risk-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px;
   background: var(--surface-2); font-size: 13.5px; }

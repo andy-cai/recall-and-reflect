@@ -63,7 +63,18 @@ async function list() {
 
   function subjectSection(summary, items) {
     const isUncat = summary.name === '';
+    const allFocused = items.length > 0 && items.every(i => i.priority);
+    const focusAreaBtn = isUncat ? null : el('button', {
+      class: 'btn' + (allFocused ? ' on-accent' : ''), style: { padding: '6px 12px' },
+      onClick: async (e) => {
+        const next = allFocused ? 0 : 1;
+        e.currentTarget.disabled = true;
+        await api.focusApply({ subjects: [summary.name], learning_ids: [], priority: next });
+        toast(next ? `Focusing all of ${summary.name}` : `Unfocused ${summary.name}`);
+        refreshBadge(); renderExplore();
+      } }, allFocused ? '★ Focused' : '☆ Focus area');
     const actions = el('div', { class: 'row', style: { gap: '8px' } },
+      focusAreaBtn,
       (isUncat && llmOk && items.length) ? el('button', { class: 'btn', style: { padding: '6px 12px' }, onClick: (e) => suggest(e.currentTarget) }, '✨ Suggest subjects') : null,
       summary.due > 0 ? el('button', { class: 'btn', style: { padding: '6px 12px' }, onClick: () => navigate('#/recall?subject=' + encodeURIComponent(summary.name)) }, 'Review area →') : null);
     const head = el('div', { class: 'row spread', style: { margin: '6px 2px 10px' } },
@@ -78,8 +89,21 @@ async function list() {
     return el('div', { style: { marginBottom: '26px' } }, head, rows);
   }
 
+  function starBtn(l) {
+    const btn = el('button', { class: 'star' + (l.priority ? ' on' : ''), title: 'Focus — reviewed first',
+      onClick: async (e) => {
+        e.stopPropagation();
+        l.priority = l.priority ? 0 : 1;
+        btn.classList.toggle('on', !!l.priority);
+        await api.setPriority(l.id, l.priority);
+        toast(l.priority ? 'Focused — goes first in sessions' : 'Unfocused');
+      } }, '★');
+    return btn;
+  }
+
   function conceptRow(l) {
     return el('div', { class: 'list-row', onClick: () => navigate('#/library/' + l.id) },
+      starBtn(l),
       el('div', { style: { flex: '1', minWidth: '0' } },
         el('div', { class: 'title' }, l.title),
         el('div', { class: 'meta' }, `${l.card_count} card${l.card_count !== 1 ? 's' : ''} · ${agoDate(l.created_at)}`, l.tags.length ? ' · ' + l.tags.join(', ') : '')),
@@ -139,6 +163,7 @@ async function list() {
     const rows = el('div', { class: 'stack' });
     for (const l of data.learnings) {
       rows.append(el('div', { class: 'list-row', onClick: () => navigate('#/library/' + l.id) },
+        starBtn(l),
         el('div', { style: { flex: '1', minWidth: '0' } },
           el('div', { class: 'title' }, l.title),
           el('div', { class: 'meta' }, (l.subject ? l.subject + ' · ' : '') + `${l.card_count} card${l.card_count !== 1 ? 's' : ''} · ${agoDate(l.created_at)}`)),
@@ -165,9 +190,19 @@ async function detail(id) {
   const L = data.learning;
   const view = el('div', { class: 'view' });
 
+  let prio = L.priority || 0;
+  const focusBtn = el('button', { class: 'btn' + (prio ? ' on-accent' : ''), onClick: async () => {
+    prio = prio ? 0 : 1;
+    await api.setPriority(id, prio);
+    focusBtn.textContent = prio ? '★ Focused' : '☆ Focus';
+    focusBtn.classList.toggle('on-accent', !!prio);
+    toast(prio ? 'Focused — goes first in sessions' : 'Unfocused');
+  } }, prio ? '★ Focused' : '☆ Focus');
+
   view.append(el('div', { class: 'row spread', style: { marginBottom: '18px' } },
     el('button', { class: 'btn btn-ghost', onClick: () => navigate('#/library') }, '← Library'),
     el('div', { class: 'row', style: { gap: '8px' } },
+      focusBtn,
       el('button', { class: 'btn', onClick: () => navigate('#/recall?learning=' + id) }, 'Review these →'),
       el('button', { class: 'btn btn-danger', onClick: del }, 'Delete'))));
 
