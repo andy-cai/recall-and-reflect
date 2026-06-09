@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 from app.db.repository import Repository
+from app.services.embeddings import get_embeddings
 from app.services.llm import OllamaError, get_llm
 
 router = APIRouter(prefix="/api/capture", tags=["capture"])
@@ -71,6 +72,27 @@ def ideas(req: IdeasReq):
     except OllamaError as e:
         return JSONResponse({"error": str(e)}, status_code=502)
     return {"ideas": extracted}
+
+
+class ConnectionsReq(BaseModel):
+    text: str
+
+
+@router.post("/connections")
+def connections(req: ConnectionsReq):
+    """Stretch connections: which topics the learner already studied are nearest
+    to what they're capturing right now. Pure embeddings — no generation, instant."""
+    emb = get_embeddings()
+    if not emb.model_available():
+        return {"connections": []}
+    near = emb.nearest_to_text(req.text, k=3, floor=0.55)
+    repo = Repository()
+    out = []
+    for n in near:
+        learning = repo.get_learning(n["learning_id"])
+        if learning:
+            out.append({"id": learning.id, "title": learning.title, "score": n["score"]})
+    return {"connections": out}
 
 
 class SubjectReq(BaseModel):

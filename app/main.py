@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 
-from app.api import capture, learnings, review, settings as settings_api, stats
+from app.api import capture, learnings, review, settings as settings_api, stats, teach
 from app.config import APP_NAME, APP_VERSION, WEB_DIR
 from app.db.database import get_database
 from app.db.repository import Repository
@@ -57,6 +57,7 @@ app.include_router(review.router)
 app.include_router(learnings.router)
 app.include_router(stats.router)
 app.include_router(settings_api.router)
+app.include_router(teach.router)
 
 # The SPA. Mounted last so /api/* routes take precedence.
 app.mount("/", StaticFiles(directory=str(WEB_DIR), html=True), name="web")

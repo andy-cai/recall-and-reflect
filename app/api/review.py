@@ -45,6 +45,8 @@ def _serialize(q: Question, title: str, retention: float,
         "intervals": intervals,
         # the rubric for topic-recall cards: reveal checklist + idea-based hints
         "ideas": [{"id": i["id"], "text": i["idea"]} for i in ideas] if ideas else [],
+        # solid topics qualify for a teach-back swap-in (stability ≥ 3 weeks)
+        "teach_eligible": q.card_type == "recall" and q.stability >= 21,
     }
 
 

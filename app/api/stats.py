@@ -71,4 +71,5 @@ def stats():
         "streak": _streak(activity),
         "consistency": _consistency(activity),
         "desired_retention": repo.get_desired_retention(),
+        "calibration": repo.calibration(90),
     }

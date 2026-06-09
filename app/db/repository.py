@@ -700,6 +700,58 @@ class Repository:
         )
         return [{"date": r["d"], "count": r["n"]} for r in rows]
 
+    def get_recall_card(self, learning_id: int) -> Optional[Question]:
+        row = self.db.fetch_one(
+            "SELECT * FROM questions WHERE learning_id = ? AND card_type = 'recall' "
+            "ORDER BY id LIMIT 1", (learning_id,))
+        return self._question(row) if row else None
+
+    def append_reflection(self, learning_id: int, text: str) -> None:
+        self.db.execute(
+            "UPDATE learnings SET reflection = COALESCE(reflection || char(10) || char(10), '') || ? "
+            "WHERE id = ?", (text, learning_id))
+
+    def calibration(self, days: int = 90) -> dict:
+        """Confidence × AI-verdict accuracy, plus the subject where mid/high
+        confidence is least reliable (the overconfidence hot spot)."""
+        start = (datetime.now() - timedelta(days=days)).isoformat()
+        rows = self.db.fetch_all(
+            """
+            SELECT r.confidence, r.ai_verdict, l.subject
+            FROM reviews r
+            JOIN questions q ON q.id = r.question_id
+            JOIN learnings l ON l.id = q.learning_id
+            WHERE r.reviewed_at >= ? AND r.confidence IS NOT NULL AND r.ai_verdict IS NOT NULL
+            """,
+            (start,),
+        )
+        levels = {1: {"n": 0, "right": 0}, 2: {"n": 0, "right": 0}, 3: {"n": 0, "right": 0}}
+        by_subject: dict[str, dict] = {}
+        for r in rows:
+            c = r["confidence"]
+            if c not in levels:
+                continue
+            right = 1 if r["ai_verdict"] == "correct" else 0
+            levels[c]["n"] += 1
+            levels[c]["right"] += right
+            if c >= 2:
+                subj = (r["subject"] or "Uncategorized").strip() or "Uncategorized"
+                s = by_subject.setdefault(subj, {"n": 0, "right": 0})
+                s["n"] += 1
+                s["right"] += right
+        out = {
+            str(c): {"n": v["n"],
+                     "accuracy": round(v["right"] / v["n"], 3) if v["n"] else None}
+            for c, v in levels.items()
+        }
+        hot = None
+        for subj, s in by_subject.items():
+            if s["n"] >= 8:
+                acc = s["right"] / s["n"]
+                if hot is None or acc < hot["accuracy"]:
+                    hot = {"subject": subj, "n": s["n"], "accuracy": round(acc, 3)}
+        return {"levels": out, "overconfident_subject": hot}
+
     # ---------- settings ----------
 
     def get_setting(self, key: str, default=None):

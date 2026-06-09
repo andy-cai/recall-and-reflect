@@ -208,6 +208,24 @@ keeps missing. The question targets exactly that idea (favor why/how/when phrasi
 is answerable in a sentence or two, and the answer is the idea itself, stated clearly.
 Output only the structured object."""
 
+_CONTRAST_SYSTEM = """You write ONE contrast card for two concepts a learner studies separately but could
+confuse. The question forces discrimination: when do they differ, disagree, or apply —
+not definitions of each. The answer states the key distinction crisply (include the
+condition where choosing wrong matters). Use the learners' own notes. Output only the
+structured object."""
+
+_STUDENT_SYSTEM = """You are a curious FIRST-YEAR STUDENT being taught a topic by the learner. You do NOT
+know the topic. Your job is to make their explanation earn its clarity:
+
+- Ask exactly ONE short question per turn, the most natural confusion a beginner
+  would actually have about what they just said.
+- If they use jargon or a symbol without defining it, ask what it means.
+- If they state a rule, ask why it's true, or what happens at the edge.
+- If an explanation is genuinely clear, say what clicked in one short phrase, then
+  probe the next gap.
+Never lecture. Never correct them with facts. Never reveal that you know anything.
+One or two sentences max per turn."""
+
 _FOCUS_SYSTEM = """The learner tells you what they want to prioritize in their reviews (an exam, a project,
 a vague theme). Match their request against their ACTUAL subjects and topic titles.
 
@@ -478,6 +496,26 @@ class LLMService:
         valid = {it["id"] for it in items}
         return [{"id": a.id, "subject": a.subject.strip()}
                 for a in result.items if a.id in valid and a.subject.strip()]
+
+    def contrast_card(self, a: dict, b: dict) -> dict:
+        """One discrimination card for two confusable topics ({title, content} each)."""
+        prompt = (
+            f"Concept A: {a['title']}\n{(a.get('content') or '')[:800]}\n\n"
+            f"Concept B: {b['title']}\n{(b.get('content') or '')[:800]}\n\n"
+            "Write the contrast card."
+        )
+        messages = [{"role": "system", "content": _CONTRAST_SYSTEM},
+                    {"role": "user", "content": prompt}]
+        result = self._complete_json(messages, GenCard, temperature=0.4, num_predict=260)
+        if not (result.question.strip() and result.answer.strip()):
+            raise OllamaError("Model returned no usable contrast card.")
+        return {"question": result.question.strip(), "answer": result.answer.strip()}
+
+    def teach_student_stream(self, topic: str, history: list[dict]) -> Iterator[str]:
+        """Stream the confused student's next question during a teach-back."""
+        system = _STUDENT_SYSTEM + f"\n\nThe topic being taught to you: {topic}"
+        messages = [{"role": "system", "content": system}, *history]
+        yield from self._chat_stream(messages, temperature=0.7, num_predict=120)
 
     def interpret_focus(self, text: str, subjects: list[str], topics: list[dict]) -> dict:
         """Map a free-text 'what I want to prioritize' onto actual subjects/topic ids."""

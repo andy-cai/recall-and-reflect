@@ -1,5 +1,6 @@
 """Learnings + cards CRUD, and saving a captured learning."""
 
+import threading
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -9,9 +10,20 @@ from pydantic import BaseModel
 
 from app.core.cloze import extract_cloze_cards
 from app.db.repository import Repository
+from app.services.embeddings import get_embeddings
 from app.services.llm import OllamaError, get_llm
 
 router = APIRouter(prefix="/api", tags=["learnings"])
+
+CONTRAST_FLOOR = 0.86   # similarity above which two topics look confusable
+
+
+def _embed_async(learning_id: int, title: str, content: str) -> None:
+    """Embed off the hot path; failures are silent (no embed model running)."""
+    threading.Thread(
+        target=lambda: get_embeddings().ensure(learning_id, title, content),
+        daemon=True,
+    ).start()
 
 
 class CardIn(BaseModel):
@@ -68,6 +80,7 @@ def create_learning(body: LearningIn):
     if body.recall_card:
         repo.create_recall_card(lid, title, body.content.strip())
         n += 1
+    _embed_async(lid, title, body.content)
     return {"id": lid, "title": title, "cards": n}
 
 
@@ -75,6 +88,18 @@ def create_learning(body: LearningIn):
 def list_learnings(search: str = "", tag: Optional[str] = None):
     repo = Repository()
     items = repo.list_learnings(search=search, tag=tag)
+    # Semantic enrich: "plasticity onset" should find Luder's bands even though
+    # no word matches. Appended after the literal hits, best-effort.
+    if search and not tag:
+        emb = get_embeddings()
+        if emb.model_available():
+            near = emb.nearest_to_text(search, k=8, floor=0.45)
+            have = {it["learning"].id for it in items}
+            wanted = [n["learning_id"] for n in near if n["learning_id"] not in have]
+            if wanted:
+                by_id = {it["learning"].id: it
+                         for it in repo.list_learnings(search="", tag=None, limit=1000)}
+                items += [by_id[lid] for lid in wanted if lid in by_id]
     return {
         "learnings": [
             {
@@ -141,7 +166,89 @@ def update_learning(learning_id: int, body: LearningUpdate):
                          tags=body.tags, notes=body.notes)
     if body.key_ideas is not None:
         repo.set_key_ideas(learning_id, body.key_ideas)
+    _embed_async(learning_id, body.title, body.content)
     return {"ok": True}
+
+
+# ---------- related concepts / contrast cards (local embeddings) ----------
+
+@router.get("/learnings/{learning_id}/related")
+def related(learning_id: int):
+    repo = Repository()
+    learning = repo.get_learning(learning_id)
+    if not learning:
+        return JSONResponse({"error": "not_found"}, status_code=404)
+    emb = get_embeddings()
+    if not emb.model_available():
+        return {"related": [], "contrast": None, "embeddings": False}
+    emb.ensure(learning_id, learning.title, learning.content)
+    emb.backfill(24)   # opportunistically embed the rest of the library
+    near = emb.nearest(learning_id, k=5)
+    out = []
+    for n in near:
+        other = repo.get_learning(n["learning_id"])
+        if other:
+            out.append({"id": other.id, "title": other.title, "score": n["score"]})
+    contrast = None
+    if out and out[0]["score"] >= CONTRAST_FLOOR and get_llm().status()["available"]:
+        contrast = {"with_id": out[0]["id"], "with_title": out[0]["title"]}
+    return {"related": out, "contrast": contrast, "embeddings": True}
+
+
+class ContrastReq(BaseModel):
+    with_id: int
+
+
+@router.post("/learnings/{learning_id}/contrast")
+def add_contrast(learning_id: int, body: ContrastReq):
+    """Generate + attach a discrimination card for two confusable topics."""
+    repo = Repository()
+    a, b = repo.get_learning(learning_id), repo.get_learning(body.with_id)
+    if not a or not b:
+        return JSONResponse({"error": "not_found"}, status_code=404)
+    llm = get_llm()
+    if not llm.status()["available"]:
+        return JSONResponse({"error": "no_local_model"}, status_code=503)
+    try:
+        card = llm.contrast_card({"title": a.title, "content": a.content},
+                                 {"title": b.title, "content": b.content})
+    except OllamaError as e:
+        return JSONResponse({"error": str(e)}, status_code=502)
+    repo.create_question(learning_id, card["question"], card["answer"])
+    return {"added": 1, "question": card["question"]}
+
+
+class DupeCheckReq(BaseModel):
+    titles: list[str]
+
+
+@router.post("/topics/check_dupes")
+def check_dupes(body: DupeCheckReq):
+    """Flag titles that are nearly identical to existing topics (before bulk add)."""
+    emb = get_embeddings()
+    titles = [t.strip() for t in body.titles if t.strip()][:60]
+    if not titles or not emb.model_available():
+        return {"dupes": []}
+    repo = Repository()
+    vectors = emb.embed_texts(titles)
+    if not vectors:
+        return {"dupes": []}
+    emb.backfill(24)
+    existing = emb.all_vectors()
+    dupes = []
+    from app.services.embeddings import cosine
+    for title, vec in zip(titles, vectors):
+        best_id, best = None, 0.0
+        for lid, v in existing:
+            s = cosine(vec, v)
+            if s > best:
+                best_id, best = lid, s
+        if best_id is not None and best >= 0.88:
+            match = repo.get_learning(best_id)
+            if match:
+                dupes.append({"title": title, "match_id": best_id,
+                              "match_title": match.title, "score": round(best, 2)})
+    return {"dupes": dupes}
 
 
 @router.post("/learnings/{learning_id}/generate")
