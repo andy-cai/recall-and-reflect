@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recall &amp; Reflect — Round 2 mockups</title>
+<style>
+  :root {
+    --accent:#d59a52; --accent-weak:#2d2a1b; --accent-text:#1c1407;
+    --bg:#131d16; --surface:#1b271e; --surface-2:#243027; --border:#2f3b32; --border-strong:#3d4b40;
+    --text:#ece3d1; --text-soft:#c4bca7; --muted:#8b9182;
+    --good:#87ba6c; --good-weak:#1f2c1a; --hard:#cf9f49; --hard-weak:#2b2414;
+    --again:#d4775a; --again-weak:#2e1d16; --easy:#6fa9a0; --easy-weak:#15241f;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(0,0,0,.22), 0 8px 24px rgba(0,0,0,.30);
+    --font:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"Inter",sans-serif;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:var(--font); background:var(--bg); color:var(--text); font-size:15px; line-height:1.55; }
+  h1,h2,h3 { font-weight:640; letter-spacing:-.02em; margin:0; line-height:1.2; }
+  .wrap { max-width:880px; margin:0 auto; padding:40px 24px 120px; }
+  .muted { color:var(--muted); } .soft { color:var(--text-soft); }
+  .eyebrow { font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:22px; }
+  .row { display:flex; align-items:center; gap:12px; } .spread { justify-content:space-between; }
+  .toc { position:sticky; top:0; z-index:10; background:color-mix(in srgb, var(--bg) 88%, transparent);
+         backdrop-filter:blur(8px); padding:12px 0; margin:18px 0 34px; border-bottom:1px solid var(--border); display:flex; gap:8px; flex-wrap:wrap; }
+  .toc a { color:var(--text-soft); text-decoration:none; font-size:13px; font-weight:560; padding:6px 11px;
+           border:1px solid var(--border-strong); border-radius:99px; background:var(--surface); }
+  .toc a:hover { color:var(--accent); border-color:var(--accent); }
+  section { margin:56px 0; }
+  .sec-head h2 { font-size:19px; }
+  .sec-head .why { font-size:13px; color:var(--muted); margin:6px 0 0; max-width:660px; }
+  .why b { color:var(--text-soft); font-weight:600; }
+  .vtabs { display:flex; gap:7px; margin:16px 0 14px; flex-wrap:wrap; }
+  .vtab { padding:7px 13px; border-radius:99px; border:1px solid var(--border-strong); background:var(--surface);
+          color:var(--text-soft); font-weight:560; font-size:13px; cursor:pointer; font-family:inherit; }
+  .vtab.on { background:var(--accent-weak); color:var(--accent); border-color:var(--accent); }
+  .pane { display:none; } .pane.on { display:block; animation:rise .18s ease; }
+  @keyframes rise { from{opacity:0; transform:translateY(5px)} to{opacity:1; transform:none} }
+  .pane-note { font-size:12.5px; color:var(--muted); margin:12px 2px 0; }
+  .pane-note b { color:var(--text-soft); }
+
+  .q-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+            box-shadow:var(--shadow); padding:26px 28px; text-align:center; }
+  .q-card .src { font-size:12px; color:var(--muted); margin-bottom:10px; }
+  .q-card .q { font-size:18px; font-weight:600; }
+  .input { width:100%; background:var(--surface-2); border:1px solid var(--border-strong); color:var(--text);
+           border-radius:11px; padding:11px 13px; font-size:14.5px; resize:vertical; font-family:inherit; }
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:10px 16px; border-radius:11px;
+         border:1px solid var(--border-strong); background:var(--surface); color:var(--text); font-weight:560; cursor:pointer; font-family:inherit; font-size:14px; }
+  .btn-primary { background:var(--accent); border-color:var(--accent); color:var(--accent-text); }
+  .btn-ghost { border-color:transparent; background:none; color:var(--text-soft); }
+  .kbd { font-size:11px; border:1px solid var(--border-strong); border-bottom-width:2px; border-radius:5px; padding:1px 6px; color:var(--muted); background:var(--surface-2); }
+
+  .idea { display:flex; gap:11px; align-items:flex-start; padding:9px 12px; border-radius:10px; text-align:left; }
+  .idea + .idea { margin-top:6px; }
+  .idea .mark { flex:none; width:22px; height:22px; border-radius:50%; display:grid; place-items:center; font-size:12px; font-weight:800; margin-top:1px; }
+  .idea.hit { background:var(--good-weak); } .idea.hit .mark { background:var(--good); color:#10210d; }
+  .idea.miss { background:var(--again-weak); } .idea.miss .mark { background:var(--again); color:#2b0f06; }
+  .idea.neutral { background:var(--surface-2); } .idea.neutral .mark { background:var(--border-strong); color:var(--text); }
+  .idea .t { font-size:14px; }
+
+  .assoc { border-radius:11px; padding:12px 14px; background:var(--easy-weak); border:1px solid color-mix(in srgb, var(--easy) 40%, transparent); font-size:13.5px; }
+  .assoc .lbl { font-size:10.5px; font-weight:800; letter-spacing:.1em; color:var(--easy); text-transform:uppercase; }
+
+  .chat { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; }
+  .msg { max-width:85%; padding:10px 14px; border-radius:13px; font-size:14px; margin-bottom:10px; }
+  .msg.ai { background:var(--surface-2); border:1px solid var(--border); }
+  .msg.user { background:var(--accent-weak); margin-left:auto; }
+  .chip { display:inline-flex; align-items:center; gap:6px; font-size:12.5px; padding:5px 11px; border-radius:99px;
+          border:1px dashed var(--easy); color:var(--easy); background:var(--surface-2); cursor:pointer; }
+  .pill-due { font-size:11.5px; font-weight:700; color:var(--again); background:var(--again-weak); border-radius:99px; padding:3px 9px; }
+
+  .twocol { display:grid; grid-template-columns:1.4fr 1fr; gap:16px; align-items:start; }
+  @media (max-width:760px){ .twocol{grid-template-columns:1fr} }
+
+  .bar { height:10px; border-radius:5px; background:var(--border-strong); overflow:hidden; }
+  .bar i { display:block; height:100%; }
+  .math { font-family:"Cambria Math",Georgia,serif; font-style:italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="pagehead">
+    <div class="eyebrow">Recall &amp; Reflect · round 2 preview</div>
+    <h1 style="margin-top:8px">Next features — no photos, no drawing</h1>
+    <p class="muted" style="max-width:640px; margin-top:8px">Re-scoped per your note: people cards work from
+      stories and context (no uploads), and image-occlusion / sketch features are proposed as <b style="color:var(--text-soft)">deferred</b>.
+      Everything below is text-only and local.</p>
+  </div>
+
+  <nav class="toc">
+    <a href="#s1">1 · People (no photos)</a>
+    <a href="#s2">2 · Connections &amp; contrast</a>
+    <a href="#s3">3 · Feynman teach-back</a>
+    <a href="#s4">4 · Calibration</a>
+  </nav>
+
+  <!-- ============ 1 · PEOPLE ============ -->
+  <section id="s1">
+    <div class="sec-head">
+      <h2>1 · People cards — story-cued, photo-free</h2>
+      <p class="why">A person becomes a normal topic whose <b>key ideas are the facts you know about them</b> —
+        the rubric machinery you already have. The cue is the story, not a photo. Capture takes ~20 seconds.</p>
+    </div>
+
+    <div class="vtabs" data-group="g1">
+      <button class="vtab on" data-pane="g1-a">A · Two directions</button>
+      <button class="vtab" data-pane="g1-b">B · Single card</button>
+      <button class="vtab" data-pane="g1-c">Capture flow</button>
+    </div>
+
+    <!-- A -->
+    <div class="pane on" id="g1-a">
+      <div class="twocol">
+        <div>
+          <div class="q-card">
+            <div class="src">people · MFE · card 1 of 2</div>
+            <div class="q">Met at the battery test bay in May — walked you through the tin-whisker short on the BMS board.<br>
+              <span style="color:var(--accent)">Who is this, and what's your association?</span></div>
+          </div>
+          <textarea class="input" rows="2" style="margin-top:10px" placeholder="Name + the image you built…"></textarea>
+        </div>
+        <div class="card" style="padding:16px">
+          <div class="eyebrow" style="margin-bottom:8px">Card 2 of 2 (separate review)</div>
+          <div class="q-card" style="box-shadow:none; padding:16px">
+            <div class="q" style="font-size:15px">Priya — recall everything you know about her</div>
+          </div>
+          <div class="idea neutral" style="margin-top:10px"><span class="mark">·</span><div class="t">HV pack lead</div></div>
+          <div class="idea neutral"><span class="mark">·</span><div class="t">Tin-whisker short story (BMS board)</div></div>
+          <div class="idea neutral"><span class="mark">·</span><div class="t">Runs the iTECH bidirectional supply</div></div>
+          <div class="idea neutral"><span class="mark">·</span><div class="t">Mentioned a sailing trip in July → follow up</div></div>
+        </div>
+      </div>
+      <p class="pane-note"><b>Why:</b> story→name is the retrieval you actually need mid-conversation; name→facts keeps
+        the relationship details alive (and follow-ups like "ask about the sailing trip" resurface on schedule).
+        Both cards ride the normal FSRS queue under a "People" subject you can focus or mute.</p>
+    </div>
+
+    <!-- B -->
+    <div class="pane" id="g1-b">
+      <div class="q-card">
+        <div class="src">people · MFE</div>
+        <div class="q">Battery test bay, May — tin-whisker short story.<br><span style="color:var(--accent)">Name?</span></div>
+      </div>
+      <div class="card" style="margin-top:12px; padding:16px; text-align:center">
+        <div style="font-size:17px; font-weight:640">Priya — HV pack lead</div>
+        <div class="assoc" style="margin-top:10px; text-align:left"><div class="lbl">Your association</div>
+          "Priya = <i>prying</i> open the pack — crowbar at the HV bay."</div>
+      </div>
+      <p class="pane-note"><b>Why:</b> one card per person, minimum bookkeeping. Less coverage (facts aren't separately
+        tracked), but the lightest to maintain if the two-direction version feels like overkill.</p>
+    </div>
+
+    <!-- capture -->
+    <div class="pane" id="g1-c">
+      <div class="card" style="max-width:560px">
+        <div class="eyebrow" style="margin-bottom:12px">+ Person (Reflect → People tab)</div>
+        <div class="row" style="gap:10px; margin-bottom:10px">
+          <input class="input" placeholder="Name" value="Priya" style="flex:1">
+          <input class="input" placeholder="Where / when" value="MFE battery bay, May" style="flex:1.4">
+        </div>
+        <textarea class="input" rows="2" style="margin-bottom:10px">HV pack lead. Walked me through the tin-whisker short on the BMS board. Runs the iTECH supply. Sailing trip in July.</textarea>
+        <div class="msg ai" style="max-width:100%; margin-bottom:10px">Now make it sticky — what does <b>“Priya”</b> sound like,
+          and can you tie it to something you noticed about her? <span class="muted">(You invent it; that's what makes it work.)</span></div>
+        <input class="input" placeholder="Your vivid association…" value="Priya = prying open the pack — crowbar at the HV bay" style="margin-bottom:12px">
+        <button class="btn btn-primary" style="width:100%">Save person · 2 cards</button>
+      </div>
+      <p class="pane-note"><b>Why:</b> the one non-negotiable from the research: the association must be
+        <b>self-generated</b> — the AI only prompts, never invents it for you. The facts list becomes the rubric automatically.</p>
+    </div>
+  </section>
+
+  <!-- ============ 2 · CONNECTIONS ============ -->
+  <section id="s2">
+    <div class="sec-head">
+      <h2>2 · Connections &amp; contrast cards (embeddings, all local)</h2>
+      <p class="why">Every topic gets a local embedding (Ollama's <code>nomic-embed-text</code>, already in config,
+        never used until now). Near-neighbors that aren't duplicates are exactly the <b>confusables worth a contrast card</b>.</p>
+    </div>
+
+    <div class="vtabs" data-group="g2">
+      <button class="vtab on" data-pane="g2-a">Library: related + contrast</button>
+      <button class="vtab" data-pane="g2-b">Capture: connection chips</button>
+    </div>
+
+    <div class="pane on" id="g2-a">
+      <div class="card" style="max-width:620px">
+        <div class="eyebrow" style="margin-bottom:10px">Related concepts — “Tresca (max shear) criterion”</div>
+        <div class="row spread" style="padding:8px 0; border-bottom:1px solid var(--border)">
+          <span class="soft" style="font-size:14px">Von Mises (distortion energy)</span>
+          <span class="muted" style="font-size:12px">very close · 0.91</span>
+        </div>
+        <div class="row spread" style="padding:8px 0; border-bottom:1px solid var(--border)">
+          <span class="soft" style="font-size:14px">Coulomb-Mohr (asymmetric materials)</span>
+          <span class="muted" style="font-size:12px">close · 0.84</span>
+        </div>
+        <div class="row spread" style="padding:8px 0">
+          <span class="soft" style="font-size:14px">Mohr's circle sign convention</span>
+          <span class="muted" style="font-size:12px">related · 0.77</span>
+        </div>
+        <div style="border:1px dashed var(--hard); border-radius:11px; padding:12px 14px; margin-top:12px; background:var(--hard-weak)">
+          <div style="font-size:13.5px"><b style="color:var(--hard)">⚔ Easily confused?</b>
+            <span class="soft"> “Tresca” and “Von Mises” are very close. A contrast card drills the difference directly:</span></div>
+          <div class="soft" style="font-size:13px; margin:8px 0 10px; font-style:italic">“When do Tresca and Von Mises disagree most, and which is conservative?”</div>
+          <div class="row" style="gap:8px">
+            <button class="btn btn-primary" style="padding:6px 12px; font-size:13px">Add contrast card</button>
+            <button class="btn-ghost" style="font-size:13px">Dismiss</button>
+          </div>
+        </div>
+      </div>
+      <p class="pane-note"><b>Also unlocked:</b> Library search becomes semantic ("plasticity onset" finds Luder's bands),
+        and bulk-add warns on near-duplicates before they double your queue. Suggestions only — nothing is created without a click.</p>
+    </div>
+
+    <div class="pane" id="g2-b">
+      <div class="chat" style="max-width:620px">
+        <div class="msg user">Hall-Petch: σ<sub>y</sub> = σ₀ + k/√d — finer grains, more boundaries, stronger.</div>
+        <div class="msg ai">Why do more boundaries make it stronger — what's physically blocking?</div>
+        <div class="row" style="gap:7px; margin-top:4px; flex-wrap:wrap">
+          <span class="chip">⚯ You know “Luder's bands &amp; upper/lower yield” — connect them?</span>
+          <span class="chip">⚯ “Heat treatment / grain growth” — how does it interact?</span>
+        </div>
+        <textarea class="input" rows="1" style="margin-top:12px" placeholder="Reply, or tap a chip to riff on it…"></textarea>
+      </div>
+      <p class="pane-note"><b>Why:</b> your "stretch connections" technique, automated: chips come from your own
+        nearest-neighbor topics, so elaboration links new material to things you provably already studied.
+        Tapping one inserts it as the next chat turn; ignoring them costs nothing.</p>
+    </div>
+  </section>
+
+  <!-- ============ 3 · FEYNMAN ============ -->
+  <section id="s3">
+    <div class="sec-head">
+      <h2>3 · Feynman teach-back</h2>
+      <p class="why">For topics you've already stabilized, the strongest next rep isn't another recall — it's
+        <b>teaching it simply</b>. The model plays a confused student: asks naive why/how questions, flags undefined jargon.</p>
+    </div>
+
+    <div class="vtabs" data-group="g3">
+      <button class="vtab on" data-pane="g3-a">A · Scheduled swap-in</button>
+      <button class="vtab" data-pane="g3-b">B · On-demand only</button>
+    </div>
+
+    <div class="pane on" id="g3-a">
+      <div class="q-card" style="border-color:var(--easy)">
+        <div class="src">teach it · Transient heat transfer · stability 28d</div>
+        <div class="q">This one's solid — so teach it. Explain lumped capacitance to a first-year.<br>
+          <span class="muted" style="font-size:13px">I'll play the student. I don't know what “Biot number” means yet.</span></div>
+      </div>
+      <div class="chat" style="margin-top:12px">
+        <div class="msg user">If a body conducts heat internally much faster than it loses it from the surface, you can treat the whole thing as one temperature…</div>
+        <div class="msg ai">Wait — how do I know if it's “much faster”? Is there a number I can compute before trusting this?</div>
+        <div class="msg user">Yes — Biot number: hL/k. Below ~0.1 the lumped assumption holds.</div>
+        <div class="msg ai">You used h, L and k — which one is about the material, and what's L for a weird shape? 🤔</div>
+        <textarea class="input" rows="1" style="margin-top:8px" placeholder="Keep teaching…"></textarea>
+      </div>
+      <p class="pane-note"><b>How it's scheduled:</b> when a topic's stability passes ~3 weeks, roughly every third
+        review of it becomes a teach-back instead of free recall (capped at one per session). The transcript appends to
+        the topic's reflection; gaps the “student” exposes become rubric ideas. Counts as a normal review for FSRS.</p>
+    </div>
+
+    <div class="pane" id="g3-b">
+      <div class="card row spread" style="max-width:620px">
+        <div>
+          <div style="font-weight:580">Transient heat transfer</div>
+          <div class="muted" style="font-size:12.5px">5 cards · stability 28d · solid for a month</div>
+        </div>
+        <div class="row" style="gap:8px">
+          <button class="btn" style="padding:6px 12px">🎓 Teach it</button>
+          <button class="btn" style="padding:6px 12px">Review these →</button>
+        </div>
+      </div>
+      <p class="pane-note"><b>Why:</b> same chat, but it never interrupts the review flow — you choose when.
+        A gentle Today suggestion ("3 topics are solid enough to teach") keeps it discoverable. Lower friction, easier to ignore.</p>
+    </div>
+  </section>
+
+  <!-- ============ 4 · CALIBRATION ============ -->
+  <section id="s4">
+    <div class="sec-head">
+      <h2>4 · Calibration panel (Stats) — one design</h2>
+      <p class="why">You already record confidence before every reveal and an AI verdict after. Crossing them shows
+        whether your <b>“Certain” actually means certain</b> — miscalibration is exactly where study time leaks.</p>
+    </div>
+    <div class="card" style="max-width:560px">
+      <div class="eyebrow" style="margin-bottom:14px">Confidence calibration · last 90 days</div>
+      <div style="margin-bottom:12px">
+        <div class="row spread" style="margin-bottom:4px"><span class="soft" style="font-size:13.5px">When you said <b>Certain</b> (n=124)</span><span style="font-size:13px; color:var(--good)">right 88%</span></div>
+        <div class="bar"><i style="width:88%; background:var(--good)"></i></div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div class="row spread" style="margin-bottom:4px"><span class="soft" style="font-size:13.5px">When you said <b>Pretty sure</b> (n=210)</span><span style="font-size:13px; color:var(--hard)">right 64%</span></div>
+        <div class="bar"><i style="width:64%; background:var(--hard)"></i></div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="row spread" style="margin-bottom:4px"><span class="soft" style="font-size:13.5px">When you said <b>Guessing</b> (n=58)</span><span style="font-size:13px; color:var(--again)">right 31%</span></div>
+        <div class="bar"><i style="width:31%; background:var(--again)"></i></div>
+      </div>
+      <div class="soft" style="font-size:13px; background:var(--surface-2); border-radius:10px; padding:10px 13px">
+        💡 Your “Pretty sure” behaves like a coin flip on <b>Machine Element Design</b> (52%) — those cards are
+        the best place to slow down before revealing.
+      </div>
+    </div>
+    <p class="pane-note"><b>Cost:</b> near zero — the data already exists in the reviews table. One Stats card, per-subject drill-down.</p>
+  </section>
+
+  <div class="card" style="margin-top:56px; background:var(--surface-2)">
+    <div class="eyebrow" style="margin-bottom:8px">Explicitly deferred (your call to revive)</div>
+    <p class="soft" style="font-size:13.5px">Image occlusion, sketch-to-recall canvas, photo uploads of any kind,
+      memory-palace UI, and the FSRS personal-weight optimizer (waits for ~1k reviews regardless). None of these block
+      anything above.</p>
+  </div>
+
+</div>
+<script>
+  document.querySelectorAll('.vtabs').forEach(tabs => {
+    tabs.querySelectorAll('.vtab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabs.querySelectorAll('.vtab').forEach(b => b.classList.toggle('on', b === btn));
+        tabs.parentElement.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id === btn.dataset.pane));
+      });
+    });
+  });
+</script>
+</body>
+</html>
