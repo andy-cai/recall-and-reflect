@@ -67,9 +67,12 @@ class Repository:
             self.set_learning_tags(lid, tags)
         return lid
 
-    def create_recall_card(self, learning_id: int, title: str, content: str) -> int:
-        """The default 'free recall' prompt for a topic — recall it in your own words."""
-        question = f"Recall everything you can about: {title}"
+    def create_recall_card(self, learning_id: int, title: str, content: str,
+                           prompt: Optional[str] = None) -> int:
+        """The default 'free recall' prompt for a topic. A custom prompt turns it
+        into a task ('Derive…', 'Compare…', 'Walk through…') — stronger retrieval
+        than 'recall everything about X'."""
+        question = (prompt or "").strip() or f"Recall everything you can about: {title}"
         return self.create_question(
             learning_id=learning_id, question=question,
             answer=(content or "").strip(), card_type="recall",

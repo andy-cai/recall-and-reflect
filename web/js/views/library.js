@@ -67,6 +67,7 @@ async function list() {
     const focusAreaBtn = isUncat ? null : el('button', {
       class: 'btn' + (allFocused ? ' on-accent' : ''), style: { padding: '6px 12px' },
       onClick: async (e) => {
+        e.stopPropagation();
         const next = allFocused ? 0 : 1;
         e.currentTarget.disabled = true;
         await api.focusApply({ subjects: [summary.name], learning_ids: [], priority: next });
@@ -75,18 +76,25 @@ async function list() {
       } }, allFocused ? '★ Focused' : '☆ Focus area');
     const actions = el('div', { class: 'row', style: { gap: '8px' } },
       focusAreaBtn,
-      (isUncat && llmOk && items.length) ? el('button', { class: 'btn', style: { padding: '6px 12px' }, onClick: (e) => suggest(e.currentTarget) }, '✨ Suggest subjects') : null,
-      summary.due > 0 ? el('button', { class: 'btn', style: { padding: '6px 12px' }, onClick: () => navigate('#/recall?subject=' + encodeURIComponent(summary.name)) }, 'Review area →') : null);
-    const head = el('div', { class: 'row spread', style: { margin: '6px 2px 10px' } },
-      el('div', { class: 'row', style: { gap: '10px' } },
+      (isUncat && llmOk && items.length) ? el('button', { class: 'btn', style: { padding: '6px 12px' }, onClick: (e) => { e.stopPropagation(); suggest(e.currentTarget); } }, '✨ Suggest subjects') : null,
+      summary.due > 0 ? el('button', { class: 'btn', style: { padding: '6px 12px' }, onClick: (e) => { e.stopPropagation(); navigate('#/recall?subject=' + encodeURIComponent(summary.name)); } }, 'Review area →') : null);
+
+    // With a seeded curriculum the Library holds ~100 topics: sections collapse,
+    // and only areas with due work start open.
+    let open = summary.due > 0 || isUncat;
+    const chev = el('span', { class: 'muted', style: { fontSize: '13px', width: '14px', flex: 'none' } }, open ? '▾' : '▸');
+    const head = el('div', { class: 'row spread subj-head', style: { margin: '6px 2px 10px' },
+      onClick: () => { open = !open; rows.style.display = open ? '' : 'none'; chev.textContent = open ? '▾' : '▸'; } },
+      el('div', { class: 'row', style: { gap: '10px', minWidth: '0' } },
+        chev,
         el('h3', { style: { fontSize: '16px' } }, isUncat ? 'Uncategorized' : summary.name),
         el('span', { class: 'muted', style: { fontSize: '12.5px' } },
           `${summary.learnings} concept${summary.learnings !== 1 ? 's' : ''} · ${summary.cards} card${summary.cards !== 1 ? 's' : ''}`),
         summary.due > 0 ? el('span', { class: 'pill-due' }, `${summary.due} due`) : null),
       actions);
-    const rows = el('div', { class: 'stack', style: { gap: '8px' } });
+    const rows = el('div', { class: 'stack', style: { gap: '8px', display: open ? '' : 'none' } });
     for (const l of items) rows.append(conceptRow(l));
-    return el('div', { style: { marginBottom: '26px' } }, head, rows);
+    return el('div', { style: { marginBottom: '18px' } }, head, rows);
   }
 
   function starBtn(l) {

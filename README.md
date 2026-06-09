@@ -50,6 +50,19 @@ you just write cards manually and self-grade reviews.
 | **Calibrate** | Stats shows whether your *Certain* actually means certain (confidence × AI-verdict accuracy), and names the subject where you're most overconfident. |
 | **Schedule** | FSRS-4.5 sets each card's next review to hit your target retention (default 90%). The queue is shaped: most-at-risk first, one card per topic per session (remaining siblings are buried to tomorrow), new cards throttled by a per-day cap. |
 
+## Starter curriculum
+
+`seeds/` ships curated decks (mechanical engineering core, battery engineering,
+internship topics — ~95 topics, ~185 cards with key-idea rubrics, task-style recall
+prompts, and contrast cards for confusables). Import any time; re-runs skip what exists:
+
+```bat
+python tools\seed_curriculum.py
+```
+
+New topics ease into review at your new-per-day cap; focus a subject on Today to pull
+its topics forward. Edit or add decks as JSON in `seeds/`.
+
 ## Math
 
 Card text supports `$...$` / `$$...$$` TeX. To render it offline, vendor KaTeX once
