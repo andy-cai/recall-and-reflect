@@ -189,6 +189,7 @@ async function detail(id) {
   if (!data || data.error) { const v = el('div', { class: 'view' }); v.append(el('p', {}, 'Not found.')); return v; }
   const L = data.learning;
   const view = el('div', { class: 'view' });
+  const llmOk = !!(state.llm && state.llm.available);
 
   let prio = L.priority || 0;
   const focusBtn = el('button', { class: 'btn' + (prio ? ' on-accent' : ''), onClick: async () => {
@@ -199,16 +200,18 @@ async function detail(id) {
     toast(prio ? 'Focused — goes first in sessions' : 'Unfocused');
   } }, prio ? '★ Focused' : '☆ Focus');
 
+  const solid = data.cards.some(c => c.card_type === 'recall' && c.stability >= 21);
   view.append(el('div', { class: 'row spread', style: { marginBottom: '18px' } },
     el('button', { class: 'btn btn-ghost', onClick: () => navigate('#/library') }, '← Library'),
     el('div', { class: 'row', style: { gap: '8px' } },
       focusBtn,
+      (llmOk && solid) ? el('button', { class: 'btn', title: 'Explain it simply — the AI plays a confused student',
+        onClick: () => navigate('#/recall?teach=' + id) }, '🎓 Teach it') : null,
       el('button', { class: 'btn', onClick: () => navigate('#/recall?learning=' + id) }, 'Review these →'),
       el('button', { class: 'btn btn-danger', onClick: del }, 'Delete'))));
 
   const subjectNames = (await api.subjects().catch(() => ({ names: [] }))).names || [];
   const titleInput = el('input', { class: 'input', value: L.title, style: { fontSize: '20px', fontWeight: '600' } });
-  const llmOk = !!(state.llm && state.llm.available);
   const contentArea = el('textarea', { class: 'input', rows: '4' }); contentArea.value = L.content || '';
   const notesArea = el('textarea', { class: 'input', rows: '3', placeholder: 'Add notes over time — corrections, links, fresh examples…' }); notesArea.value = L.notes || '';
   const tagsInput = el('input', { class: 'input', value: (L.tags || []).join(', ') });
@@ -237,6 +240,38 @@ async function detail(id) {
       el('span', {}, `Capture conversation · ${convo.length} message${convo.length !== 1 ? 's' : ''}`), chev);
     view.append(el('div', { class: 'card', style: { marginTop: '16px', padding: '6px' } }, toggle, body));
   }
+
+  // related concepts (local embeddings) — loads async, hidden when unavailable
+  const relatedSlot = el('div', {});
+  view.append(relatedSlot);
+  api.related(id).then(r => {
+    if (!r.embeddings || !r.related.length) return;
+    const panel = el('div', { class: 'card', style: { marginTop: '16px' } },
+      el('div', { class: 'eyebrow', style: { marginBottom: '10px' } }, 'Related concepts'));
+    for (const rel of r.related) {
+      panel.append(el('div', { class: 'row spread', style: { padding: '7px 0', borderBottom: '1px solid var(--border)', cursor: 'pointer' },
+        onClick: () => navigate('#/library/' + rel.id) },
+        el('span', { class: 'soft', style: { fontSize: '14px' } }, rel.title),
+        el('span', { class: 'muted', style: { fontSize: '12px' } },
+          rel.score >= 0.86 ? `very close · ${rel.score}` : rel.score >= 0.7 ? `close · ${rel.score}` : `related · ${rel.score}`)));
+    }
+    if (r.contrast) {
+      const addBtn = el('button', { class: 'btn btn-primary', style: { padding: '6px 12px', fontSize: '13px' }, onClick: async () => {
+        addBtn.disabled = true; addBtn.textContent = 'Writing…';
+        try {
+          const res = await api.addContrast(id, r.contrast.with_id);
+          toast('Contrast card added'); refreshBadge(); box.remove(); reloadCards();
+        } catch { toast('Could not generate — is Ollama up?'); addBtn.disabled = false; addBtn.textContent = 'Add contrast card'; }
+      } }, 'Add contrast card');
+      const box = el('div', { style: { border: '1px dashed var(--hard)', borderRadius: '11px', padding: '12px 14px', marginTop: '12px', background: 'var(--hard-weak)' } },
+        el('div', { style: { fontSize: '13.5px' } }, el('b', { style: { color: 'var(--hard)' } }, '⚔ Easily confused? '),
+          el('span', { class: 'soft' }, `“${L.title}” and “${r.contrast.with_title}” are very close — a contrast card drills the difference directly.`)),
+        el('div', { class: 'row', style: { gap: '8px', marginTop: '10px' } }, addBtn,
+          el('button', { class: 'btn-ghost', style: { fontSize: '13px' }, onClick: () => box.remove() }, 'Dismiss')));
+      panel.append(box);
+    }
+    relatedSlot.append(panel);
+  }).catch(() => {});
 
   // cards
   view.append(el('div', { class: 'row spread', style: { margin: '24px 0 12px' } },

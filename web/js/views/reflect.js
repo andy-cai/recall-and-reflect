@@ -210,13 +210,37 @@ export async function render() {
       composer.focus();
     }
 
+    // Stretch connections: after the first dump, surface the nearest topics the
+    // learner already studied. Tapping a chip turns it into the next question —
+    // elaboration anchored to something they provably know. Zero generation cost.
+    async function showConnections(text) {
+      try {
+        const r = await api.captureConnections(text);
+        if (!r.connections || !r.connections.length) return;
+        const chips = el('div', { class: 'row wrap', style: { gap: '7px', margin: '2px 0 10px' } });
+        for (const c of r.connections) {
+          chips.append(el('button', { class: 'chip link', onClick: () => {
+            chips.remove();
+            const q = `You already know “${c.title}” — how does this connect (or where do they differ)?`;
+            addMsg('ai', q);
+            convo.push({ role: 'assistant', content: q });
+            asked += 1;
+            composer.focus();
+          } }, `⚯ ${c.title}`));
+        }
+        log.append(chips);
+      } catch {}
+    }
+
     async function onSend() {
       const text = composer.value.trim();
       if (!text || phase === 'cards' || sendBtn.disabled) return;
+      const isFirst = !convo.some(m => m.role === 'user');
       renderMathIn(addMsg('user', text).node);
       convo.push({ role: 'user', content: text });
       composer.value = ''; composer.style.height = 'auto';
       makeBtn.style.display = '';
+      if (isFirst) showConnections(text);   // fire-and-forget, never blocks the chat
       if (asked < MAX_Q) await requestFollowup();
       else await setupTopic();
     }
@@ -239,22 +263,73 @@ export async function render() {
       topicPanel));
   }
 
-  // ---------- quick add (bulk) ----------
+  // ---------- quick add (bulk) + person ----------
   const quickWrap = el('div', { style: { display: 'none' } });
   buildQuickAdd(quickWrap, subjectNames, llmOk);
+  const personWrap = el('div', { style: { display: 'none' } });
+  buildPersonAdd(personWrap);
 
   const chatBtn = el('button', { class: 'chip on', onClick: () => setMode('chat') }, llmOk ? 'Reflect' : 'Write');
   const quickBtn = el('button', { class: 'chip', onClick: () => setMode('quick') }, 'Quick add');
+  const personBtn = el('button', { class: 'chip', onClick: () => setMode('person') }, 'Person');
   function setMode(m) {
     chatBtn.classList.toggle('on', m === 'chat');
     quickBtn.classList.toggle('on', m === 'quick');
+    personBtn.classList.toggle('on', m === 'person');
     chatWrap.style.display = m === 'chat' ? '' : 'none';
     quickWrap.style.display = m === 'quick' ? '' : 'none';
+    personWrap.style.display = m === 'person' ? '' : 'none';
   }
-  view.append(el('div', { class: 'row', style: { gap: '7px', marginBottom: '16px' } }, chatBtn, quickBtn));
-  view.append(chatWrap, quickWrap);
+  view.append(el('div', { class: 'row', style: { gap: '7px', marginBottom: '16px' } }, chatBtn, quickBtn, personBtn));
+  view.append(chatWrap, quickWrap, personWrap);
 
   return view;
+}
+
+// People as topics, photo-free: the cue is the story, the reveal is the name +
+// the association YOU invented (self-generated imagery is what makes it stick).
+function buildPersonAdd(root) {
+  const nameInput = el('input', { class: 'input', placeholder: 'Name' });
+  const whereInput = el('input', { class: 'input', placeholder: 'Where / when — “MFE battery bay, May”' });
+  const factsArea = el('textarea', { class: 'input', rows: '3',
+    placeholder: 'What you know — role, the story you shared, details worth keeping…\nFirst line becomes the cue.' });
+  const assocInput = el('input', { class: 'input', placeholder: 'e.g. “Priya = prying open the pack — crowbar at the HV bay”' });
+  const saveBtn = el('button', { class: 'btn btn-primary' }, 'Save person · 1 card');
+
+  saveBtn.addEventListener('click', async () => {
+    const name = nameInput.value.trim();
+    const facts = factsArea.value.trim();
+    if (!name || !facts) { toast('Name and at least one fact.'); return; }
+    const hook = facts.split('\n')[0];
+    const where = whereInput.value.trim();
+    const assoc = assocInput.value.trim();
+    const question = `${where ? where + ' — ' : ''}${hook}. Who is this?`;
+    const answer = `${name}\n${facts}${assoc ? `\n🧷 Your association: ${assoc}` : ''}`;
+    saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+    try {
+      const res = await api.createLearning({
+        title: name, content: `${where ? where + '\n' : ''}${facts}`,
+        subject: 'People', notes: assoc || null, tags: [],
+        recall_card: false, cards: [{ type: 'basic', question, answer }],
+      });
+      toast(`Saved ${name}`);
+      refreshBadge();
+      nameInput.value = whereInput.value = factsArea.value = assocInput.value = '';
+    } catch (e) { toast('Save failed: ' + e.message); }
+    saveBtn.disabled = false; saveBtn.textContent = 'Save person · 1 card';
+  });
+
+  root.append(el('div', { class: 'card stack', style: { maxWidth: '560px' } },
+    el('div', { class: 'eyebrow' }, 'Remember a person'),
+    el('p', { class: 'muted', style: { fontSize: '13px', marginTop: '-4px' } },
+      'The story becomes the cue; at review you recall the name. ~20 seconds, no photos.'),
+    el('div', { class: 'row', style: { gap: '10px' } },
+      el('div', { class: 'field', style: { flex: '1' } }, el('label', { class: 'lbl' }, 'Name'), nameInput),
+      el('div', { class: 'field', style: { flex: '1.4' } }, el('label', { class: 'lbl' }, 'Where / when'), whereInput)),
+    el('div', { class: 'field' }, el('label', { class: 'lbl' }, 'What you know'), factsArea),
+    el('div', { class: 'field' }, el('label', { class: 'lbl' }, 'Vivid association ',
+      infoTip('What does the name sound like? Tie it to something you noticed about them. You invent it — self-generated images are what make name recall stick.')), assocInput),
+    el('div', { class: 'row', style: { justifyContent: 'flex-end' } }, saveBtn)));
 }
 
 function buildQuickAdd(root, subjectNames, llmOk) {
@@ -279,9 +354,22 @@ function buildQuickAdd(root, subjectNames, llmOk) {
   };
   text.addEventListener('input', updateCount);
   addBtn.addEventListener('click', async () => {
-    const items = parseItems();
+    let items = parseItems();
     if (!items.length) { toast('Add at least one topic.'); return; }
-    addBtn.disabled = true; addBtn.textContent = 'Adding…';
+    addBtn.disabled = true; addBtn.textContent = 'Checking…';
+    // duplicate check (local embeddings) — don't double the queue silently
+    try {
+      const d = await api.checkDupes(items.map(i => i.title));
+      if (d.dupes && d.dupes.length) {
+        const lines = d.dupes.map(x => `• “${x.title}” ≈ existing “${x.match_title}”`).join('\n');
+        if (confirm(`${d.dupes.length} look like topics you already have:\n\n${lines}\n\nSkip the duplicates? (Cancel adds everything anyway)`)) {
+          const skip = new Set(d.dupes.map(x => x.title));
+          items = items.filter(i => !skip.has(i.title));
+          if (!items.length) { toast('All were duplicates — nothing added.'); addBtn.disabled = false; updateCount(); return; }
+        }
+      }
+    } catch {}
+    addBtn.textContent = 'Adding…';
     try {
       const res = await api.bulkTopics({ items, subject: subjectInput.value.trim() || null,
         tags: tagsInput.value.split(',').map(t => t.trim()).filter(Boolean),

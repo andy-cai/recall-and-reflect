@@ -44,6 +44,10 @@ you just write cards manually and self-grade reviews.
 | **Organize** | Each note gets a **Subject** (its home area). The Library's *Explore* view groups concepts by subject, and the local AI can suggest subjects for an uncategorized backlog (you approve). |
 | **Focus** | Prioritize what matters now: star topics in the Library, focus a whole subject, or just tell Today *“vibrations final next week”* — the local model matches it to your real topics (you confirm). Focused topics jump every queue and claim the new-card budget first. |
 | **Rhythm** | Come back after days away to a **welcome-back ramp** (spread the pile over N days, keep today's most-at-risk). Evenings offer a small **wind-down session** — today's misses and new captures, timed for sleep consolidation. |
+| **Connect** | With a local embed model (`ollama pull nomic-embed-text`), topics link up: **related concepts** in the Library, one-click **contrast cards** for confusables (Tresca vs. von Mises), **connection chips** while you capture, semantic search, and duplicate warnings on bulk add. |
+| **Teach** | Topics that are solid (stability ≥ 3 weeks) occasionally swap a review for a **teach-back**: explain it simply while the local AI plays a confused first-year. Also on-demand (🎓 in the Library). The transcript joins the topic's reflection; rating counts as a review. |
+| **People** | A photo-free person card: the story is the cue ("battery bay, tin-whisker short — who?"), the reveal is the name plus the vivid association *you* invented. Capture takes ~20 seconds (Reflect → Person). |
+| **Calibrate** | Stats shows whether your *Certain* actually means certain (confidence × AI-verdict accuracy), and names the subject where you're most overconfident. |
 | **Schedule** | FSRS-4.5 sets each card's next review to hit your target retention (default 90%). The queue is shaped: most-at-risk first, one card per topic per session (remaining siblings are buried to tomorrow), new cards throttled by a per-day cap. |
 
 ## Math

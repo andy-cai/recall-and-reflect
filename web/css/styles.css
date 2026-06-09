@@ -315,6 +315,7 @@ textarea.input { min-height: 92px; line-height: 1.5; }
 .idea + .idea { margin-top: 6px; }
 .idea .mark { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
   font-size: 12px; font-weight: 800; margin-top: 1px; }
+.idea.neutral { background: var(--surface-2); } .idea.neutral .mark { background: var(--border-strong); color: var(--text); }
 .idea.hit   { background: var(--good-weak); }  .idea.hit .mark   { background: var(--good); color: #10210d; }
 .idea.part  { background: var(--hard-weak); }  .idea.part .mark  { background: var(--hard); color: #241a06; }
 .idea.miss  { background: var(--again-weak); } .idea.miss .mark  { background: var(--again); color: #2b0f06; }
@@ -322,6 +323,14 @@ textarea.input { min-height: 92px; line-height: 1.5; }
 
 /* Math: TeX source fallback when KaTeX isn't vendored (tools/get_katex.py) */
 .math-src { font-family: "Cambria Math", "STIX Two Math", Georgia, serif; font-style: italic; }
+
+/* Connection chips (capture) — tappable links to topics you already know */
+.chip.link { border-style: dashed; border-color: var(--easy); color: var(--easy); }
+.chip.link:hover { background: var(--easy-weak); }
+
+/* Calibration bars (Stats) */
+.cal-bar { height: 10px; border-radius: 5px; background: var(--border-strong); overflow: hidden; }
+.cal-bar i { display: block; height: 100%; }
 
 /* Focus star (Library rows) + focused-state buttons */
 .star { border: none; background: none; cursor: pointer; font-size: 17px; padding: 2px 4px;

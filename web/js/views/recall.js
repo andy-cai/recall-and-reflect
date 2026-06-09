@@ -21,10 +21,32 @@ function hintFor(c, level) {
 
 export async function render({ params } = {}) {
   const llmOk = !!(state.llm && state.llm.available);
+
+  // Standalone teach-back from the Library (🎓 Teach it)
+  if (params?.teach) {
+    const lid = Number(params.teach);
+    const detail = await api.getLearning(lid);
+    const view = el('div', { class: 'view' });
+    view.append(teachUI({
+      learningId: lid,
+      title: detail.learning.title,
+      ideas: (detail.key_ideas || []).map(i => ({ id: i.id, text: i.idea })),
+      onDone: () => navigate('#/library/' + lid),
+    }));
+    return view;
+  }
+
   const data = await api.queue({ tag: params?.tag || null, learning_id: params?.learning || null,
     subject: params?.subject, limit: params?.limit || null,
     focus: params?.focus || null, mode: params?.mode || null });
   const cards = data.cards;
+
+  // Scheduled teach swap-in: at most one solid topic per session teaches instead
+  // of recalling (deterministic per day, ~1 in 3 of the eligible).
+  if (llmOk) {
+    const candidate = cards.find(c => c.teach_eligible && (c.id + new Date().getDate()) % 3 === 0);
+    if (candidate) candidate._teach = true;
+  }
 
   const view = el('div', { class: 'view' });
   const wrap = el('div', { class: 'review-wrap', tabindex: '-1' });
@@ -72,6 +94,24 @@ export async function render({ params } = {}) {
     updateProgress();
     clear(stage);
     const c = current();
+
+    // Solid topic → teach it instead of recalling it (skippable)
+    if (c._teach) {
+      stage._teachActive = true;
+      stage.append(teachUI({
+        learningId: c.learning_id,
+        title: c.title,
+        ideas: c.ideas || [],
+        onSkip: () => { c._teach = false; stage._teachActive = false; showCard(); },
+        onDone: () => {
+          stage._teachActive = false;
+          reviewedCount += 1; correctish += 1;
+          idx += 1; refreshBadge(); showCard();
+        },
+      }));
+      return;
+    }
+    stage._teachActive = false;
 
     const qcard = el('div', { class: 'q-card' },
       el('div', { class: 'src' }, c.title ? `from · ${c.title}` : ''),
@@ -295,6 +335,7 @@ export async function render({ params } = {}) {
 
   // ---------- keyboard ----------
   function onKey(e) {
+    if (stage._teachActive) return;  // the teach chat owns its own keys
     const editable = e.target.matches && e.target.matches('textarea:not([readonly]), input:not([readonly])');
     if (editable) {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); reveal(); }
@@ -316,4 +357,97 @@ export async function render({ params } = {}) {
 
   showCard();
   return view;
+}
+
+// ---------- Feynman teach-back ----------
+// The model plays a confused first-year; you explain. Wrapping up self-checks
+// against the rubric and counts as a review of the topic's recall card.
+function teachUI({ learningId, title, ideas = [], onDone, onSkip }) {
+  const messages = [];
+  const wrap = el('div', {});
+
+  wrap.append(el('div', { class: 'q-card', style: { borderColor: 'var(--easy)' } },
+    el('div', { class: 'src' }, `teach it · ${title}`),
+    el('div', { class: 'q' }, 'This one’s solid — so teach it. ',
+      el('span', { style: { color: 'var(--easy)' } }, `Explain “${title}” to a first-year.`)),
+    el('div', { class: 'muted', style: { fontSize: '13px', marginTop: '8px' } },
+      'I’ll play the student — I don’t know this topic yet.')));
+
+  const log = el('div', { class: 'chat-log', style: { marginTop: '14px' } });
+  const composer = el('textarea', { class: 'input', rows: '2', placeholder: 'Start wherever feels natural…' });
+  const sendBtn = el('button', { class: 'btn btn-primary', onClick: send }, 'Send');
+  const wrapBtn = el('button', { class: 'btn', onClick: wrapUp, disabled: true }, 'Wrap up & rate');
+  const skipBtn = onSkip ? el('button', { class: 'btn btn-ghost', onClick: onSkip }, 'Normal recall instead') : null;
+  const footer = el('div', { class: 'row', style: { gap: '8px', marginTop: '10px', justifyContent: 'flex-end' } },
+    skipBtn, wrapBtn, sendBtn);
+  wrap.append(el('div', { class: 'chat', style: { marginTop: '14px' } }, log, composer, footer));
+
+  function addBubble(role, text = '') {
+    const node = el('div', { class: 'msg ' + (role === 'user' ? 'user' : 'ai') }, text);
+    log.append(node);
+    node.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    return node;
+  }
+  addBubble('ai', 'Ready when you are. 🤔');
+
+  composer.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+    e.stopPropagation();
+  });
+
+  async function send() {
+    const text = composer.value.trim();
+    if (!text || sendBtn.disabled) return;
+    renderMathIn(addBubble('user', text));
+    messages.push({ role: 'user', content: text });
+    composer.value = '';
+    wrapBtn.disabled = false;
+    sendBtn.disabled = true;
+    const bubble = addBubble('ai', '…');
+    let reply = '';
+    try {
+      for await (const chunk of api.teachTurnStream(learningId, messages)) {
+        reply += chunk;
+        bubble.textContent = reply;
+      }
+      reply = reply.trim();
+      if (reply) messages.push({ role: 'assistant', content: reply });
+      else bubble.remove();
+      renderMathIn(bubble);
+    } catch {
+      bubble.textContent = 'The student lost connection — wrap up when ready.';
+    }
+    sendBtn.disabled = false;
+    composer.focus();
+  }
+
+  function wrapUp() {
+    composer.disabled = true; sendBtn.disabled = true; wrapBtn.disabled = true;
+    const panel = el('div', { class: 'card', style: { marginTop: '14px', padding: '16px' } });
+    if (ideas.length) {
+      panel.append(el('div', { class: 'eyebrow', style: { marginBottom: '10px' } }, 'Self-check — did your explanation cover these?'));
+      for (const i of ideas) {
+        panel.append(el('div', { class: 'idea neutral' }, el('span', { class: 'mark' }, '·'), el('div', { class: 't' }, i.text)));
+      }
+      renderMathIn(panel);
+    }
+    const rates = [['again', 'Struggled', 1], ['hard', 'Shaky', 2], ['good', 'Taught it', 3], ['easy', 'Crystal', 4]];
+    const grid = el('div', { class: 'rate-grid' },
+      ...rates.map(([cls, label, r]) => el('button', { class: 'rate-btn ' + cls, onClick: () => finishWith(r) },
+        el('span', { class: 'name ' + cls }, label))));
+    panel.append(el('div', { class: 'muted center', style: { fontSize: '12.5px', margin: '12px 0 4px' } },
+      'How did teaching it feel? This schedules the topic like a normal review.'), grid);
+    wrap.append(panel);
+    panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  async function finishWith(rating) {
+    try {
+      await api.teachFinish({ learning_id: learningId, messages, rating });
+      toast('Teach-back saved to the topic’s reflection.');
+    } catch (e) { toast('Could not save: ' + e.message); }
+    onDone();
+  }
+
+  return wrap;
 }

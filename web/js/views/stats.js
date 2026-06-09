@@ -69,6 +69,33 @@ export async function render() {
     el('div', { class: 'eyebrow', style: { marginBottom: '14px' } }, 'Due in the next 14 days'),
     barChart(next14, d => d.v, d => `${d.key}: ${d.v} due`)));
 
+  // calibration — does "Certain" actually mean certain?
+  const cal = s.calibration;
+  if (cal && Object.values(cal.levels).some(l => l.n >= 5)) {
+    const names = { 3: 'Certain', 2: 'Pretty sure', 1: 'Guessing' };
+    const colors = { 3: 'var(--good)', 2: 'var(--hard)', 1: 'var(--again)' };
+    const panel = el('div', { class: 'card', style: { marginTop: '16px' } },
+      el('div', { class: 'eyebrow', style: { marginBottom: '14px' } }, 'Confidence calibration · 90d'));
+    for (const c of [3, 2, 1]) {
+      const lv = cal.levels[String(c)];
+      if (!lv || !lv.n) continue;
+      const pct = lv.accuracy == null ? 0 : Math.round(lv.accuracy * 100);
+      panel.append(
+        el('div', { class: 'row spread', style: { marginBottom: '4px' } },
+          el('span', { class: 'soft', style: { fontSize: '13.5px' } }, `When you said `, el('b', {}, names[c]), ` (n=${lv.n})`),
+          el('span', { style: { fontSize: '13px', color: colors[c] } }, `right ${pct}%`)),
+        el('div', { class: 'cal-bar', style: { marginBottom: '12px' } },
+          el('i', { style: { width: pct + '%', background: colors[c] } })));
+    }
+    const hot = cal.overconfident_subject;
+    if (hot && hot.accuracy < 0.7) {
+      panel.append(el('div', { class: 'soft', style: { fontSize: '13px', background: 'var(--surface-2)', borderRadius: '10px', padding: '10px 13px' } },
+        `💡 Your mid/high confidence is least reliable on `, el('b', {}, hot.subject),
+        ` (right ${Math.round(hot.accuracy * 100)}% of ${hot.n}) — slow down before revealing there.`));
+    }
+    view.append(panel);
+  }
+
   // heatmap (full year)
   view.append(el('div', { class: 'card', style: { marginTop: '16px' } },
     el('div', { class: 'eyebrow', style: { marginBottom: '14px' } }, 'Activity · last year'),

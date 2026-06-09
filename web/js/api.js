@@ -94,6 +94,16 @@ export const api = {
   },
   ramp: (days) => jfetch('POST', '/api/review/ramp', { days }),
 
+  // embeddings: related concepts, contrast cards, connections, dupes
+  related: (id) => jfetch('GET', `/api/learnings/${id}/related`),
+  addContrast: (id, with_id) => jfetch('POST', `/api/learnings/${id}/contrast`, { with_id }),
+  captureConnections: (text) => jfetch('POST', '/api/capture/connections', { text }),
+  checkDupes: (titles) => jfetch('POST', '/api/topics/check_dupes', { titles }),
+
+  // teach-back
+  teachTurnStream: (learning_id, messages) => streamText('/api/teach/turn', { learning_id, messages }),
+  teachFinish: (b) => jfetch('POST', '/api/teach/finish', b),
+
   // focus (priority topics)
   focusInterpret: (text) => jfetch('POST', '/api/focus/interpret', { text }),
   focusApply: (b) => jfetch('POST', '/api/focus/apply', b),
