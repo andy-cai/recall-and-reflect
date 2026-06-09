@@ -183,6 +183,59 @@ class Repository:
         )
         return [{"id": r["id"], "title": r["title"], "content": r["content"]} for r in rows]
 
+    # ---------- key ideas (the rubric a topic's free recall is graded against) ----------
+
+    def set_key_ideas(self, learning_id: int, ideas: list[str]) -> None:
+        """Replace the rubric. Stats reset only for ideas whose text changed."""
+        now = to_iso(datetime.now())
+        with self.db.get_connection() as conn:
+            existing = {r["idea"]: r for r in conn.execute(
+                "SELECT * FROM key_ideas WHERE learning_id = ?", (learning_id,))}
+            conn.execute("DELETE FROM key_ideas WHERE learning_id = ?", (learning_id,))
+            for pos, text in enumerate(t.strip() for t in ideas if t.strip()):
+                old = existing.get(text)
+                conn.execute(
+                    "INSERT INTO key_ideas (learning_id, idea, position, hits, misses, "
+                    "miss_streak, drilled, created_at) VALUES (?,?,?,?,?,?,?,?)",
+                    (learning_id, text, pos,
+                     old["hits"] if old else 0, old["misses"] if old else 0,
+                     old["miss_streak"] if old else 0, old["drilled"] if old else 0,
+                     old["created_at"] if old else now),
+                )
+            conn.commit()
+
+    def get_key_ideas(self, learning_id: int) -> list[dict]:
+        rows = self.db.fetch_all(
+            "SELECT * FROM key_ideas WHERE learning_id = ? ORDER BY position, id",
+            (learning_id,),
+        )
+        return [dict(r) for r in rows]
+
+    def record_idea_results(self, results: list[dict]) -> list[dict]:
+        """Update per-idea tallies from a graded recall. Returns ideas that just
+        reached a 2-miss streak and haven't been drilled yet (drill-card candidates)."""
+        needs_drill = []
+        with self.db.get_connection() as conn:
+            for r in results:
+                if r.get("result") == "hit":
+                    conn.execute(
+                        "UPDATE key_ideas SET hits = hits + 1, miss_streak = 0 WHERE id = ?",
+                        (r["id"],))
+                else:
+                    conn.execute(
+                        "UPDATE key_ideas SET misses = misses + 1, miss_streak = miss_streak + 1 "
+                        "WHERE id = ?", (r["id"],))
+            for r in results:
+                row = conn.execute("SELECT * FROM key_ideas WHERE id = ?", (r["id"],)).fetchone()
+                if row and row["miss_streak"] >= 2 and not row["drilled"]:
+                    needs_drill.append(dict(row))
+            conn.commit()
+        return needs_drill
+
+    def mark_idea_drilled(self, idea_id: int) -> None:
+        self.db.execute("UPDATE key_ideas SET drilled = 1, miss_streak = 0 WHERE id = ?",
+                        (idea_id,))
+
     # ---------- tags ----------
 
     def set_learning_tags(self, learning_id: int, tags: list[str]) -> None:
@@ -380,6 +433,7 @@ class Repository:
         self, q: Question, rating: int, recall_text: Optional[str] = None,
         confidence: Optional[int] = None, ai_verdict: Optional[str] = None,
         elapsed_ms: Optional[int] = None, bury_siblings: bool = True,
+        idea_results: Optional[str] = None,
     ) -> ScheduleResult:
         now = datetime.now()
         card = CardState(
@@ -407,8 +461,8 @@ class Repository:
                     stability_before, difficulty_before, state_before, next_review_before,
                     lapses_before, last_reviewed_before,
                     stability_after, difficulty_after, state_after, next_review_after,
-                    lapses_after, interval_after, elapsed_ms
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    lapses_after, interval_after, elapsed_ms, idea_results
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """,
                 (
                     q.id, rating, to_iso(now), recall_text, confidence, ai_verdict,
@@ -416,7 +470,7 @@ class Repository:
                     q.lapses, to_iso(q.last_reviewed_at),
                     result.stability, result.difficulty, int(result.state),
                     to_iso(result.next_review_at), result.lapses, result.interval_days,
-                    elapsed_ms,
+                    elapsed_ms, idea_results,
                 ),
             )
             conn.commit()

@@ -29,6 +29,7 @@ class LearningIn(BaseModel):
     conversation: Optional[str] = None
     tags: list[str] = []
     cards: list[CardIn] = []
+    key_ideas: list[str] = []  # the rubric the topic's free recall is graded against
     recall_card: bool = True   # auto-add a free-recall prompt for the topic
 
 
@@ -62,6 +63,8 @@ def create_learning(body: LearningIn):
     lid = repo.create_learning(title, body.content.strip(), body.reflection,
                               subject=body.subject, tags=body.tags, conversation=body.conversation)
     n = _persist_cards(repo, lid, body.cards)
+    if body.key_ideas:
+        repo.set_key_ideas(lid, body.key_ideas)
     if body.recall_card:
         repo.create_recall_card(lid, title, body.content.strip())
         n += 1
@@ -105,6 +108,7 @@ def get_learning(learning_id: int):
             "tags": learning.tags,
             "created_at": learning.created_at.isoformat() if learning.created_at else None,
         },
+        "key_ideas": repo.get_key_ideas(learning_id),
         "cards": [
             {
                 "id": c.id, "question": c.question, "answer": c.answer,
@@ -125,6 +129,7 @@ class LearningUpdate(BaseModel):
     subject: Optional[str] = None
     notes: Optional[str] = None
     tags: list[str] = []
+    key_ideas: Optional[list[str]] = None
 
 
 @router.put("/learnings/{learning_id}")
@@ -133,6 +138,8 @@ def update_learning(learning_id: int, body: LearningUpdate):
     repo.update_learning(learning_id, body.title.strip(), body.content.strip(),
                          reflection=body.reflection, subject=body.subject,
                          tags=body.tags, notes=body.notes)
+    if body.key_ideas is not None:
+        repo.set_key_ideas(learning_id, body.key_ideas)
     return {"ok": True}
 
 

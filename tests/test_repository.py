@@ -117,6 +117,44 @@ class TestHypercorrection(RepoCase):
         self.assertLess(hyper.interval_days, plain.interval_days)
 
 
+class TestKeyIdeas(RepoCase):
+    def test_set_and_get_round_trip(self):
+        lid, _ = self.make_topic("Hall-Petch")
+        self.repo.set_key_ideas(lid, ["σy = σ0 + k/√d", "boundaries block dislocations", ""])
+        ideas = self.repo.get_key_ideas(lid)
+        self.assertEqual([i["idea"] for i in ideas],
+                         ["σy = σ0 + k/√d", "boundaries block dislocations"])
+
+    def test_editing_rubric_keeps_stats_for_unchanged_ideas(self):
+        lid, _ = self.make_topic("Hall-Petch")
+        self.repo.set_key_ideas(lid, ["kept idea", "dropped idea"])
+        kept_id = self.repo.get_key_ideas(lid)[0]["id"]
+        self.repo.record_idea_results([{"id": kept_id, "result": "miss"}])
+        self.repo.set_key_ideas(lid, ["kept idea", "new idea"])
+        ideas = {i["idea"]: i for i in self.repo.get_key_ideas(lid)}
+        self.assertEqual(ideas["kept idea"]["misses"], 1)
+        self.assertEqual(ideas["new idea"]["misses"], 0)
+
+    def test_two_miss_streak_flags_drill_once(self):
+        lid, _ = self.make_topic("Hall-Petch")
+        self.repo.set_key_ideas(lid, ["inverse Hall-Petch at nano scale"])
+        iid = self.repo.get_key_ideas(lid)[0]["id"]
+        self.assertEqual(self.repo.record_idea_results([{"id": iid, "result": "miss"}]), [])
+        flagged = self.repo.record_idea_results([{"id": iid, "result": "miss"}])
+        self.assertEqual([f["id"] for f in flagged], [iid])
+        self.repo.mark_idea_drilled(iid)
+        self.assertEqual(self.repo.record_idea_results([{"id": iid, "result": "miss"}]), [])
+
+    def test_hit_resets_streak(self):
+        lid, _ = self.make_topic("Hall-Petch")
+        self.repo.set_key_ideas(lid, ["idea"])
+        iid = self.repo.get_key_ideas(lid)[0]["id"]
+        self.repo.record_idea_results([{"id": iid, "result": "miss"}])
+        self.repo.record_idea_results([{"id": iid, "result": "hit"}])
+        flagged = self.repo.record_idea_results([{"id": iid, "result": "miss"}])
+        self.assertEqual(flagged, [])
+
+
 class TestActivity(RepoCase):
     def test_capturing_counts_as_activity(self):
         self.make_topic("captured today")

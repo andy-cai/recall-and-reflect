@@ -62,6 +62,18 @@ CREATE TABLE IF NOT EXISTS reviews (
     elapsed_ms INTEGER
 );
 
+CREATE TABLE IF NOT EXISTS key_ideas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    learning_id INTEGER NOT NULL REFERENCES learnings(id) ON DELETE CASCADE,
+    idea TEXT NOT NULL,
+    position INTEGER NOT NULL DEFAULT 0,
+    hits INTEGER NOT NULL DEFAULT 0,                -- times recalled at review
+    misses INTEGER NOT NULL DEFAULT 0,
+    miss_streak INTEGER NOT NULL DEFAULT 0,         -- consecutive misses; 2 spawns a drill card
+    drilled INTEGER NOT NULL DEFAULT 0,             -- a drill card was already created
+    created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS tags (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE NOT NULL COLLATE NOCASE
@@ -78,6 +90,7 @@ CREATE TABLE IF NOT EXISTS settings (
     value TEXT
 );
 
+CREATE INDEX IF NOT EXISTS idx_key_ideas_learning ON key_ideas(learning_id);
 CREATE INDEX IF NOT EXISTS idx_questions_learning ON questions(learning_id);
 CREATE INDEX IF NOT EXISTS idx_questions_next_review ON questions(next_review_at);
 CREATE INDEX IF NOT EXISTS idx_reviews_question ON reviews(question_id);
@@ -122,6 +135,10 @@ class Database:
             conn.execute("ALTER TABLE learnings ADD COLUMN conversation TEXT")
         if "notes" not in cols:
             conn.execute("ALTER TABLE learnings ADD COLUMN notes TEXT")
+        rcols = {r["name"] for r in conn.execute("PRAGMA table_info(reviews)")}
+        if "idea_results" not in rcols:
+            # per-idea rubric outcomes for recall cards, JSON: [{"id":..,"result":"hit|partial|miss"}]
+            conn.execute("ALTER TABLE reviews ADD COLUMN idea_results TEXT")
 
     @contextmanager
     def get_connection(self):

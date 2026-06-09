@@ -82,14 +82,39 @@ export async function render() {
   }
 
   const recallNote = el('div', { style: { fontSize: '12.5px', color: 'var(--text-soft)', background: 'var(--surface-2)', borderRadius: '10px', padding: '11px 13px', margin: '2px 0 12px', lineHeight: '1.45' } },
-    '🧠 At review you’ll recall this topic in your own words first', llmOk ? ', then your local AI probes the gaps with follow-up questions.' : '. ');
+    '🧠 At review you’ll recall this topic in your own words first', llmOk ? ' — graded against the key ideas below.' : '. ');
+
+  // ---------- key ideas (the rubric future recall is graded against) ----------
+  const ideaEditors = [];
+  const ideaList = el('div', { class: 'stack', style: { gap: '7px' } });
+  function makeIdea(text = '') {
+    const input = el('input', { class: 'input', placeholder: 'One key idea, one line', value: text,
+      style: { fontSize: '13.5px', padding: '8px 11px' } });
+    const ed = { read: () => input.value.trim() };
+    const row = el('div', { class: 'row', style: { gap: '7px' } }, input,
+      el('button', { class: 'btn-ghost', style: { padding: '2px 8px', fontSize: '12px', flex: 'none' },
+        onClick: () => { row.remove(); const i = ideaEditors.indexOf(ed); if (i >= 0) ideaEditors.splice(i, 1); } }, '✕'));
+    ideaEditors.push(ed);
+    return row;
+  }
+  function renderIdeas(ideas) {
+    clear(ideaList); ideaEditors.length = 0;
+    for (const t of ideas) ideaList.append(makeIdea(t));
+  }
+  const ideasPanel = el('div', { style: { margin: '0 0 12px' } },
+    el('div', { class: 'row spread', style: { marginBottom: '8px' } },
+      el('span', { class: 'eyebrow' }, 'Key ideas',
+        infoTip('What future-you is accountable for: your free recall of this topic is graded idea by idea. Trim ruthlessly — 3–8 one-liners.')),
+      el('button', { class: 'btn-ghost', style: { padding: '2px 8px', fontSize: '12px' },
+        onClick: () => ideaList.append(makeIdea()) }, '+ add')),
+    ideaList);
 
   const topicPanel = el('div', { class: 'card draft-panel' },
     el('div', { class: 'eyebrow', style: { marginBottom: '12px' } }, 'Topic'),
     el('div', { class: 'field', style: { marginBottom: '10px' } }, el('label', { class: 'lbl' }, 'Subject'), subjectInput, subjectList),
     el('div', { class: 'field', style: { marginBottom: '10px' } }, el('label', { class: 'lbl' }, 'Title'), titleInput),
     el('div', { class: 'field', style: { marginBottom: '12px' } }, el('label', { class: 'lbl' }, 'Tags'), tagsInput),
-    recallNote, detailDisclosure, saveBtn);
+    recallNote, ideasPanel, detailDisclosure, saveBtn);
 
   async function save() {
     const dump = convo.find(m => m.role === 'user');
@@ -97,13 +122,14 @@ export async function render() {
     const title = titleInput.value.trim() || deriveTitle(content);
     if (!content && !title) { toast('Describe the topic first.'); return; }
     const cards = editors.map(e => e.read()).filter(c => c.question && c.answer);
+    const key_ideas = ideaEditors.map(e => e.read()).filter(Boolean);
     const reflection = convo.filter((_, i) => i > 0).map(m => `${m.role === 'user' ? 'Me' : 'Q'}: ${m.content}`).join('\n');
     const conversation = convo.length ? JSON.stringify(convo) : null;
     const tags = tagsInput.value.split(',').map(t => t.trim()).filter(Boolean);
     saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
     try {
       const res = await api.createLearning({ title, content, reflection: reflection || null,
-        subject: subjectInput.value.trim() || null, conversation, tags, cards });
+        subject: subjectInput.value.trim() || null, conversation, tags, cards, key_ideas });
       toast(`Saved “${res.title}”`);
       refreshBadge();
       navigate('#/library/' + res.id);
@@ -126,12 +152,19 @@ export async function render() {
     clear(detailList); editors.length = 0;
     const loading = el('div', { class: 'row', style: { padding: '8px 2px' } }, el('span', { class: 'spin' }), el('span', { class: 'muted' }, ' prepping a few questions…'));
     detailList.append(loading);
+    clear(ideaList); ideaEditors.length = 0;
+    ideaList.append(el('div', { class: 'row' }, el('span', { class: 'spin' }), el('span', { class: 'muted', style: { fontSize: '12.5px' } }, ' distilling key ideas…')));
+    const ideasJob = api.captureIdeas(transcript)
+      .then(r => renderIdeas(r.ideas || []))
+      .catch(() => { clear(ideaList); ideaEditors.length = 0; });
     try {
       const res = await api.captureCards(transcript, 4);
       renderDetails(res.cards);
-      addMsg('ai').setText('Set. You’ll recall this in your own words at review — I’ve also prepped a few specific questions (see “Detail questions”). Pick a subject and save.');
+      await ideasJob;
+      addMsg('ai').setText('Set. I’ve distilled the key ideas your recall will be graded against — edit them in the panel, they’re what future-you is accountable for. Pick a subject and save.');
     } catch (e) {
       clear(detailList); editors.length = 0; updateCount(); toggleDetails(false);
+      await ideasJob;
       addMsg('ai').setText('Got it — I’ll prompt you to recall this topic at review. Pick a subject and save.');
     }
   }

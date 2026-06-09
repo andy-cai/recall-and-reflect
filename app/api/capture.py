@@ -56,6 +56,23 @@ def cards(req: CardsReq):
     return {"cards": generated}
 
 
+class IdeasReq(BaseModel):
+    transcript: str
+
+
+@router.post("/ideas")
+def ideas(req: IdeasReq):
+    """Distill the conversation into key ideas — the rubric future recall is graded against."""
+    llm = get_llm()
+    if not llm.status()["available"]:
+        return JSONResponse({"error": "no_local_model"}, status_code=503)
+    try:
+        extracted = llm.extract_key_ideas(req.transcript)
+    except OllamaError as e:
+        return JSONResponse({"error": str(e)}, status_code=502)
+    return {"ideas": extracted}
+
+
 class SubjectReq(BaseModel):
     transcript: str
 

@@ -90,6 +90,20 @@ class Grade(BaseModel):
     poke: str = Field(default="", description="one short Socratic question; never reveal the answer")
 
 
+class KeyIdeaList(BaseModel):
+    ideas: list[str] = Field(default_factory=list, description="3-8 one-line key ideas")
+
+
+class IdeaResult(BaseModel):
+    index: int = Field(description="0-based index of the key idea")
+    result: str = Field(description="one of: hit, partial, miss")
+
+
+class RubricGrade(BaseModel):
+    items: list[IdeaResult] = Field(default_factory=list)
+    poke: str = Field(default="", description="one short Socratic question; never reveal the answer")
+
+
 class SubjectGuess(BaseModel):
     subject: str = Field(default="", description="one concise subject area, Title Case, 1-3 words")
 
@@ -160,6 +174,34 @@ Then ALWAYS write ONE short Socratic "poke" (never leave it empty): a single que
 that pushes them toward the gap they missed, or — if they nailed it — one level deeper
 (a "why", an edge case, or an application). Never reveal the answer. Keep it to one sentence."""
 
+
+_IDEAS_SYSTEM = """You distill a study conversation into the KEY IDEAS of the topic — the rubric a
+learner's future free recall will be graded against.
+
+Write 3-8 one-line ideas. Each idea:
+- is one self-contained claim, mechanism, formula, distinction, or condition worth
+  remembering on its own (include the equation when there is one),
+- uses the learner's own framing and examples where possible,
+- is concrete enough to check a recall against ("boundaries block dislocation motion",
+  not "understands grain boundaries").
+Order from most to least central. No trivia, no duplicates. Output only the structured object."""
+
+_RUBRIC_GRADE_SYSTEM = """You grade a learner's free recall of a topic against a numbered rubric of key ideas.
+
+For EVERY rubric index, judge whether the learner's recall expressed that idea:
+- "hit": the idea is present in substance (wording may differ wildly; terse is fine)
+- "partial": touched but incomplete or muddled
+- "miss": absent or wrong
+Judge meaning, not phrasing. Do not require ideas beyond the rubric.
+
+Then write ONE short Socratic poke (never empty, never revealing): aim it at the most
+important missed idea — or, if everything was hit, one level deeper (a why, an edge
+case, or an application). Output only the structured object."""
+
+_DRILL_SYSTEM = """You write ONE focused active-recall question drilling a specific key idea the learner
+keeps missing. The question targets exactly that idea (favor why/how/when phrasing),
+is answerable in a sentence or two, and the answer is the idea itself, stated clearly.
+Output only the structured object."""
 
 _SUBJECT_SYSTEM = """You file study notes into broad subject areas (e.g. "Machine Learning",
 "Spanish", "Microeconomics", "Anatomy", "Personal Finance").
@@ -329,6 +371,42 @@ class LLMService:
         if not out:
             raise OllamaError("Model returned no usable cards.")
         return out
+
+    def extract_key_ideas(self, transcript: str) -> list[str]:
+        messages = [
+            {"role": "system", "content": _IDEAS_SYSTEM},
+            {"role": "user", "content": f"Conversation:\n---\n{transcript[:4000]}\n---\nDistill the key ideas."},
+        ]
+        result = self._complete_json(messages, KeyIdeaList, temperature=0.3)
+        return [i.strip() for i in result.ideas if i.strip()][:8]
+
+    def grade_rubric(self, topic: str, ideas: list[str], user_answer: str) -> dict:
+        listing = "\n".join(f"{i}. {idea}" for i, idea in enumerate(ideas))
+        prompt = (
+            f"Topic: {topic}\n\nRubric of key ideas:\n{listing}\n\n"
+            f"Learner's free recall:\n{user_answer or '(left blank)'}"
+        )
+        messages = [
+            {"role": "system", "content": _RUBRIC_GRADE_SYSTEM},
+            {"role": "user", "content": prompt},
+        ]
+        grade = self._complete_json(messages, RubricGrade, temperature=0.1)
+        results = ["miss"] * len(ideas)
+        for item in grade.items:
+            if 0 <= item.index < len(ideas):
+                r = item.result.strip().lower()
+                results[item.index] = r if r in ("hit", "partial", "miss") else "miss"
+        return {"results": results, "poke": grade.poke.strip()}
+
+    def drill_question(self, topic: str, idea: str) -> dict:
+        messages = [
+            {"role": "system", "content": _DRILL_SYSTEM},
+            {"role": "user", "content": f"Topic: {topic}\nKey idea they keep missing: {idea}\n\nWrite the drill question."},
+        ]
+        result = self._complete_json(messages, GenCard, temperature=0.4)
+        if not (result.question.strip() and result.answer.strip()):
+            raise OllamaError("Model returned no usable drill question.")
+        return {"question": result.question.strip(), "answer": result.answer.strip()}
 
     def grade_recall(self, question: str, reference: str, user_answer: str) -> dict:
         prompt = (

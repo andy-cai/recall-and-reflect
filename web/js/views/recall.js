@@ -5,8 +5,13 @@ import { navigate, refreshBadge } from '../app.js';
 
 const CONF = { 1: 'Guessing', 2: 'Pretty sure', 3: 'Certain' };
 
-function hintFor(ans, level) {
-  ans = ans || '';
+function hintFor(c, level) {
+  // Topic-recall cards hint with a rubric line — a real retrieval cue.
+  if (c.ideas && c.ideas.length) {
+    const i = Math.min(level, c.ideas.length) - 1;
+    return `Idea ${i + 1} of ${c.ideas.length}: ${c.ideas[i].text}`;
+  }
+  const ans = c.answer || '';
   const words = ans.split(/\s+/).filter(Boolean);
   if (level <= 1) return `${words.length} word${words.length !== 1 ? 's' : ''} · starts with “${ans.trim()[0] || '?'}”`;
   if (level === 2) return `First word: “${words[0] || ''}”`;
@@ -46,6 +51,7 @@ export async function render({ params } = {}) {
 
   let idx = 0, revealed = false, confidence = null, hints = 0, cardStart = 0, verdict = null;
   let reviewedCount = 0, correctish = 0, lastRecall = '', suggested = null, rateGrid = null;
+  let ideaResults = null;
 
   function total() { return cards.length; }  // grows if a confident miss is re-queued
 
@@ -59,6 +65,7 @@ export async function render({ params } = {}) {
   function showCard() {
     if (idx >= total()) return finish();
     revealed = false; confidence = null; hints = 0; verdict = null; suggested = null; rateGrid = null;
+    ideaResults = null;
     cardStart = Date.now();
     updateProgress();
     clear(stage);
@@ -96,9 +103,10 @@ export async function render({ params } = {}) {
     setTimeout(() => recallInput.focus(), 30);
 
     function showHint() {
-      hints = Math.min(3, hints + 1);
+      const maxHints = c.ideas && c.ideas.length ? c.ideas.length : 3;
+      hints = Math.min(maxHints, hints + 1);
       hintBox.hidden = false;
-      hintBox.textContent = '💡 ' + hintFor(c.answer, hints);
+      hintBox.textContent = '💡 ' + hintFor(c, hints);
     }
     stage._showHint = showHint;
   }
@@ -124,9 +132,26 @@ export async function render({ params } = {}) {
         el('div', { class: 'soft' }, recallText)));
     }
 
-    const answerBox = el('div', { class: 'a-reveal' },
-      el('div', { class: 'lbl' }, 'Answer'),
-      el('div', { class: 'a' }, c.answer));
+    // Topic recall with a rubric → checklist reveal; otherwise the classic answer box.
+    const hasRubric = !!(c.ideas && c.ideas.length);
+    let answerBox, ideaRows = null, ideaCount = null;
+    if (hasRubric) {
+      ideaRows = c.ideas.map(i => {
+        const mark = el('span', { class: 'mark' }, '·');
+        const node = el('div', { class: 'idea' }, mark, el('div', { class: 't' }, i.text));
+        return { id: i.id, text: i.text, node, mark };
+      });
+      ideaCount = el('span', { class: 'muted', style: { fontSize: '12px' } },
+        llmOk && recallText ? '' : 'self-check: which did you actually say?');
+      answerBox = el('div', { class: 'card', style: { marginTop: '12px', padding: '16px' } },
+        el('div', { class: 'row spread', style: { marginBottom: '10px' } },
+          el('div', { class: 'eyebrow' }, 'Key ideas'), ideaCount),
+        ...ideaRows.map(r => r.node));
+    } else {
+      answerBox = el('div', { class: 'a-reveal' },
+        el('div', { class: 'lbl' }, 'Answer'),
+        el('div', { class: 'a' }, c.answer));
+    }
     stage.append(answerBox);
 
     const gradeSlot = el('div', {});
@@ -146,11 +171,30 @@ export async function render({ params } = {}) {
         const g = await api.grade(c.id, recallText);
         verdict = g.verdict;
         clear(gradeSlot);
+        // Paint the rubric checklist: ✓ hit / ◐ partial / ✕ miss per idea.
+        if (g.ideas && ideaRows) {
+          ideaResults = g.ideas.map(({ id, result }) => ({ id, result }));
+          const marks = { hit: ['hit', '✓'], partial: ['part', '◐'], miss: ['miss', '✕'] };
+          let hitN = 0;
+          for (const r of g.ideas) {
+            const row = ideaRows.find(x => x.id === r.id);
+            if (!row) continue;
+            const [cls, sym] = marks[r.result] || marks.miss;
+            row.node.classList.add(cls);
+            row.mark.textContent = sym;
+            if (r.result === 'hit') hitN++;
+          }
+          if (ideaCount) ideaCount.textContent = `${hitN} of ${g.ideas.length}`;
+        }
         const vbadge = el('div', { class: 'center', style: { marginTop: '14px' } },
           el('span', { class: 'verdict ' + verdict }, verdict === 'correct' ? '✓ Got it' : verdict === 'partial' ? '◐ Partial' : '✕ Missed it'));
         gradeSlot.append(vbadge);
-        if (g.missing && verdict !== 'correct') {
+        if (g.missing && verdict !== 'correct' && !hasRubric) {
           gradeSlot.append(el('div', { class: 'muted center', style: { fontSize: '13px', marginTop: '6px' } }, 'Missing: ' + g.missing));
+        }
+        if (g.drilled && g.drilled.length) {
+          gradeSlot.append(el('div', { class: 'muted center', style: { fontSize: '12.5px', marginTop: '6px' } },
+            '🛠 Added a drill card for an idea you keep missing.'));
         }
         // Confident miss → hypercorrection: call it out and re-queue for this session.
         if (confidence === 3 && verdict === 'wrong') {
@@ -211,6 +255,7 @@ export async function render({ params } = {}) {
       recall: lastRecall, confidence, ai_verdict: verdict,
       elapsed_ms: Date.now() - cardStart,
       bury: !params?.learning,   // topic practice reviews siblings on purpose
+      idea_results: ideaResults,
     };
     revealed = false; // guard against double
     try { await api.answer(payload); } catch (e) { toast('Could not save: ' + e.message); }
