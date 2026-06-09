@@ -126,6 +126,11 @@ class TopicList(BaseModel):
     topics: list[TopicItem] = Field(default_factory=list)
 
 
+class FocusPlan(BaseModel):
+    subjects: list[str] = Field(default_factory=list, description="existing subject names the user wants to prioritize")
+    learning_ids: list[int] = Field(default_factory=list, description="ids of specific topics the user wants to prioritize")
+
+
 # ---------- prompts ----------
 
 _CAPTURE_SYSTEM = """You are a sharp, warm study partner helping someone lock in something they just learned.
@@ -203,6 +208,15 @@ keeps missing. The question targets exactly that idea (favor why/how/when phrasi
 is answerable in a sentence or two, and the answer is the idea itself, stated clearly.
 Output only the structured object."""
 
+_FOCUS_SYSTEM = """The learner tells you what they want to prioritize in their reviews (an exam, a project,
+a vague theme). Match their request against their ACTUAL subjects and topic titles.
+
+Return only subjects/topic-ids from the provided lists that genuinely match the intent —
+including semantic matches ("battery stuff" → "Battery Engineering"; "my vibrations
+final" → "Vibrations"). Prefer whole subjects when the request is broad; pick specific
+topic ids only when the request names specifics. Return nothing that doesn't match.
+Output only the structured object."""
+
 _SUBJECT_SYSTEM = """You file study notes into broad subject areas (e.g. "Machine Learning",
 "Spanish", "Microeconomics", "Anatomy", "Personal Finance").
 
@@ -221,6 +235,7 @@ topics that aren't in the text. Output only the structured object."""
 class LLMService:
     def __init__(self, model: str = DEFAULT_MODEL):
         self.preferred = model
+        self.fast_preferred: str = ""   # optional smaller model for grading/classifying
         self._resolved: Optional[str] = None
 
     # ---------- model discovery (local only) ----------
@@ -264,6 +279,18 @@ class LLMService:
         self.preferred = name
         self._resolved = None
 
+    def set_fast_model(self, name: str) -> None:
+        """A smaller local model for latency-sensitive calls (grading, classifying).
+        Empty string = use the main model for everything."""
+        if name and is_cloud_model(name):
+            raise OllamaError("Cloud models are blocked to keep your data on-device.")
+        self.fast_preferred = name or ""
+
+    def resolve_fast_model(self) -> Optional[str]:
+        if self.fast_preferred and self.fast_preferred in self.local_models():
+            return self.fast_preferred
+        return self.resolve_model()
+
     def warm(self) -> None:
         """Best-effort: load the model so the first real call isn't a cold start."""
         model = self.resolve_model()
@@ -281,13 +308,17 @@ class LLMService:
 
     # ---------- primitives ----------
 
-    def _chat_stream(self, messages: list[dict], temperature: float = 0.5) -> Iterator[str]:
+    def _chat_stream(self, messages: list[dict], temperature: float = 0.5,
+                     num_predict: int = 0) -> Iterator[str]:
         model = self.resolve_model()
         if not model:
             raise OllamaError("No local model available.")
+        options = {"temperature": temperature}
+        if num_predict:
+            options["num_predict"] = num_predict   # cap tail latency
         payload = {
             "model": model, "messages": messages, "stream": True,
-            "keep_alive": OLLAMA_KEEP_ALIVE, "options": {"temperature": temperature},
+            "keep_alive": OLLAMA_KEEP_ALIVE, "options": options,
         }
         filt = _ThinkFilter()
         try:
@@ -315,16 +346,20 @@ class LLMService:
             raise OllamaError(f"Ollama request failed: {e}")
 
     def _complete_json(
-        self, messages: list[dict], schema: type[BaseModel], temperature: float = 0.3
+        self, messages: list[dict], schema: type[BaseModel], temperature: float = 0.3,
+        num_predict: int = 0, fast: bool = False,
     ) -> BaseModel:
-        model = self.resolve_model()
+        model = self.resolve_fast_model() if fast else self.resolve_model()
         if not model:
             raise OllamaError("No local model available.")
+        options = {"temperature": temperature}
+        if num_predict:
+            options["num_predict"] = num_predict   # cap tail latency
         payload = {
             "model": model, "messages": messages, "stream": False,
             "format": schema.model_json_schema(),
             "keep_alive": OLLAMA_KEEP_ALIVE,
-            "options": {"temperature": temperature},
+            "options": options,
         }
         try:
             with httpx.Client(timeout=httpx.Timeout(OLLAMA_TIMEOUT, connect=OLLAMA_CONNECT_TIMEOUT)) as client:
@@ -350,14 +385,14 @@ class LLMService:
 
     def capture_followup_stream(self, history: list[dict]) -> Iterator[str]:
         messages = [{"role": "system", "content": _CAPTURE_SYSTEM}, *history]
-        yield from self._chat_stream(messages, temperature=0.6)
+        yield from self._chat_stream(messages, temperature=0.6, num_predict=160)
 
     def generate_cards(self, transcript: str, n: int = 4, basic_only: bool = False) -> list[dict]:
         messages = [
             {"role": "system", "content": _CARDS_BASIC_SYSTEM if basic_only else _CARDS_SYSTEM},
             {"role": "user", "content": f"Aim for about {n} questions.\n\nConversation:\n---\n{transcript}\n---"},
         ]
-        result = self._complete_json(messages, CardSet, temperature=0.4)
+        result = self._complete_json(messages, CardSet, temperature=0.4, num_predict=700)
         out: list[dict] = []
         for c in result.cards:
             ctype = (c.type or "basic").strip().lower()
@@ -377,7 +412,7 @@ class LLMService:
             {"role": "system", "content": _IDEAS_SYSTEM},
             {"role": "user", "content": f"Conversation:\n---\n{transcript[:4000]}\n---\nDistill the key ideas."},
         ]
-        result = self._complete_json(messages, KeyIdeaList, temperature=0.3)
+        result = self._complete_json(messages, KeyIdeaList, temperature=0.3, num_predict=450)
         return [i.strip() for i in result.ideas if i.strip()][:8]
 
     def grade_rubric(self, topic: str, ideas: list[str], user_answer: str) -> dict:
@@ -390,7 +425,7 @@ class LLMService:
             {"role": "system", "content": _RUBRIC_GRADE_SYSTEM},
             {"role": "user", "content": prompt},
         ]
-        grade = self._complete_json(messages, RubricGrade, temperature=0.1)
+        grade = self._complete_json(messages, RubricGrade, temperature=0.1, num_predict=400, fast=True)
         results = ["miss"] * len(ideas)
         for item in grade.items:
             if 0 <= item.index < len(ideas):
@@ -403,21 +438,21 @@ class LLMService:
             {"role": "system", "content": _DRILL_SYSTEM},
             {"role": "user", "content": f"Topic: {topic}\nKey idea they keep missing: {idea}\n\nWrite the drill question."},
         ]
-        result = self._complete_json(messages, GenCard, temperature=0.4)
+        result = self._complete_json(messages, GenCard, temperature=0.4, num_predict=220)
         if not (result.question.strip() and result.answer.strip()):
             raise OllamaError("Model returned no usable drill question.")
         return {"question": result.question.strip(), "answer": result.answer.strip()}
 
     def grade_recall(self, question: str, reference: str, user_answer: str) -> dict:
         prompt = (
-            f"Question:\n{question}\n\nReference answer:\n{reference}\n\n"
+            f"Question:\n{question}\n\nReference answer:\n{reference[:1200]}\n\n"
             f"Learner's recall:\n{user_answer or '(left blank)'}"
         )
         messages = [
             {"role": "system", "content": _GRADE_SYSTEM},
             {"role": "user", "content": prompt},
         ]
-        grade = self._complete_json(messages, Grade, temperature=0.1)
+        grade = self._complete_json(messages, Grade, temperature=0.1, num_predict=250, fast=True)
         verdict = grade.verdict.strip().lower()
         if verdict not in ("correct", "partial", "wrong"):
             verdict = "partial"
@@ -429,7 +464,7 @@ class LLMService:
             {"role": "system", "content": _SUBJECT_SYSTEM},
             {"role": "user", "content": f"Existing subjects: {ex}\n\nNote:\n{text[:1500]}\n\nReturn the single best subject area."},
         ]
-        return self._complete_json(messages, SubjectGuess, temperature=0.2).subject.strip()
+        return self._complete_json(messages, SubjectGuess, temperature=0.2, num_predict=60, fast=True).subject.strip()
 
     def suggest_subjects(self, items: list[dict], existing: list[str]) -> list[dict]:
         ex = ", ".join(existing) if existing else "(none yet)"
@@ -439,17 +474,36 @@ class LLMService:
             {"role": "user", "content": f"Existing subjects: {ex}\n\nAssign each note a subject area "
                 f"(reuse existing where sensible; use the SAME area for related notes):\n{listing}"},
         ]
-        result = self._complete_json(messages, SubjectAssigns, temperature=0.2)
+        result = self._complete_json(messages, SubjectAssigns, temperature=0.2, num_predict=900)
         valid = {it["id"] for it in items}
         return [{"id": a.id, "subject": a.subject.strip()}
                 for a in result.items if a.id in valid and a.subject.strip()]
+
+    def interpret_focus(self, text: str, subjects: list[str], topics: list[dict]) -> dict:
+        """Map a free-text 'what I want to prioritize' onto actual subjects/topic ids."""
+        subj = ", ".join(subjects) if subjects else "(none)"
+        listing = "\n".join(f"- [{t['id']}] {t['title']}" for t in topics[:200])
+        messages = [
+            {"role": "system", "content": _FOCUS_SYSTEM},
+            {"role": "user", "content": f"Subjects: {subj}\n\nTopics:\n{listing}\n\n"
+                f"The learner says: \"{text.strip()[:400]}\"\n\nWhat should be prioritized?"},
+        ]
+        plan = self._complete_json(messages, FocusPlan, temperature=0.1,
+                                   num_predict=300, fast=True)
+        valid_ids = {t["id"] for t in topics}
+        subj_lower = {s.lower(): s for s in subjects}
+        return {
+            "subjects": [subj_lower[s.strip().lower()] for s in plan.subjects
+                         if s.strip().lower() in subj_lower],
+            "learning_ids": [i for i in plan.learning_ids if i in valid_ids],
+        }
 
     def split_topics(self, text: str) -> list[dict]:
         messages = [
             {"role": "system", "content": _SPLIT_SYSTEM},
             {"role": "user", "content": f"Text:\n---\n{text[:4000]}\n---\nExtract the study topics."},
         ]
-        result = self._complete_json(messages, TopicList, temperature=0.2)
+        result = self._complete_json(messages, TopicList, temperature=0.2, num_predict=900)
         out = []
         for t in result.topics:
             title = t.title.strip()

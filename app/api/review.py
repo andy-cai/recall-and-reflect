@@ -50,10 +50,16 @@ def _serialize(q: Question, title: str, retention: float,
 
 @router.get("/queue")
 def queue(tag: Optional[str] = None, learning_id: Optional[int] = None,
-          subject: Optional[str] = None, limit: int = 200):
+          subject: Optional[str] = None, limit: int = 200,
+          focus: int = 0, mode: Optional[str] = None):
     repo = Repository()
     retention = repo.get_desired_retention()
-    due = repo.get_due_questions(limit=limit, tag=tag, learning_id=learning_id, subject=subject)
+    if mode == "evening":
+        # wind-down: today's misses + today's captures, a small pass before sleep
+        due = repo.evening_queue(limit=min(limit, 10))
+    else:
+        due = repo.get_due_questions(limit=limit, tag=tag, learning_id=learning_id,
+                                     subject=subject, focus=bool(focus))
 
     titles: dict[int, str] = {}
     ideas: dict[int, list[dict]] = {}
@@ -181,3 +187,14 @@ def answer(req: AnswerReq):
 def undo():
     qid = Repository().undo_last_review()
     return {"question_id": qid}
+
+
+class RampReq(BaseModel):
+    days: int = 5
+
+
+@router.post("/ramp")
+def ramp(req: RampReq):
+    """Welcome-back mode: spread the overdue pile over the next N days,
+    keeping today's most-at-risk allotment."""
+    return Repository().ramp_backlog(req.days)

@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS learnings (
     subject TEXT,                          -- primary area / project (a note's "home")
     conversation TEXT,                     -- raw capture transcript (JSON)
     notes TEXT,                            -- free notes added over time
+    priority INTEGER NOT NULL DEFAULT 0,   -- 1 = focused: reviewed first, new cards first
     created_at TEXT NOT NULL,
     is_active INTEGER NOT NULL DEFAULT 1
 );
@@ -135,6 +136,8 @@ class Database:
             conn.execute("ALTER TABLE learnings ADD COLUMN conversation TEXT")
         if "notes" not in cols:
             conn.execute("ALTER TABLE learnings ADD COLUMN notes TEXT")
+        if "priority" not in cols:
+            conn.execute("ALTER TABLE learnings ADD COLUMN priority INTEGER NOT NULL DEFAULT 0")
         rcols = {r["name"] for r in conn.execute("PRAGMA table_info(reviews)")}
         if "idea_results" not in rcols:
             # per-idea rubric outcomes for recall cards, JSON: [{"id":..,"result":"hit|partial|miss"}]

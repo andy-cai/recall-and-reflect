@@ -155,6 +155,78 @@ class TestKeyIdeas(RepoCase):
         self.assertEqual(flagged, [])
 
 
+class TestFocus(RepoCase):
+    def test_focused_topics_jump_the_queue(self):
+        _, (q_risky,) = self.make_topic("unfocused but risky")
+        lid, (q_focus,) = self.make_topic("focused topic")
+        self.set_reviewed(q_risky, stability=10, reviewed_days_ago=60)  # very low R
+        self.set_reviewed(q_focus, stability=10, reviewed_days_ago=2)   # high R
+        self.repo.set_priority(lid, 1)
+        queue = self.repo.get_due_questions()
+        self.assertEqual(queue[0].id, q_focus)
+
+    def test_focus_filter_only_returns_focused(self):
+        self.make_topic("normal")
+        lid, _ = self.make_topic("starred")
+        self.repo.set_priority(lid, 1)
+        queue = self.repo.get_due_questions(focus=True)
+        self.assertEqual(len(queue), 1)
+        self.assertEqual(queue[0].learning_id, lid)
+
+    def test_subject_priority_and_clear(self):
+        lid_a, _ = self.make_topic("a")
+        lid_b, _ = self.make_topic("b")
+        self.repo.set_subject(lid_a, "Vibrations")
+        self.repo.set_subject(lid_b, "Vibrations")
+        self.repo.set_subject_priority("vibrations", 1)   # case-insensitive
+        self.assertEqual(self.repo.focus_summary()["topics"], 2)
+        self.assertEqual(self.repo.clear_focus(), 2)
+        self.assertEqual(self.repo.focus_summary()["topics"], 0)
+
+    def test_match_focus_text_fallback(self):
+        lid, _ = self.make_topic("Mohr's circle sign convention")
+        self.repo.set_subject(lid, "Mechanics of Materials")
+        m = self.repo.match_focus_text("prioritize mechanics for the exam")
+        self.assertIn("Mechanics of Materials", m["subjects"])
+        m2 = self.repo.match_focus_text("mohr's circle")
+        self.assertEqual([x["id"] for x in m2["learnings"]], [lid])
+
+
+class TestRamp(RepoCase):
+    def test_ramp_spreads_backlog_keeping_daily_target(self):
+        self.repo.set_setting("daily_target", 2)
+        self.repo.set_setting("new_per_day", 100)
+        for i in range(8):
+            _, (qid,) = self.make_topic(f"t{i}")
+            self.set_reviewed(qid, stability=5, reviewed_days_ago=10 + i)
+        self.assertEqual(self.repo.get_due_count(), 8)
+        res = self.repo.ramp_backlog(days=3)
+        self.assertEqual(res["moved"], 6)
+        self.assertEqual(self.repo.get_due_count(), 2)
+        # the two kept are the most at risk (longest since review)
+        kept = {q.id for q in self.repo.get_due_questions()}
+        self.assertEqual(len(kept), 2)
+
+    def test_ramp_with_nothing_due(self):
+        self.assertEqual(self.repo.ramp_backlog(days=5)["moved"], 0)
+
+
+class TestEveningQueue(RepoCase):
+    def test_misses_then_todays_captures(self):
+        _, (q_missed,) = self.make_topic("missed today")
+        _, (q_good,) = self.make_topic("aced today")
+        self.repo.apply_review(self.repo.get_question(q_missed), rating=1)
+        self.repo.apply_review(self.repo.get_question(q_good), rating=3)
+        lid = self.repo.create_learning("captured tonight", "content")
+        q_new = self.repo.create_recall_card(lid, "captured tonight", "content")
+        evening = self.repo.evening_queue(limit=5)
+        ids = [q.id for q in evening]
+        self.assertIn(q_missed, ids)
+        self.assertIn(q_new, ids)
+        self.assertNotIn(q_good, ids)
+        self.assertEqual(ids[0], q_missed)  # misses come first
+
+
 class TestActivity(RepoCase):
     def test_capturing_counts_as_activity(self):
         self.make_topic("captured today")

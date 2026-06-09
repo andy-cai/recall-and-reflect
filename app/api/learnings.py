@@ -81,6 +81,7 @@ def list_learnings(search: str = "", tag: Optional[str] = None):
                 "id": it["learning"].id,
                 "title": it["learning"].title,
                 "subject": it["learning"].subject or "",
+                "priority": it["learning"].priority,
                 "created_at": it["learning"].created_at.isoformat() if it["learning"].created_at else None,
                 "tags": it["learning"].tags,
                 "card_count": it["card_count"],
@@ -105,7 +106,7 @@ def get_learning(learning_id: int):
             "id": learning.id, "title": learning.title, "content": learning.content,
             "reflection": learning.reflection, "subject": learning.subject or "",
             "conversation": learning.conversation, "notes": learning.notes or "",
-            "tags": learning.tags,
+            "priority": learning.priority, "tags": learning.tags,
             "created_at": learning.created_at.isoformat() if learning.created_at else None,
         },
         "key_ideas": repo.get_key_ideas(learning_id),
@@ -204,6 +205,72 @@ class SuspendReq(BaseModel):
 def suspend_card(card_id: int, body: SuspendReq):
     Repository().set_suspended(card_id, body.suspended)
     return {"ok": True}
+
+
+# ---------- focus (priority topics) ----------
+
+class PriorityReq(BaseModel):
+    priority: int = 1
+
+
+@router.post("/learnings/{learning_id}/priority")
+def set_learning_priority(learning_id: int, body: PriorityReq):
+    Repository().set_priority(learning_id, body.priority)
+    return {"ok": True}
+
+
+class FocusInterpretReq(BaseModel):
+    text: str
+
+
+@router.post("/focus/interpret")
+def interpret_focus(body: FocusInterpretReq):
+    """Map 'I want to prioritize my vibrations final + battery stuff' onto actual
+    subjects and topics. Uses the local model when up, substring matching otherwise."""
+    repo = Repository()
+    llm = get_llm()
+    topics = [{"id": r["id"], "title": r["title"]}
+              for r in repo.db.fetch_all(
+                  "SELECT id, title FROM learnings WHERE is_active = 1 "
+                  "ORDER BY created_at DESC LIMIT 500")]
+    titles = {t["id"]: t["title"] for t in topics}
+
+    matched = None
+    if llm.status()["available"]:
+        try:
+            plan = llm.interpret_focus(body.text, repo.subject_names(), topics)
+            matched = {
+                "subjects": plan["subjects"],
+                "learnings": [{"id": i, "title": titles[i]} for i in plan["learning_ids"]],
+            }
+        except OllamaError:
+            matched = None
+    if matched is None or (not matched["subjects"] and not matched["learnings"]):
+        matched = repo.match_focus_text(body.text)
+    return matched
+
+
+class FocusApplyReq(BaseModel):
+    subjects: list[str] = []
+    learning_ids: list[int] = []
+    priority: int = 1
+
+
+@router.post("/focus/apply")
+def apply_focus(body: FocusApplyReq):
+    repo = Repository()
+    for s in body.subjects:
+        if s.strip():
+            repo.set_subject_priority(s.strip(), body.priority)
+    for lid in body.learning_ids:
+        repo.set_priority(lid, body.priority)
+    return {"ok": True, "focus": repo.focus_summary()}
+
+
+@router.post("/focus/clear")
+def clear_focus():
+    cleared = Repository().clear_focus()
+    return {"cleared": cleared}
 
 
 # ---------- subjects ----------

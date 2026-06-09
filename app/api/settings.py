@@ -26,6 +26,7 @@ def get_settings():
         "notifications": str(repo.get_setting("notifications", "1")) == "1",
         "theme": repo.get_setting("theme", "dark"),
         "model": status["model"] or repo.get_setting("model", DEFAULT_MODEL),
+        "fast_model": repo.get_setting("fast_model", ""),
         "llm": status,
     }
 
@@ -37,6 +38,7 @@ class SettingsUpdate(BaseModel):
     notifications: Optional[bool] = None
     theme: Optional[str] = None
     model: Optional[str] = None
+    fast_model: Optional[str] = None   # '' = use the main model for everything
 
 
 @router.put("/settings")
@@ -57,6 +59,12 @@ def update_settings(body: SettingsUpdate):
             get_llm().set_model(body.model)
             repo.set_setting("model", body.model)
             threading.Thread(target=get_llm().warm, daemon=True).start()
+        except OllamaError as e:
+            return JSONResponse({"error": str(e)}, status_code=400)
+    if body.fast_model is not None:
+        try:
+            get_llm().set_fast_model(body.fast_model)
+            repo.set_setting("fast_model", body.fast_model)
         except OllamaError as e:
             return JSONResponse({"error": str(e)}, status_code=400)
     return {"ok": True}

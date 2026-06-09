@@ -14,6 +14,7 @@ class Learning:
     subject: Optional[str] = None
     conversation: Optional[str] = None
     notes: Optional[str] = None
+    priority: int = 0
     created_at: Optional[datetime] = None
     is_active: bool = True
     tags: list[str] = field(default_factory=list)

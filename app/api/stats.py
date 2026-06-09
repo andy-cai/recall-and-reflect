@@ -47,6 +47,8 @@ def today():
         "heatmap": by_day,
         "totals": repo.total_counts(),
         "at_risk": repo.at_risk_cards(3),
+        "focus": repo.focus_summary(),
+        "gap_days": repo.days_since_last_activity(),
         "llm": get_llm().status(),
     }
 
