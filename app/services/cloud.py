@@ -64,49 +64,16 @@ class CloudAssist:
         if not st["ready"]:
             raise CloudError(st["reason"] or "Cloud assist is not configured.")
 
+        # Dynamic thinking stays ON: quality over latency for these per-click
+        # calls. Thoughts count against the output budget, so give headroom.
         gen_config: dict = {
             "responseMimeType": "application/json",
             "temperature": 0.4,
-            "maxOutputTokens": max_tokens,
+            "maxOutputTokens": max(max_tokens, 8000),
         }
-        # Flash models think by default and thoughts eat the output budget —
-        # disable for these short structured tasks. (Pro can't disable; give it room.)
-        if "flash" in self.model:
-            gen_config["thinkingConfig"] = {"thinkingBudget": 0}
-        else:
-            gen_config["maxOutputTokens"] = max(max_tokens, 8000)
-
         sys_text = (f"{system}\n\nReturn ONLY a JSON object matching this schema "
                     f"(no prose, no code fences):\n{json.dumps(schema.model_json_schema())}")
-        body = {
-            "systemInstruction": {"parts": [{"text": sys_text}]},
-            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-            "generationConfig": gen_config,
-        }
-        import httpx
-        try:
-            with httpx.Client(timeout=60.0) as client:
-                resp = client.post(
-                    f"{CLOUD_BASE_URL}/models/{self.model}:generateContent",
-                    headers={"x-goog-api-key": self._key()},
-                    json=body,
-                )
-        except httpx.HTTPError as e:
-            raise CloudError(f"Cloud request failed: {e}")
-        if resp.status_code == 400:
-            raise CloudError("Gemini rejected the request — check that GEMINI_API_KEY is valid.")
-        if resp.status_code == 429:
-            raise CloudError("Free-tier rate limit hit — wait a minute and try again.")
-        if resp.status_code >= 500:
-            raise CloudError(f"Gemini service error ({resp.status_code}) — try again shortly.")
-        if resp.status_code != 200:
-            raise CloudError(f"Cloud request failed (HTTP {resp.status_code}).")
-
-        try:
-            parts = resp.json()["candidates"][0]["content"]["parts"]
-            text = "".join(p.get("text", "") for p in parts).strip()
-        except (KeyError, IndexError, ValueError):
-            raise CloudError("Gemini returned no usable content (possibly safety-blocked).")
+        text = self._generate(sys_text, [{"role": "user", "parts": [{"text": prompt}]}], gen_config)
         text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text)
         try:
             return schema.model_validate_json(text)
@@ -118,6 +85,56 @@ class CloudAssist:
                 except Exception:
                     pass
             raise CloudError("Could not parse Gemini's structured output.")
+
+    def _generate(self, system: str, contents: list, gen_config: dict) -> str:
+        """One generateContent call; returns the joined text parts."""
+        st = self.status()
+        if not st["ready"]:
+            raise CloudError(st["reason"] or "Cloud assist is not configured.")
+        import httpx
+        body = {
+            "systemInstruction": {"parts": [{"text": system}]},
+            "contents": contents,
+            "generationConfig": gen_config,
+        }
+        try:
+            with httpx.Client(timeout=90.0) as client:
+                resp = client.post(
+                    f"{CLOUD_BASE_URL}/models/{self.model}:generateContent",
+                    headers={"x-goog-api-key": self._key()},
+                    json=body,
+                )
+        except httpx.HTTPError as e:
+            raise CloudError(f"Cloud request failed: {e}")
+        if resp.status_code == 400:
+            raise CloudError("Gemini rejected the request. Check that GEMINI_API_KEY is valid.")
+        if resp.status_code == 429:
+            raise CloudError("Free-tier rate limit hit. Wait a minute and try again.")
+        if resp.status_code >= 500:
+            raise CloudError(f"Gemini service error ({resp.status_code}). Try again shortly.")
+        if resp.status_code != 200:
+            raise CloudError(f"Cloud request failed (HTTP {resp.status_code}).")
+        try:
+            parts = resp.json()["candidates"][0]["content"]["parts"]
+            return "".join(p.get("text", "") for p in parts if not p.get("thought")).strip()
+        except (KeyError, IndexError, ValueError):
+            raise CloudError("Gemini returned no usable content (possibly safety-blocked).")
+
+    def followup(self, history: list[dict], style: str) -> str:
+        """One Socratic follow-up for the Reflect manuscript (engineering mode)."""
+        from app.services.llm import _CAPTURE_SYSTEM
+        contents = [{"role": "user" if m["role"] == "user" else "model",
+                     "parts": [{"text": m["content"]}]} for m in history]
+        system = f"{_CAPTURE_SYSTEM}\n\nSTYLE (follow strictly):\n{style}"
+        return self._generate(system, contents,
+                              {"temperature": 0.7, "maxOutputTokens": 8000})
+
+    def extract_key_ideas(self, transcript: str, style: str) -> list[str]:
+        from app.services.llm import _IDEAS_SYSTEM, KeyIdeaList
+        system = f"{_IDEAS_SYSTEM}\n\nSTYLE (follow strictly):\n{style}"
+        prompt = f"Conversation:\n---\n{transcript[:8000]}\n---\nDistill the key ideas."
+        result = self.complete_json(system, prompt, KeyIdeaList, max_tokens=3000)
+        return [i.strip() for i in result.ideas if i.strip()][:8]
 
     def refine_card(self, topic: str, content: str, question: str, answer: str,
                     feedback: str, style: str) -> dict:

@@ -31,8 +31,8 @@ export async function render() {
 
   view.append(el('div', { class: 'tiles' },
     el('div', { class: 'tile' }, el('div', { class: 'n' }, String(s.totals.reviews)), el('div', { class: 'l' }, 'total reviews')),
-    el('div', { class: 'tile' }, el('div', { class: 'n good' }, s.retention_30 == null ? '—' : s.retention_30 + '%'), el('div', { class: 'l' }, 'retention · 30d')),
-    el('div', { class: 'tile' }, el('div', { class: 'n' }, String(s.streak), s.streak ? ' 🔥' : ''), el('div', { class: 'l' }, 'day streak')),
+    el('div', { class: 'tile' }, el('div', { class: 'n good' }, s.retention_30 == null ? '·' : s.retention_30 + '%'), el('div', { class: 'l' }, 'retention · 30d')),
+    el('div', { class: 'tile' }, el('div', { class: 'n' }, String(s.streak)), el('div', { class: 'l' }, 'day streak')),
     el('div', { class: 'tile' }, el('div', { class: 'n accent' }, s.consistency + '%'), el('div', { class: 'l' }, 'consistency · 14d')),
     el('div', { class: 'tile' }, el('div', { class: 'n' }, String(s.totals.cards)), el('div', { class: 'l' }, 'cards')),
     el('div', { class: 'tile' }, el('div', { class: 'n' }, String(s.totals.learnings)), el('div', { class: 'l' }, 'learnings'))));
@@ -90,8 +90,8 @@ export async function render() {
     const hot = cal.overconfident_subject;
     if (hot && hot.accuracy < 0.7) {
       panel.append(el('div', { class: 'soft', style: { fontSize: '13px', background: 'var(--surface-2)', borderRadius: '10px', padding: '10px 13px' } },
-        `💡 Your mid/high confidence is least reliable on `, el('b', {}, hot.subject),
-        ` (right ${Math.round(hot.accuracy * 100)}% of ${hot.n}) — slow down before revealing there.`));
+        `Your mid/high confidence is least reliable on `, el('b', {}, hot.subject),
+        ` (right ${Math.round(hot.accuracy * 100)}% of ${hot.n}). Slow down before revealing there.`));
     }
     view.append(panel);
   }

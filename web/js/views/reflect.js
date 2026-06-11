@@ -8,7 +8,7 @@ import { navigate, refreshBadge } from '../app.js';
 import { renderMathIn } from '../math.js';
 
 const MAX_Q = 2;
-const GREETING = "What do you want to remember? Describe the topic in your own words — I'll ask a couple of sharp questions, then set it up so you can recall it later.";
+const GREETING = "What do you want to remember? Describe the topic in your own words. I'll ask a couple of sharp questions, then set it up so you can recall it later.";
 
 function deriveTitle(text) {
   const first = (text || '').trim().split('\n')[0].replace(/^#+\s*/, '');
@@ -25,6 +25,7 @@ export async function render() {
   const editors = [];               // detail-question editors
   let addMsg = () => ({ node: null, setText() {}, typing() {} });
   let addStatus = (t) => addMsg('ai', t);   // quiet status line (not a margin note)
+  let cloudForSetup = () => false;          // set by the manuscript's privacy switch
   let contentArea = null;
   let makeBtnRef = null;
 
@@ -70,8 +71,8 @@ export async function render() {
   view.append(el('div', { class: 'page-head' },
     el('h1', {}, 'Reflect'),
     el('p', { class: 'sub' }, llmOk
-      ? 'Talk a topic through — explaining it yourself is what makes it stick.'
-      : 'AI is offline — jot the topic down; you can talk it through later.')));
+      ? 'Talk a topic through. Explaining it yourself is what makes it stick.'
+      : 'AI is offline. Jot the topic down; you can talk it through later.')));
 
   const chatWrap = el('div', {});
 
@@ -98,7 +99,7 @@ export async function render() {
   const detailBody = el('div', { style: { display: 'none', marginTop: '8px' } }, detailList, addQBtn);
   const detailHeader = el('button', { class: 'btn btn-ghost', style: { width: '100%', justifyContent: 'space-between', padding: '8px 10px' },
     onClick: () => toggleDetails() }, el('span', {}, 'Detail questions ', detailCount,
-      infoTip('Optional. Your main review is recalling this topic in your own words — these just drill specific details. Edit or remove any.')), chev);
+      infoTip('Optional. Your main review is recalling this topic in your own words; these just drill specific details. Edit or remove any.')), chev);
   const detailDisclosure = el('div', { style: { border: '1px solid var(--border)', borderRadius: '10px', padding: '4px', margin: '0 0 12px' } }, detailHeader, detailBody);
 
   function updateCount() { detailCount.textContent = editors.length ? `· ${editors.length}` : ''; }
@@ -126,7 +127,7 @@ export async function render() {
   }
 
   const recallNote = el('div', { style: { fontSize: '12.5px', color: 'var(--text-soft)', background: 'var(--surface-2)', borderRadius: '10px', padding: '11px 13px', margin: '2px 0 12px', lineHeight: '1.45' } },
-    '🧠 At review you’ll recall this topic in your own words first', llmOk ? ' — graded against the key ideas below.' : '. ');
+    'At review you’ll recall this topic in your own words first', llmOk ? ', graded against the key ideas below.' : '. ');
 
   // ---------- key ideas (the rubric future recall is graded against) ----------
   const ideaEditors = [];
@@ -149,7 +150,7 @@ export async function render() {
   const ideasPanel = el('div', { style: { margin: '0 0 12px' } },
     el('div', { class: 'row spread', style: { marginBottom: '8px' } },
       el('span', { class: 'eyebrow' }, 'Key ideas',
-        infoTip('What future-you is accountable for: your free recall of this topic is graded idea by idea. Trim ruthlessly — 3–8 one-liners.')),
+        infoTip('What future-you is accountable for: your free recall of this topic is graded idea by idea. Trim ruthlessly, 3 to 8 one-liners.')),
       el('button', { class: 'btn-ghost', style: { padding: '2px 8px', fontSize: '12px' },
         onClick: () => ideaList.append(makeIdea()) }, '+ add')),
     ideaList);
@@ -201,19 +202,19 @@ export async function render() {
     detailList.append(loading);
     clear(ideaList); ideaEditors.length = 0;
     ideaList.append(el('div', { class: 'row' }, el('span', { class: 'spin' }), el('span', { class: 'muted', style: { fontSize: '12.5px' } }, ' distilling key ideas…')));
-    const ideasJob = api.captureIdeas(transcript)
+    const ideasJob = api.captureIdeas(transcript, cloudForSetup())
       .then(r => renderIdeas(r.ideas || []))
       .catch(() => { clear(ideaList); ideaEditors.length = 0; });
     try {
-      const res = await api.captureCards(transcript, 4);
+      const res = await api.captureCards(transcript, 4, cloudForSetup());
       renderDetails(res.cards);
       await ideasJob;
       saveDraft();
-      addStatus('Set. I’ve distilled the key ideas your recall will be graded against — edit them in the panel, they’re what future-you is accountable for. Pick a subject and save.');
+      addStatus('Set. I’ve distilled the key ideas your recall will be graded against. Edit them in the panel; they’re what future-you is accountable for. Pick a subject and save.');
     } catch (e) {
       clear(detailList); editors.length = 0; updateCount(); toggleDetails(false);
       await ideasJob;
-      addStatus('Got it — I’ll prompt you to recall this topic at review. Pick a subject and save.');
+      addStatus('Got it. I’ll prompt you to recall this topic at review. Pick a subject and save.');
     }
   }
 
@@ -228,6 +229,30 @@ export async function render() {
     const cue = el('div', { class: 'ms-cue' }, GREETING);
     let noteCount = 0, openNote = null;
 
+    // Privacy switch: questions come from the local model by default. For
+    // engineering topics you can hand this session to Gemini for sharper
+    // questions; personal material should stay on Private.
+    const cloudReady = !!(state.settings && state.settings.cloud && state.settings.cloud.ready);
+    let provider = cloudReady && localStorage.getItem('rr-reflect-provider') === 'cloud' ? 'cloud' : 'local';
+    const useCloud = () => provider === 'cloud';
+    const provNote = el('span', { class: 'muted', style: { fontSize: '11.5px' } });
+    function setProvider(p) {
+      provider = p;
+      localStorage.setItem('rr-reflect-provider', p);
+      provLocalBtn.classList.toggle('on', p === 'local');
+      provCloudBtn.classList.toggle('on', p === 'cloud');
+      provNote.textContent = p === 'cloud'
+        ? 'this session is sent to Gemini for sharper questions'
+        : 'everything stays on this machine';
+    }
+    const provLocalBtn = el('button', { class: 'chip', onClick: () => setProvider('local') }, 'Private');
+    const provCloudBtn = el('button', { class: 'chip', onClick: () => setProvider('cloud') }, 'Gemini');
+    const provRow = cloudReady
+      ? el('div', { class: 'row spread', style: { marginBottom: '14px' } },
+          el('div', { class: 'row', style: { gap: '6px' } }, provLocalBtn, provCloudBtn), provNote)
+      : null;
+    if (provRow) setProvider(provider);
+
     const composer = el('textarea', { class: 'ms-compose', rows: '1', placeholder: 'Start writing…' });
     const sendBtn = el('button', { class: 'btn btn-primary', style: { padding: '7px 14px' }, onClick: onSend }, 'Add ↵');
     const makeBtn = el('button', { class: 'btn btn-ghost', style: { display: 'none' }, onClick: () => setupTopic() }, 'Set it up now →');
@@ -239,6 +264,7 @@ export async function render() {
       doc.insertBefore(el('div', { class: 'ms-cue', style: { marginTop: '4px' } }, t), writeRow);
       scrollDown();
     };
+    cloudForSetup = useCloud;
 
     const scrollDown = () => requestAnimationFrame(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }));
 
@@ -265,7 +291,7 @@ export async function render() {
       const note = el('div', { class: 'ms-note open' }, el('span', { class: 'n' }, noteCount + ' '), body);
       marginCol.append(note);
       openNote = note;
-      composer.placeholder = 'Answer the margin — or keep writing…';
+      composer.placeholder = 'Answer the margin, or keep writing…';
       scrollDown();
       let t = null;
       return {
@@ -283,7 +309,7 @@ export async function render() {
       const m = addMsg('ai'); m.typing(true);
       let text = '';
       try {
-        for await (const chunk of api.followupStream(convo)) { m.typing(false); text += chunk; m.setText(text); }
+        for await (const chunk of api.followupStream(convo, useCloud())) { m.typing(false); text += chunk; m.setText(text); }
       } catch { m.typing(false); m.setText('Let’s set this topic up.'); sendBtn.disabled = false; setupTopic(); return; }
       m.typing(false); text = text.trim(); sendBtn.disabled = false;
       renderMathIn(m.node);
@@ -305,13 +331,13 @@ export async function render() {
         for (const c of r.connections) {
           chips.append(el('button', { class: 'chip link', onClick: () => {
             chips.remove();
-            const q = `You already know “${c.title}” — how does this connect (or where do they differ)?`;
+            const q = `You already know “${c.title}”. How does this connect, or where do they differ?`;
             addMsg('ai', q);
             convo.push({ role: 'assistant', content: q });
             asked += 1;
             saveDraft();
             composer.focus();
-          } }, `⚯ ${c.title}`));
+          } }, c.title));
         }
         doc.insertBefore(chips, writeRow);
       } catch {}
@@ -346,11 +372,11 @@ export async function render() {
     composer.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSend(); } });
 
     chatWrap.append(el('div', { class: 'reflect-grid' },
-      el('div', { class: 'card ms-frame' }, el('div', { class: 'ms' }, doc, marginCol)),
+      el('div', { class: 'card ms-frame' }, provRow, el('div', { class: 'ms' }, doc, marginCol)),
       topicPanel));
     setTimeout(() => composer.focus(), 50);
   } else {
-    contentArea = el('textarea', { class: 'input', rows: '6', placeholder: 'What’s the topic? Describe it in your own words — context, examples, why it matters.' });
+    contentArea = el('textarea', { class: 'input', rows: '6', placeholder: 'What’s the topic? Describe it in your own words: context, examples, why it matters.' });
     chatWrap.append(el('div', { class: 'reflect-grid' },
       el('div', { class: 'stack' },
         el('div', { class: 'field' }, el('label', { class: 'lbl' }, 'The topic'), contentArea),
@@ -387,7 +413,7 @@ export async function render() {
     const snippet = firstLine.length > 70 ? firstLine.slice(0, 70) + '…' : firstLine;
     const banner = el('div', { class: 'card row spread', style: { marginBottom: '14px', borderColor: 'var(--accent)' } },
       el('div', { style: { minWidth: '0' } },
-        el('div', { style: { fontWeight: '580' } }, '📝 Unfinished reflection'),
+        el('div', { style: { fontWeight: '580' } }, 'Unfinished reflection'),
         el('div', { class: 'muted', style: { fontSize: '12.5px' } }, `“${snippet}” · ${agoLabel(draft.ts)}`)),
       el('div', { class: 'row', style: { gap: '8px', flex: 'none' } },
         el('button', { class: 'btn btn-ghost', onClick: () => { clearDraft(); banner.remove(); } }, 'Discard'),
@@ -409,11 +435,11 @@ function agoLabel(ts) {
 // the association YOU invented (self-generated imagery is what makes it stick).
 function buildPersonAdd(root) {
   const nameInput = el('input', { class: 'input', placeholder: 'Name' });
-  const whereInput = el('input', { class: 'input', placeholder: 'Where / when — “MFE battery bay, May”' });
+  const whereInput = el('input', { class: 'input', placeholder: 'Where / when, e.g. “MFE battery bay, May”' });
   const factsArea = el('textarea', { class: 'input', rows: '3',
-    placeholder: 'What you know — role, the story you shared, details worth keeping…\nFirst line becomes the cue.' });
-  const assocInput = el('input', { class: 'input', placeholder: 'e.g. “Priya = prying open the pack — crowbar at the HV bay”' });
-  const saveBtn = el('button', { class: 'btn btn-primary' }, 'Save person · 1 card');
+    placeholder: 'What you know: role, the story you shared, details worth keeping…\nFirst line becomes the cue.' });
+  const assocInput = el('input', { class: 'input', placeholder: 'e.g. “Priya = prying open the pack, crowbar at the HV bay”' });
+  const saveBtn = el('button', { class: 'btn btn-primary' }, 'Save person');
 
   saveBtn.addEventListener('click', async () => {
     const name = nameInput.value.trim();
@@ -422,7 +448,7 @@ function buildPersonAdd(root) {
     const hook = facts.split('\n')[0];
     const where = whereInput.value.trim();
     const assoc = assocInput.value.trim();
-    const question = `${where ? where + ' — ' : ''}${hook}. Who is this?`;
+    const question = `${where ? where + '. ' : ''}${hook}. Who is this?`;
     const answer = `${name}\n${facts}${assoc ? `\n🧷 Your association: ${assoc}` : ''}`;
     saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
     try {
@@ -435,19 +461,19 @@ function buildPersonAdd(root) {
       refreshBadge();
       nameInput.value = whereInput.value = factsArea.value = assocInput.value = '';
     } catch (e) { toast('Save failed: ' + e.message); }
-    saveBtn.disabled = false; saveBtn.textContent = 'Save person · 1 card';
+    saveBtn.disabled = false; saveBtn.textContent = 'Save person';
   });
 
   root.append(el('div', { class: 'card stack', style: { maxWidth: '560px' } },
     el('div', { class: 'eyebrow' }, 'Remember a person'),
     el('p', { class: 'muted', style: { fontSize: '13px', marginTop: '-4px' } },
-      'The story becomes the cue; at review you recall the name. ~20 seconds, no photos.'),
+      'The story becomes the cue; at review you recall the name. Twenty seconds, no photos.'),
     el('div', { class: 'row', style: { gap: '10px' } },
       el('div', { class: 'field', style: { flex: '1' } }, el('label', { class: 'lbl' }, 'Name'), nameInput),
       el('div', { class: 'field', style: { flex: '1.4' } }, el('label', { class: 'lbl' }, 'Where / when'), whereInput)),
     el('div', { class: 'field' }, el('label', { class: 'lbl' }, 'What you know'), factsArea),
     el('div', { class: 'field' }, el('label', { class: 'lbl' }, 'Vivid association ',
-      infoTip('What does the name sound like? Tie it to something you noticed about them. You invent it — self-generated images are what make name recall stick.')), assocInput),
+      infoTip('What does the name sound like? Tie it to something you noticed about them. You invent it; self-generated images are what make name recall stick.')), assocInput),
     el('div', { class: 'row', style: { justifyContent: 'flex-end' } }, saveBtn)));
 }
 
@@ -457,7 +483,7 @@ function buildQuickAdd(root, subjectNames, llmOk) {
   const tagsInput = el('input', { class: 'input', placeholder: 'tags for all (optional)' });
   const perDay = el('input', { class: 'input', type: 'number', value: '8', style: { maxWidth: '84px' } });
   const text = el('textarea', { class: 'input', rows: '9',
-    placeholder: 'One topic per line. Add a note after — or : if you like.\n\nQ-factor of SDOF systems — higher Q = sharper resonance, slower decay\nNyquist stability criterion\nPluralism in global power balances' });
+    placeholder: 'One topic per line. Add a note after a colon if you like.\n\nQ-factor of SDOF systems: higher Q = sharper resonance, slower decay\nNyquist stability criterion\nPluralism in global power balances' });
   const countLbl = el('span', { class: 'muted' }, '');
   const addBtn = el('button', { class: 'btn btn-primary' }, 'Add topics');
 
@@ -484,7 +510,7 @@ function buildQuickAdd(root, subjectNames, llmOk) {
         if (confirm(`${d.dupes.length} look like topics you already have:\n\n${lines}\n\nSkip the duplicates? (Cancel adds everything anyway)`)) {
           const skip = new Set(d.dupes.map(x => x.title));
           items = items.filter(i => !skip.has(i.title));
-          if (!items.length) { toast('All were duplicates — nothing added.'); addBtn.disabled = false; updateCount(); return; }
+          if (!items.length) { toast('All were duplicates. Nothing added.'); addBtn.disabled = false; updateCount(); return; }
         }
       }
     } catch {}
@@ -493,7 +519,7 @@ function buildQuickAdd(root, subjectNames, llmOk) {
       const res = await api.bulkTopics({ items, subject: subjectInput.value.trim() || null,
         tags: tagsInput.value.split(',').map(t => t.trim()).filter(Boolean),
         per_day: Math.max(1, parseInt(perDay.value, 10) || 8) });
-      toast(`Added ${res.created} topic${res.created !== 1 ? 's' : ''} — easing in ${perDay.value}/day`);
+      toast(`Added ${res.created} topic${res.created !== 1 ? 's' : ''}, easing in ${perDay.value}/day`);
       refreshBadge(); navigate('#/library');
     } catch (e) { toast('Add failed: ' + e.message); addBtn.disabled = false; updateCount(); }
   });
@@ -501,7 +527,7 @@ function buildQuickAdd(root, subjectNames, llmOk) {
   root.append(el('div', { class: 'card stack' },
     el('div', { class: 'row spread' }, el('div', { class: 'eyebrow' }, 'Add topics in bulk'), countLbl),
     el('p', { class: 'muted', style: { fontSize: '13px', marginTop: '-4px' } },
-      'One per line — each becomes a topic with a free-recall prompt. They ease into review a few per day.'),
+      'One per line. Each becomes a topic with a free-recall prompt; they ease into review a few per day.'),
     text,
     el('div', { class: 'row wrap', style: { gap: '12px' } },
       el('div', { class: 'field', style: { flex: '1', minWidth: '150px' } }, el('label', { class: 'lbl' }, 'Subject (all)'), subjectInput, subjList),
@@ -511,7 +537,7 @@ function buildQuickAdd(root, subjectNames, llmOk) {
 
   if (llmOk) {
     const splitText = el('textarea', { class: 'input', rows: '4', placeholder: 'Paste an outline or messy notes…' });
-    const splitBtn = el('button', { class: 'btn' }, '✨ Split into topics');
+    const splitBtn = el('button', { class: 'btn' }, 'Split into topics');
     splitBtn.addEventListener('click', async () => {
       const t = splitText.value.trim();
       if (!t) { toast('Paste some text first.'); return; }
@@ -521,13 +547,13 @@ function buildQuickAdd(root, subjectNames, llmOk) {
         const tops = res.topics || [];
         if (!tops.length) { toast('No topics found.'); }
         else {
-          const add = tops.map(x => x.note ? `${x.title} — ${x.note}` : x.title).join('\n');
+          const add = tops.map(x => x.note ? `${x.title}: ${x.note}` : x.title).join('\n');
           text.value = (text.value.trim() ? text.value.trim() + '\n' : '') + add;
           updateCount();
-          toast(`Pulled out ${tops.length} — review & save above`);
+          toast(`Pulled out ${tops.length}. Review and save above`);
         }
       } catch (e) { toast(e.status === 503 ? 'Start Ollama to use AI split' : 'Split failed'); }
-      splitBtn.disabled = false; splitBtn.textContent = '✨ Split into topics';
+      splitBtn.disabled = false; splitBtn.textContent = 'Split into topics';
     });
     root.append(el('div', { class: 'card stack', style: { marginTop: '16px' } },
       el('div', { class: 'eyebrow' }, 'Or let AI split a paste'),

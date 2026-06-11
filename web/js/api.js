@@ -48,11 +48,11 @@ export const api = {
   llmStatus: () => jfetch('GET', '/api/llm/status'),
 
   // capture
-  captureCards: (transcript, n = 4) => jfetch('POST', '/api/capture/cards', { transcript, n }),
-  captureIdeas: (transcript) => jfetch('POST', '/api/capture/ideas', { transcript }),
+  captureCards: (transcript, n = 4, use_cloud = false) => jfetch('POST', '/api/capture/cards', { transcript, n, use_cloud }),
+  captureIdeas: (transcript, use_cloud = false) => jfetch('POST', '/api/capture/ideas', { transcript, use_cloud }),
   prettify: (text) => jfetch('POST', '/api/capture/prettify', { text }),
   captureSubject: (transcript) => jfetch('POST', '/api/capture/subject', { transcript }),
-  followupStream: (messages) => streamText('/api/capture/followup', { messages }),
+  followupStream: (messages, use_cloud = false) => streamText('/api/capture/followup', { messages, use_cloud }),
 
   // subjects
   subjects: () => jfetch('GET', '/api/subjects'),

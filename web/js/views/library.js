@@ -76,7 +76,7 @@ async function list() {
       } }, allFocused ? '★ Focused' : '☆ Focus area');
     const actions = el('div', { class: 'row', style: { gap: '8px' } },
       focusAreaBtn,
-      (isUncat && llmOk && items.length) ? el('button', { class: 'btn', style: { padding: '6px 12px' }, onClick: (e) => { e.stopPropagation(); suggest(e.currentTarget); } }, '✨ Suggest subjects') : null,
+      (isUncat && llmOk && items.length) ? el('button', { class: 'btn', style: { padding: '6px 12px' }, onClick: (e) => { e.stopPropagation(); suggest(e.currentTarget); } }, 'Suggest subjects') : null,
       summary.due > 0 ? el('button', { class: 'btn', style: { padding: '6px 12px' }, onClick: (e) => { e.stopPropagation(); navigate('#/recall?subject=' + encodeURIComponent(summary.name)); } }, 'Review area →') : null);
 
     // With a seeded curriculum the Library holds ~100 topics: sections collapse,
@@ -98,13 +98,13 @@ async function list() {
   }
 
   function starBtn(l) {
-    const btn = el('button', { class: 'star' + (l.priority ? ' on' : ''), title: 'Focus — reviewed first',
+    const btn = el('button', { class: 'star' + (l.priority ? ' on' : ''), title: 'Focus: reviewed first',
       onClick: async (e) => {
         e.stopPropagation();
         l.priority = l.priority ? 0 : 1;
         btn.classList.toggle('on', !!l.priority);
         await api.setPriority(l.id, l.priority);
-        toast(l.priority ? 'Focused — goes first in sessions' : 'Unfocused');
+        toast(l.priority ? 'Focused. Goes first in sessions' : 'Unfocused');
       } }, '★');
     return btn;
   }
@@ -153,7 +153,7 @@ async function list() {
     });
     clear(reviewSlot);
     reviewSlot.append(el('div', { class: 'card', style: { marginBottom: '18px', borderColor: 'var(--accent)' } },
-      el('div', { class: 'eyebrow', style: { marginBottom: '10px' } }, '✨ Suggested subjects — edit, then apply'),
+      el('div', { class: 'eyebrow', style: { marginBottom: '10px' } }, 'Suggested subjects. Edit, then apply'),
       dl, ...rows.map(r => r.node),
       el('div', { class: 'row', style: { justifyContent: 'flex-end', gap: '8px', marginTop: '12px' } },
         el('button', { class: 'btn btn-ghost', onClick: () => clear(reviewSlot) }, 'Cancel'), applyBtn)));
@@ -181,7 +181,7 @@ async function list() {
   }
 
   function emptyState() {
-    return el('div', { class: 'empty' }, el('div', { class: 'icon' }, '📚'),
+    return el('div', { class: 'empty' }, 
       el('h2', {}, search || activeTag ? 'Nothing matches' : 'Nothing captured yet'),
       el('p', { class: 'muted' }, 'Head to Reflect to add your first learning.'),
       el('div', { class: 'row', style: { justifyContent: 'center', marginTop: '16px' } },
@@ -205,7 +205,7 @@ async function detail(id) {
     await api.setPriority(id, prio);
     focusBtn.textContent = prio ? '★ Focused' : '☆ Focus';
     focusBtn.classList.toggle('on-accent', !!prio);
-    toast(prio ? 'Focused — goes first in sessions' : 'Unfocused');
+    toast(prio ? 'Focused. Goes first in sessions' : 'Unfocused');
   } }, prio ? '★ Focused' : '☆ Focus');
 
   const solid = data.cards.some(c => c.card_type === 'recall' && c.stability >= 21);
@@ -213,15 +213,15 @@ async function detail(id) {
     el('button', { class: 'btn btn-ghost', onClick: () => navigate('#/library') }, '← Library'),
     el('div', { class: 'row', style: { gap: '8px' } },
       focusBtn,
-      (llmOk && solid) ? el('button', { class: 'btn', title: 'Explain it simply — the AI plays a confused student',
-        onClick: () => navigate('#/recall?teach=' + id) }, '🎓 Teach it') : null,
+      (llmOk && solid) ? el('button', { class: 'btn', title: 'Explain it simply; the AI plays a confused student',
+        onClick: () => navigate('#/recall?teach=' + id) }, 'Teach it') : null,
       el('button', { class: 'btn', onClick: () => navigate('#/recall?learning=' + id) }, 'Review these →'),
       el('button', { class: 'btn btn-danger', onClick: del }, 'Delete'))));
 
   const subjectNames = (await api.subjects().catch(() => ({ names: [] }))).names || [];
   const titleInput = el('input', { class: 'input', value: L.title, style: { fontSize: '20px', fontWeight: '600' } });
   const contentArea = el('textarea', { class: 'input', rows: '4' }); contentArea.value = L.content || '';
-  const notesArea = el('textarea', { class: 'input', rows: '3', placeholder: 'Add notes over time — corrections, links, fresh examples…' }); notesArea.value = L.notes || '';
+  const notesArea = el('textarea', { class: 'input', rows: '3', placeholder: 'Add notes over time: corrections, links, fresh examples…' }); notesArea.value = L.notes || '';
   const tagsInput = el('input', { class: 'input', value: (L.tags || []).join(', ') });
   const subjectList = el('datalist', { id: 'subj-list-d' }, ...subjectNames.map(n => el('option', { value: n })));
   const subjectInput = el('input', { class: 'input', value: L.subject || '', placeholder: 'e.g. Machine Learning', list: 'subj-list-d' });
@@ -269,11 +269,11 @@ async function detail(id) {
         try {
           const res = await api.addContrast(id, r.contrast.with_id);
           toast('Contrast card added'); refreshBadge(); box.remove(); reloadCards();
-        } catch { toast('Could not generate — is Ollama up?'); addBtn.disabled = false; addBtn.textContent = 'Add contrast card'; }
+        } catch { toast('Could not generate. Is Ollama up?'); addBtn.disabled = false; addBtn.textContent = 'Add contrast card'; }
       } }, 'Add contrast card');
       const box = el('div', { style: { border: '1px dashed var(--hard)', borderRadius: '11px', padding: '12px 14px', marginTop: '12px', background: 'var(--hard-weak)' } },
-        el('div', { style: { fontSize: '13.5px' } }, el('b', { style: { color: 'var(--hard)' } }, '⚔ Easily confused? '),
-          el('span', { class: 'soft' }, `“${L.title}” and “${r.contrast.with_title}” are very close — a contrast card drills the difference directly.`)),
+        el('div', { style: { fontSize: '13.5px' } }, el('b', { style: { color: 'var(--hard)' } }, 'Easily confused? '),
+          el('span', { class: 'soft' }, `“${L.title}” and “${r.contrast.with_title}” are very close; a contrast card drills the difference directly.`)),
         el('div', { class: 'row', style: { gap: '8px', marginTop: '10px' } }, addBtn,
           el('button', { class: 'btn-ghost', style: { fontSize: '13px' }, onClick: () => box.remove() }, 'Dismiss')));
       panel.append(box);
@@ -285,7 +285,7 @@ async function detail(id) {
   view.append(el('div', { class: 'row spread', style: { margin: '24px 0 12px' } },
     el('div', { class: 'eyebrow' }, `${data.cards.length} prompt${data.cards.length !== 1 ? 's' : ''}`),
     el('div', { class: 'row', style: { gap: '8px' } },
-      llmOk ? el('button', { class: 'btn', style: { padding: '6px 12px' }, onClick: genMore }, '✨ Generate more') : null,
+      llmOk ? el('button', { class: 'btn', style: { padding: '6px 12px' }, onClick: genMore }, 'Generate more') : null,
       el('button', { class: 'btn', style: { padding: '6px 12px' }, onClick: addCard }, '+ Add'))));
 
   const cardList = el('div', { class: 'stack' });

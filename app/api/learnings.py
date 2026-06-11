@@ -324,6 +324,10 @@ def refine_card(card_id: int, body: RefineReq):
     style = get_llm().gen_style
 
     if body.use_cloud:
+        if (learning.subject if learning else "").strip().lower() == "people":
+            return JSONResponse(
+                {"error": "People topics never leave this machine. Use the local rewrite."},
+                status_code=403)
         try:
             card = get_cloud().refine_card(topic, content, q.question, q.answer,
                                            body.feedback, style)

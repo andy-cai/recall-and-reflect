@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 from app.db.repository import Repository
+from app.services.cloud import CloudError, get_cloud
 from app.services.embeddings import get_embeddings
 from app.services.llm import OllamaError, get_llm
 
@@ -18,21 +19,31 @@ class Msg(BaseModel):
 
 class FollowupReq(BaseModel):
     messages: list[Msg]
+    use_cloud: bool = False   # Reflect's per-session engineering-mode switch
 
 
 class CardsReq(BaseModel):
     transcript: str
     n: int = 4
+    use_cloud: bool = False
 
 
 @router.post("/followup")
 def followup(req: FollowupReq):
-    """Stream the AI's next single follow-up question (plain text chunks)."""
+    """The AI's next single follow-up question (plain text). Local model streams;
+    cloud mode (explicit, per-session) returns the full text in one body."""
+    history = [{"role": m.role, "content": m.content} for m in req.messages]
+
+    if req.use_cloud:
+        try:
+            text = get_cloud().followup(history, get_llm().gen_style)
+            return StreamingResponse(iter([text]), media_type="text/plain; charset=utf-8")
+        except CloudError:
+            pass   # fall through to the local model
+
     llm = get_llm()
     if not llm.status()["available"]:
         return JSONResponse({"error": "no_local_model"}, status_code=503)
-
-    history = [{"role": m.role, "content": m.content} for m in req.messages]
 
     def gen():
         try:
@@ -47,11 +58,17 @@ def followup(req: FollowupReq):
 @router.post("/cards")
 def cards(req: CardsReq):
     """Generate draft cards from the capture conversation."""
+    n = max(1, min(8, req.n))
+    if req.use_cloud:
+        try:
+            return {"cards": get_cloud().generate_cards(req.transcript, n, get_llm().gen_style)}
+        except CloudError:
+            pass   # fall through to the local model
     llm = get_llm()
     if not llm.status()["available"]:
         return JSONResponse({"error": "no_local_model"}, status_code=503)
     try:
-        generated = llm.generate_cards(req.transcript, n=max(1, min(8, req.n)), basic_only=True)
+        generated = llm.generate_cards(req.transcript, n=n, basic_only=True)
     except OllamaError as e:
         return JSONResponse({"error": str(e)}, status_code=502)
     return {"cards": generated}
@@ -59,11 +76,17 @@ def cards(req: CardsReq):
 
 class IdeasReq(BaseModel):
     transcript: str
+    use_cloud: bool = False
 
 
 @router.post("/ideas")
 def ideas(req: IdeasReq):
-    """Distill the conversation into key ideas — the rubric future recall is graded against."""
+    """Distill the conversation into key ideas, the rubric future recall is graded against."""
+    if req.use_cloud:
+        try:
+            return {"ideas": get_cloud().extract_key_ideas(req.transcript, get_llm().gen_style)}
+        except CloudError:
+            pass   # fall through to the local model
     llm = get_llm()
     if not llm.status()["available"]:
         return JSONResponse({"error": "no_local_model"}, status_code=503)

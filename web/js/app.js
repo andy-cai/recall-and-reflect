@@ -78,7 +78,7 @@ async function route() {
     if (seq !== routeSeq) return;
     clear(mainEl);
     mainEl.append(el('div', { class: 'view empty' },
-      el('div', { class: 'icon' }, '⚠️'),
+      el('div', { class: 'icon' }, '!'),
       el('h2', {}, 'Something went wrong'),
       el('p', { class: 'muted' }, String(e.message || e))));
   }

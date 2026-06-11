@@ -22,7 +22,7 @@ function hintFor(c, level) {
 export async function render({ params } = {}) {
   const llmOk = !!(state.llm && state.llm.available);
 
-  // Standalone teach-back from the Library (🎓 Teach it)
+  // Standalone teach-back from the Library (Teach it)
   if (params?.teach) {
     const lid = Number(params.teach);
     const detail = await api.getLearning(lid);
@@ -122,10 +122,10 @@ export async function render({ params } = {}) {
     const editSlot = el('div', {});
     stage.append(el('div', { class: 'row', style: { justifyContent: 'flex-end', gap: '4px', marginTop: '6px' } },
       el('button', { class: 'btn-ghost card-act', onClick: () => toggleEditPanel(c, editSlot) }, '✎ Edit'),
-      el('button', { class: 'btn-ghost card-act', title: 'Skip without rating — stays due (S)', onClick: skipCard }, 'Skip ›')));
+      el('button', { class: 'btn-ghost card-act', title: 'Skip without rating, stays due (S)', onClick: skipCard }, 'Skip ›')));
     stage.append(editSlot);
 
-    const recallInput = el('textarea', { class: 'input', rows: '3', placeholder: 'Try to recall it — type what you remember…' });
+    const recallInput = el('textarea', { class: 'input', rows: '3', placeholder: 'Try to recall it. Type what you remember…' });
 
     const confRow = el('div', { class: 'confidence' },
       ...[1, 2, 3].map(n => el('button', { class: 'conf-pill', onClick: (e) => {
@@ -142,7 +142,7 @@ export async function render({ params } = {}) {
       el('div', { class: 'stack', style: { marginTop: '18px' } },
         recallInput,
         el('div', { class: 'muted center', style: { fontSize: '12px' } }, 'How sure are you, before you peek?',
-          infoTip('Committing to a confidence first makes recall more effortful — and being surprised by a confident miss helps the correction stick (the hypercorrection effect).')),
+          infoTip('Committing to a confidence first makes recall more effortful, and being surprised by a confident miss helps the correction stick (the hypercorrection effect).')),
         confRow,
         hintBox,
         el('div', { class: 'row', style: { justifyContent: 'center', gap: '10px', marginTop: '4px' } }, hintBtn, revealBtn)));
@@ -156,7 +156,7 @@ export async function render({ params } = {}) {
       const maxHints = c.ideas && c.ideas.length ? c.ideas.length : 3;
       hints = Math.min(maxHints, hints + 1);
       hintBox.hidden = false;
-      hintBox.textContent = '💡 ' + hintFor(c, hints);
+      hintBox.textContent = 'Hint: ' + hintFor(c, hints);
     }
     stage._showHint = showHint;
   }
@@ -178,7 +178,7 @@ export async function render({ params } = {}) {
     const editSlot = el('div', {});
     stage.append(el('div', { class: 'row', style: { justifyContent: 'flex-end', gap: '4px', marginTop: '6px' } },
       el('button', { class: 'btn-ghost card-act', onClick: () => toggleEditPanel(c, editSlot) }, '✎ Edit'),
-      el('button', { class: 'btn-ghost card-act', title: 'Skip without rating — stays due (S)', onClick: skipCard }, 'Skip ›')));
+      el('button', { class: 'btn-ghost card-act', title: 'Skip without rating, stays due (S)', onClick: skipCard }, 'Skip ›')));
     stage.append(editSlot);
 
     if (recallText) {
@@ -216,7 +216,7 @@ export async function render({ params } = {}) {
     rateGrid = buildRateGrid(c);
     stage.append(rateGrid);
     stage.append(el('div', { class: 'row', style: { justifyContent: 'center', gap: '14px', marginTop: '12px' } },
-      el('span', { class: 'muted', style: { fontSize: '12px' } }, 'Rate honestly — ', el('span', { class: 'kbd' }, '1'), '–', el('span', { class: 'kbd' }, '4')),
+      el('span', { class: 'muted', style: { fontSize: '12px' } }, 'Rate honestly: ', el('span', { class: 'kbd' }, '1'), '–', el('span', { class: 'kbd' }, '4')),
       el('button', { class: 'btn-ghost', style: { fontSize: '12px', padding: '4px 8px' }, onClick: doUndo }, '↶ Undo (Z)')));
 
     // AI grade only when the learner actually attempted in writing
@@ -250,13 +250,13 @@ export async function render({ params } = {}) {
         }
         if (g.drilled && g.drilled.length) {
           gradeSlot.append(el('div', { class: 'muted center', style: { fontSize: '12.5px', marginTop: '6px' } },
-            '🛠 Added a drill card for an idea you keep missing.'));
+            'Added a drill card for an idea you keep missing.'));
         }
         // Confident miss → hypercorrection: call it out and re-queue for this session.
         if (confidence === 3 && verdict === 'wrong') {
           answerBox.classList.add('hypercorrect');
-          gradeSlot.append(el('div', { class: 'hyper' }, '⚡',
-            el('div', {}, 'You were ', el('b', {}, 'certain'), ' and missed it — these stick hardest once corrected. ',
+          gradeSlot.append(el('div', { class: 'hyper' },
+            el('div', {}, 'You were ', el('b', {}, 'certain'), ' and missed it; these stick hardest once corrected. ',
               el('b', {}, 'It returns at the end of this session.'))));
           if (!c.requeued) cards.push({ ...c, requeued: true });
         }
@@ -270,7 +270,7 @@ export async function render({ params } = {}) {
         // never swallow the failure — say why and fall back to self-grading
         clear(gradeSlot);
         gradeSlot.append(el('div', { class: 'muted center', style: { fontSize: '12.5px', marginTop: '12px' } },
-          `⚠ AI grade unavailable${e && e.message ? ` (${e.message})` : ''} — self-grade below.`));
+          `AI grade unavailable${e && e.message ? ` (${e.message})` : ''}. Self-grade below.`));
       }
     } else if (!recallText) {
       gradeSlot.append(el('div', { class: 'muted center', style: { fontSize: '12.5px', marginTop: '12px' } },
@@ -326,7 +326,7 @@ export async function render({ params } = {}) {
   }
 
   function skipCard() {
-    toast('Skipped — no rating recorded, it stays due.');
+    toast('Skipped. No rating recorded; it stays due.');
     idx += 1;
     showCard();
   }
@@ -339,10 +339,11 @@ export async function render({ params } = {}) {
         'Cloze cards are edited from their source in the Library.'));
       return;
     }
-    const cloudReady = !!(state.settings && state.settings.cloud && state.settings.cloud.ready);
+    const cloudReady = !!(state.settings && state.settings.cloud && state.settings.cloud.ready)
+      && (c.subject || '').toLowerCase() !== 'people';   // People topics never leave this machine
     const qIn = el('textarea', { class: 'input', rows: '2' }); qIn.value = c.front;
     const aIn = el('textarea', { class: 'input', rows: '3' }); aIn.value = c.answer;
-    const fbIn = el('input', { class: 'input', placeholder: 'What’s wrong with it? — “too vague”, “ask for the mechanism, not the formula”…' });
+    const fbIn = el('input', { class: 'input', placeholder: 'What’s wrong with it? “Too vague”, “ask for the mechanism, not the formula”…' });
     const proposalSlot = el('div', {});
 
     async function applyValues(q, a) {
@@ -363,7 +364,7 @@ export async function render({ params } = {}) {
         clear(proposalSlot);
         proposalSlot.append(el('div', { class: 'card', style: { marginTop: '10px', padding: '12px', borderColor: 'var(--easy)' } },
           el('div', { class: 'eyebrow', style: { marginBottom: '8px' } },
-            r.source === 'cloud' ? '✨ Gemini’s rewrite' : '✨ Rewrite'),
+            r.source === 'cloud' ? 'Gemini’s rewrite' : 'Rewrite'),
           el('div', { style: { fontSize: '14px', fontWeight: '580' } }, r.question),
           el('div', { class: 'soft', style: { fontSize: '13.5px', marginTop: '6px' } }, r.answer),
           el('div', { class: 'row', style: { gap: '8px', marginTop: '10px', justifyContent: 'flex-end' } },
@@ -378,9 +379,9 @@ export async function render({ params } = {}) {
     }
 
     const localBtn = el('button', { class: 'btn', style: { padding: '6px 12px', fontSize: '13px' },
-      onClick: (e) => improve(false, e.currentTarget) }, '✨ Improve');
+      onClick: (e) => improve(false, e.currentTarget) }, 'Improve');
     const cloudBtn = cloudReady ? el('button', { class: 'btn', style: { padding: '6px 12px', fontSize: '13px' },
-      onClick: (e) => improve(true, e.currentTarget) }, '✨ Improve with Gemini') : null;
+      onClick: (e) => improve(true, e.currentTarget) }, 'Improve with Gemini') : null;
 
     slot.append(el('div', { class: 'card stack', style: { marginTop: '8px', padding: '14px', textAlign: 'left' } },
       el('div', { class: 'field' }, el('label', { class: 'lbl' }, 'Question'), qIn),
@@ -389,7 +390,7 @@ export async function render({ params } = {}) {
       el('div', { class: 'row wrap', style: { gap: '8px', justifyContent: 'flex-end' } },
         localBtn, cloudBtn,
         el('button', { class: 'btn-ghost', style: { fontSize: '13px' }, title: 'Push it out a day without rating',
-          onClick: async () => { await api.buryCard(c.id, 1); toast('Not today — back tomorrow.'); clear(slot); skipCard(); } }, 'Not today'),
+          onClick: async () => { await api.buryCard(c.id, 1); toast('Not today. Back tomorrow.'); clear(slot); skipCard(); } }, 'Not today'),
         el('button', { class: 'btn-ghost', style: { fontSize: '13px' },
           onClick: async () => { await api.suspendCard(c.id, true); toast('Suspended.'); refreshBadge(); clear(slot); skipCard(); } }, 'Suspend'),
         el('button', { class: 'btn btn-primary', style: { padding: '6px 12px', fontSize: '13px' },
@@ -414,7 +415,7 @@ export async function render({ params } = {}) {
     progBar.firstChild.style.width = '100%';
     const acc = reviewedCount ? Math.round(correctish / reviewedCount * 100) : 0;
     stage.append(el('div', { class: 'empty' },
-      el('div', { class: 'icon' }, '🎉'),
+      el('div', { class: 'icon' }, '✓'),
       el('h2', {}, 'Session complete'),
       el('p', { class: 'muted' }, `${reviewedCount} card${reviewedCount !== 1 ? 's' : ''} reviewed${reviewedCount ? ` · ~${acc}% recalled` : ''}.`),
       el('div', { class: 'row', style: { justifyContent: 'center', marginTop: '18px' } },
@@ -457,10 +458,10 @@ function teachUI({ learningId, title, ideas = [], onDone, onSkip }) {
 
   wrap.append(el('div', { class: 'q-card', style: { borderColor: 'var(--easy)' } },
     el('div', { class: 'src' }, `teach it · ${title}`),
-    el('div', { class: 'q' }, 'This one’s solid — so teach it. ',
+    el('div', { class: 'q' }, 'This one’s solid, so teach it. ',
       el('span', { style: { color: 'var(--easy)' } }, `Explain “${title}” to a first-year.`)),
     el('div', { class: 'muted', style: { fontSize: '13px', marginTop: '8px' } },
-      'I’ll play the student — I don’t know this topic yet.')));
+      'I’ll play the student; I don’t know this topic yet.')));
 
   const log = el('div', { class: 'chat-log', style: { marginTop: '14px' } });
   const composer = el('textarea', { class: 'input', rows: '2', placeholder: 'Start wherever feels natural…' });
@@ -477,7 +478,7 @@ function teachUI({ learningId, title, ideas = [], onDone, onSkip }) {
     node.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     return node;
   }
-  addBubble('ai', 'Ready when you are. 🤔');
+  addBubble('ai', 'Ready when you are.');
 
   composer.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
@@ -504,7 +505,7 @@ function teachUI({ learningId, title, ideas = [], onDone, onSkip }) {
       else bubble.remove();
       renderMathIn(bubble);
     } catch {
-      bubble.textContent = 'The student lost connection — wrap up when ready.';
+      bubble.textContent = 'The student lost connection. Wrap up when ready.';
     }
     sendBtn.disabled = false;
     composer.focus();
@@ -514,7 +515,7 @@ function teachUI({ learningId, title, ideas = [], onDone, onSkip }) {
     composer.disabled = true; sendBtn.disabled = true; wrapBtn.disabled = true;
     const panel = el('div', { class: 'card', style: { marginTop: '14px', padding: '16px' } });
     if (ideas.length) {
-      panel.append(el('div', { class: 'eyebrow', style: { marginBottom: '10px' } }, 'Self-check — did your explanation cover these?'));
+      panel.append(el('div', { class: 'eyebrow', style: { marginBottom: '10px' } }, 'Self-check: did your explanation cover these?'));
       for (const i of ideas) {
         panel.append(el('div', { class: 'idea neutral' }, el('span', { class: 'mark' }, '·'), el('div', { class: 't' }, i.text)));
       }

@@ -146,10 +146,16 @@ Ask exactly ONE short follow-up question per turn. Pick the highest-leverage ang
 - how does it connect to something they already know (self-explanation)
 - a concrete example or where they'd apply it (transfer)
 - how it differs from a related idea (discrimination)
-- the one-sentence gist
-Keep it to a single sentence. Be specific to what they wrote. Never lecture, never
-answer for them, never praise emptily. If the material is a plain fact with nothing to
-elaborate, ask for the gist or an example instead."""
+- where it breaks down (boundary conditions)
+
+The bar, by example. If they wrote "finer grains make metals stronger, sigma_y = sigma_0 + k/sqrt(d)":
+  Banned (generic): "Can you elaborate on that?" / "Why is that important?"
+  Good: "What is the boundary physically doing to a dislocation that makes more of them mean stronger?"
+  Good: "Strengthening usually costs ductility. Does Hall-Petch? Why or why not?"
+
+Keep it to one or two sentences, specific to what they actually wrote. Never lecture,
+never answer for them, never praise emptily. If the material is a plain fact with
+nothing to elaborate, ask for a concrete example or the one-sentence gist instead."""
 
 _CARDS_SYSTEM = """You turn a short study conversation into spaced-repetition cards that test ACTIVE RECALL.
 
@@ -163,14 +169,25 @@ examples. Answers concise and unambiguous. Vary the cognitive angle (recall,
 application, contrast). NEVER copy the conversation, speaker labels, or multiple lines
 into a cloze source — it must be a single clean sentence. Output only the structured object."""
 
-_CARDS_BASIC_SYSTEM = """You turn a short study conversation into a few open questions that test ACTIVE RECALL of the key ideas about a topic.
+_CARDS_BASIC_SYSTEM = """You turn a short study conversation into a few open questions that test ACTIVE RECALL.
 
-Produce ONLY "basic" question/answer pairs (never fill-in-the-blank / cloze). Each question:
-- targets one important idea, cause, distinction, or application from the conversation,
-- is answerable in a sentence or two and invites explanation (favor "why"/"how"),
-- avoids trivia and yes/no phrasing.
+Produce ONLY "basic" question/answer pairs (never fill-in-the-blank / cloze). Every
+question must earn its place: one load-bearing idea (a mechanism, a condition, a
+distinction, a failure mode), answerable in a sentence or two, phrased as why / how /
+when-does-it-break rather than "what is". Never trivia, never yes/no.
 
-Write clear, specific answers in the learner's own framing. Output only the structured object."""
+The quality bar, by example:
+  Weak:   "What is the Hall-Petch equation?"
+  Strong: "Why does refining grain size raise yield strength, and at roughly what
+           scale does $\\sigma_y = \\sigma_0 + k/\\sqrt{d}$ stop working?"
+  Weak:   "What is the endurance limit?"
+  Strong: "Steel has an endurance limit and aluminum does not. What does that change
+           about how you design each against fatigue?"
+
+Answers must teach, compactly: the result, the governing relation in $...$ TeX where
+one exists, the physical mechanism in a sentence, and the boundary where it fails.
+Use the learner's framing where it is correct; quietly fix it where it is not.
+Output only the structured object."""
 
 _GRADE_SYSTEM = """You grade a learner's free-recall answer against a reference answer, then nudge them.
 
@@ -184,15 +201,22 @@ that pushes them toward the gap they missed, or — if they nailed it — one le
 (a "why", an edge case, or an application). Never reveal the answer. Keep it to one sentence."""
 
 
-_IDEAS_SYSTEM = """You distill a study conversation into the KEY IDEAS of the topic — the rubric a
+_IDEAS_SYSTEM = """You distill a study conversation into the KEY IDEAS of the topic, the rubric a
 learner's future free recall will be graded against.
 
 Write 3-8 one-line ideas. Each idea:
 - is one self-contained claim, mechanism, formula, distinction, or condition worth
-  remembering on its own (include the equation when there is one),
-- uses the learner's own framing and examples where possible,
+  remembering on its own (include the equation in $...$ TeX when there is one),
+- uses the learner's own framing and examples where correct,
 - is concrete enough to check a recall against ("boundaries block dislocation motion",
   not "understands grain boundaries").
+
+Example, for a Hall-Petch conversation:
+  1. $\\sigma_y = \\sigma_0 + k/\\sqrt{d}$: finer grains raise yield strength
+  2. Mechanism: boundaries block dislocations, pile-ups must trigger slip across
+  3. Strengthens without the usual ductility penalty
+  4. Inverts below ~20 nm where boundary sliding takes over
+
 Order from most to least central. No trivia, no duplicates. Output only the structured object."""
 
 _RUBRIC_GRADE_SYSTEM = """You grade a learner's free recall of a topic against a numbered rubric of key ideas.
@@ -454,7 +478,7 @@ class LLMService:
             {"role": "system", "content": self._styled(_CARDS_BASIC_SYSTEM if basic_only else _CARDS_SYSTEM)},
             {"role": "user", "content": f"Aim for about {n} questions.\n\nConversation:\n---\n{transcript}\n---"},
         ]
-        result = self._complete_json(messages, CardSet, temperature=0.4, num_predict=700)
+        result = self._complete_json(messages, CardSet, temperature=0.4, num_predict=1800)
         out: list[dict] = []
         for c in result.cards:
             ctype = (c.type or "basic").strip().lower()
@@ -474,7 +498,7 @@ class LLMService:
             {"role": "system", "content": self._styled(_IDEAS_SYSTEM)},
             {"role": "user", "content": f"Conversation:\n---\n{transcript[:4000]}\n---\nDistill the key ideas."},
         ]
-        result = self._complete_json(messages, KeyIdeaList, temperature=0.3, num_predict=450)
+        result = self._complete_json(messages, KeyIdeaList, temperature=0.3, num_predict=1200)
         return [i.strip() for i in result.ideas if i.strip()][:8]
 
     def grade_rubric(self, topic: str, ideas: list[str], user_answer: str) -> dict:
@@ -500,7 +524,7 @@ class LLMService:
             {"role": "system", "content": self._styled(_DRILL_SYSTEM)},
             {"role": "user", "content": f"Topic: {topic}\nKey idea they keep missing: {idea}\n\nWrite the drill question."},
         ]
-        result = self._complete_json(messages, GenCard, temperature=0.4, num_predict=220)
+        result = self._complete_json(messages, GenCard, temperature=0.4, num_predict=800)
         if not (result.question.strip() and result.answer.strip()):
             raise OllamaError("Model returned no usable drill question.")
         return {"question": result.question.strip(), "answer": result.answer.strip()}
@@ -550,7 +574,7 @@ class LLMService:
         )
         messages = [{"role": "system", "content": self._styled(_CONTRAST_SYSTEM)},
                     {"role": "user", "content": prompt}]
-        result = self._complete_json(messages, GenCard, temperature=0.4, num_predict=260)
+        result = self._complete_json(messages, GenCard, temperature=0.4, num_predict=800)
         if not (result.question.strip() and result.answer.strip()):
             raise OllamaError("Model returned no usable contrast card.")
         return {"question": result.question.strip(), "answer": result.answer.strip()}
@@ -580,7 +604,7 @@ class LLMService:
         prompt = build_refine_prompt(topic, content, question, answer, feedback)
         messages = [{"role": "system", "content": self._styled(REFINE_SYSTEM)},
                     {"role": "user", "content": prompt}]
-        result = self._complete_json(messages, GenCard, temperature=0.4, num_predict=500)
+        result = self._complete_json(messages, GenCard, temperature=0.4, num_predict=1000)
         if not (result.question.strip() and result.answer.strip()):
             raise OllamaError("Model returned no usable card.")
         return {"question": result.question.strip(), "answer": result.answer.strip()}

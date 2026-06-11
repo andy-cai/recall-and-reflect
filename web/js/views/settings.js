@@ -19,7 +19,7 @@ export async function render() {
   const retLabel = el('b', {}, retVal + '%');
   const retNote = el('div', { class: 'muted', style: { fontSize: '12.5px' } });
   const retSlider = el('input', { class: 'slider', type: 'range', min: '70', max: '97', value: String(retVal) });
-  function retText(v) { return v >= 92 ? 'Thorough — more frequent reviews.' : v <= 82 ? 'Light — fewer reviews, more forgetting.' : 'Balanced (90% is the sweet spot).'; }
+  function retText(v) { return v >= 92 ? 'Thorough: more frequent reviews.' : v <= 82 ? 'Light: fewer reviews, more forgetting.' : 'Balanced (90% is the sweet spot).'; }
   retNote.textContent = retText(retVal);
   retSlider.addEventListener('input', () => { retLabel.textContent = retSlider.value + '%'; retNote.textContent = retText(+retSlider.value); });
 
@@ -89,7 +89,7 @@ export async function render() {
         el('div', {},
           el('div', { style: { fontWeight: '560' } }, 'Cloud assist (Gemini)'),
           el('div', { class: 'muted', style: { fontSize: '12.5px', maxWidth: '420px' } },
-            'Off by default. When on, an “Improve with Gemini” button appears on cards — only that card’s text is sent, only when you click. Free API key at aistudio.google.com. Reviews, capture and grading always stay local.')),
+            'Off by default. When on, an “Improve with Gemini” button appears on cards; only that card’s text is sent, only when you click. Free API key at aistudio.google.com. Reviews, capture and grading always stay local.')),
         cloudSw),
       el('div', { class: 'row', style: { gap: '10px', marginTop: '10px' } }, cloudStatus, cloudModelSel)),
     field('Theme', themeSel),
@@ -99,10 +99,9 @@ export async function render() {
 
   view.append(el('div', { class: 'card', style: { marginTop: '16px', background: 'var(--surface-2)' } },
     el('div', { class: 'row', style: { gap: '10px' } },
-      el('span', {}, '🔒'),
       el('div', { class: 'muted', style: { fontSize: '13px' } },
         el('b', { style: { color: 'var(--text-soft)' } }, 'Your data stays on this machine. '),
-        'Notes and reviews live in a local SQLite file. The app only talks to a local Ollama and never sends anything to the cloud.'))));
+        'Notes and reviews live in a local SQLite file, and routine operation talks only to a local Ollama. The single exception is the opt-in Gemini assist above, which sends one card or one Reflect session at a time, only when you choose it. People topics are never sent, under any setting.'))));
 
   async function save() {
     saveBtn.disabled = true; saveBtn.textContent = 'Saving…';

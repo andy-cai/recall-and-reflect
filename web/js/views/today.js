@@ -19,7 +19,7 @@ function buildFocus(t) {
       el('div', {},
         el('div', { style: { fontWeight: '580' } }, `★ Focusing ${t.focus.topics} topic${t.focus.topics !== 1 ? 's' : ''}`),
         el('div', { class: 'muted', style: { fontSize: '13px' } },
-          t.focus.due > 0 ? `${t.focus.due} due — they go first in every session.` : 'Nothing due in focus right now — focused topics still go first.')),
+          t.focus.due > 0 ? `${t.focus.due} due; they go first in every session.` : 'Nothing due in focus right now. Focused topics still go first.')),
       el('div', { class: 'row', style: { gap: '8px' } },
         t.focus.due > 0 ? el('button', { class: 'btn btn-primary', onClick: () => navigate('#/recall?focus=1') }, 'Review focus →') : null,
         el('button', { class: 'btn btn-ghost', onClick: async () => { await api.focusClear(); t.focus = { topics: 0, due: 0 }; showInput(); toast('Focus cleared'); } }, 'Clear'))));
@@ -33,7 +33,7 @@ function buildFocus(t) {
     wrap.append(
       el('div', { style: { fontWeight: '580', marginBottom: '4px' } }, 'Focus'),
       el('div', { class: 'muted', style: { fontSize: '13px', marginBottom: '10px' } },
-        'Tell it what matters right now — matching topics jump to the front of every session.'),
+        'Tell it what matters right now; matching topics jump to the front of every session.'),
       el('div', { class: 'row', style: { gap: '8px' } }, input, setBtn));
 
     async function submit() {
@@ -43,7 +43,7 @@ function buildFocus(t) {
       try {
         const m = await api.focusInterpret(text);
         showConfirm(m);
-      } catch { toast('Could not match — try naming a subject or topic.'); }
+      } catch { toast('Could not match. Try naming a subject or topic.'); }
       setBtn.disabled = false; setBtn.textContent = 'Set focus';
     }
   }
@@ -136,13 +136,13 @@ export async function render() {
     const rampBtn = el('button', { class: 'btn btn-primary', onClick: async () => {
       rampBtn.disabled = true;
       const r = await api.ramp(Math.max(2, +daysInput.value || 5));
-      toast(`Spread ${r.moved} reviews over ${r.days} days — today stays focused.`);
+      toast(`Spread ${r.moved} reviews over ${r.days} days. Today stays focused.`);
       refreshBadge(); navigate('#/today');
     } }, 'Ease me back in');
     view.append(el('div', { class: 'card', style: { marginBottom: '16px', borderColor: 'var(--accent)' } },
-      el('div', { style: { fontWeight: '580' } }, `Welcome back — ${t.due} reviews piled up while you were away.`),
+      el('div', { style: { fontWeight: '580' } }, `Welcome back. ${t.due} reviews piled up while you were away.`),
       el('div', { class: 'muted', style: { fontSize: '13px', margin: '4px 0 12px' } },
-        `Missing days doesn’t break the habit — quitting after them does. Keep today’s ${t.daily_target} most at-risk and spread the rest:`),
+        `Missing days doesn’t break the habit; quitting after them does. Keep today’s ${t.daily_target} most at-risk and spread the rest:`),
       el('div', { class: 'row', style: { gap: '10px' } }, rampBtn, el('span', { class: 'muted', style: { fontSize: '13px' } }, 'over'), daysInput, el('span', { class: 'muted', style: { fontSize: '13px' } }, 'days'))));
   }
 
@@ -155,8 +155,8 @@ export async function render() {
   if (new Date().getHours() >= 20) {
     view.append(el('div', { class: 'card row spread', style: { marginTop: '16px' } },
       el('div', {},
-        el('div', { style: { fontWeight: '580' } }, '🌙 Wind-down'),
-        el('div', { class: 'muted', style: { fontSize: '13.5px' } }, 'A few things worth sleeping on — today’s misses and new captures.')),
+        el('div', { style: { fontWeight: '580' } }, 'Wind-down'),
+        el('div', { class: 'muted', style: { fontSize: '13.5px' } }, 'A few things worth sleeping on: today’s misses and new captures.')),
       el('button', { class: 'btn', onClick: () => navigate('#/recall?mode=evening') }, 'Sleep on it →')));
   }
 
@@ -168,7 +168,7 @@ export async function render() {
       el('div', { class: 'l' }, 'reviewed today'),
       el('div', { class: 'progress', style: { marginTop: '10px' } }, el('i', { style: { width: pct + '%' } }))),
     el('div', { class: 'tile' },
-      el('div', { class: 'n' }, `${t.streak}`, t.streak > 0 ? el('span', { style: { fontSize: '20px' } }, ' 🔥') : ''),
+      el('div', { class: 'n' }, `${t.streak}`),
       el('div', { class: 'l' }, t.streak === 1 ? 'day streak' : 'day streak')),
     el('div', { class: 'tile' },
       el('div', { class: 'n accent' }, `${t.consistency}%`),
