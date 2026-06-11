@@ -363,7 +363,7 @@ export async function render({ params } = {}) {
         clear(proposalSlot);
         proposalSlot.append(el('div', { class: 'card', style: { marginTop: '10px', padding: '12px', borderColor: 'var(--easy)' } },
           el('div', { class: 'eyebrow', style: { marginBottom: '8px' } },
-            r.source === 'cloud' ? '✨ Claude’s rewrite' : '✨ Rewrite'),
+            r.source === 'cloud' ? '✨ Gemini’s rewrite' : '✨ Rewrite'),
           el('div', { style: { fontSize: '14px', fontWeight: '580' } }, r.question),
           el('div', { class: 'soft', style: { fontSize: '13.5px', marginTop: '6px' } }, r.answer),
           el('div', { class: 'row', style: { gap: '8px', marginTop: '10px', justifyContent: 'flex-end' } },
@@ -380,7 +380,7 @@ export async function render({ params } = {}) {
     const localBtn = el('button', { class: 'btn', style: { padding: '6px 12px', fontSize: '13px' },
       onClick: (e) => improve(false, e.currentTarget) }, '✨ Improve');
     const cloudBtn = cloudReady ? el('button', { class: 'btn', style: { padding: '6px 12px', fontSize: '13px' },
-      onClick: (e) => improve(true, e.currentTarget) }, '✨ Improve with Claude') : null;
+      onClick: (e) => improve(true, e.currentTarget) }, '✨ Improve with Gemini') : null;
 
     slot.append(el('div', { class: 'card stack', style: { marginTop: '8px', padding: '14px', textAlign: 'left' } },
       el('div', { class: 'field' }, el('label', { class: 'lbl' }, 'Question'), qIn),

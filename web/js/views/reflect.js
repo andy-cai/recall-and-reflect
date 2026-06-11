@@ -15,14 +15,55 @@ function deriveTitle(text) {
   return first.length > 70 ? first.slice(0, 70) + '…' : first;
 }
 
+const DRAFT_KEY = 'rr-reflect-draft';
+
 export async function render() {
   const llmOk = !!(state.llm && state.llm.available);
 
   const convo = [];                 // {role, content}
   let asked = 0, phase = 'gathering';
   const editors = [];               // detail-question editors
-  let addMsg = () => ({ setText() {}, typing() {} });
+  let addMsg = () => ({ node: null, setText() {}, typing() {} });
   let contentArea = null;
+  let makeBtnRef = null;
+
+  // Leaving mid-reflection must never destroy your thinking: every turn and
+  // panel edit autosaves a draft; a banner offers Resume/Discard on return.
+  function readDraft() {
+    try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch { return null; }
+  }
+  function saveDraft() {
+    const data = {
+      convo,
+      title: titleInput.value, subject: subjectInput.value, tags: tagsInput.value,
+      content: contentArea ? contentArea.value : '',
+      ideas: ideaEditors.map(e => e.read()).filter(Boolean),
+      details: editors.map(e => e.read()).filter(c => c.question || c.answer),
+      ts: Date.now(),
+    };
+    const meaningful = data.convo.some(m => m.role === 'user') || data.content.trim()
+      || data.ideas.length || data.details.length;
+    if (meaningful) localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
+  }
+  function clearDraft() { localStorage.removeItem(DRAFT_KEY); }
+  function restoreDraft(d) {
+    titleInput.value = d.title || '';
+    subjectInput.value = d.subject || '';
+    tagsInput.value = d.tags || '';
+    if (d.ideas && d.ideas.length) renderIdeas(d.ideas);
+    if (d.details && d.details.length) renderDetails(d.details);
+    if (llmOk && d.convo && d.convo.length) {
+      for (const m of d.convo) {
+        renderMathIn(addMsg(m.role === 'user' ? 'user' : 'ai', m.content).node);
+        convo.push(m);
+      }
+      asked = d.convo.filter(m => m.role === 'assistant').length;
+      if (makeBtnRef) makeBtnRef.style.display = '';
+    } else if (contentArea) {
+      contentArea.value = d.content
+        || (d.convo || []).filter(m => m.role === 'user').map(m => m.content).join('\n\n');
+    }
+  }
 
   const view = el('div', { class: 'view' });
   view.append(el('div', { class: 'page-head' },
@@ -66,6 +107,7 @@ export async function render() {
     const ed = { node, read: null };
     const q = el('input', { class: 'input', placeholder: 'Question' }); q.value = card.question || '';
     const a = el('input', { class: 'input', placeholder: 'Answer' }); a.value = card.answer || '';
+    q.addEventListener('input', saveDraft); a.addEventListener('input', saveDraft);
     node.append(
       el('div', { class: 'row spread' },
         el('span', { class: 'ct' }, 'QUESTION'),
@@ -91,6 +133,7 @@ export async function render() {
   function makeIdea(text = '') {
     const input = el('input', { class: 'input', placeholder: 'One key idea, one line', value: text,
       style: { fontSize: '13.5px', padding: '8px 11px' } });
+    input.addEventListener('input', saveDraft);
     const ed = { read: () => input.value.trim() };
     const row = el('div', { class: 'row', style: { gap: '7px' } }, input,
       el('button', { class: 'btn-ghost', style: { padding: '2px 8px', fontSize: '12px', flex: 'none' },
@@ -116,6 +159,7 @@ export async function render() {
     el('div', { class: 'field', style: { marginBottom: '10px' } }, el('label', { class: 'lbl' }, 'Title'), titleInput),
     el('div', { class: 'field', style: { marginBottom: '12px' } }, el('label', { class: 'lbl' }, 'Tags'), tagsInput),
     recallNote, ideasPanel, detailDisclosure, saveBtn);
+  [titleInput, subjectInput, tagsInput].forEach(i => i.addEventListener('input', saveDraft));
 
   async function save() {
     const dump = convo.find(m => m.role === 'user');
@@ -132,6 +176,7 @@ export async function render() {
       const res = await api.createLearning({ title, content, reflection: reflection || null,
         subject: subjectInput.value.trim() || null, conversation, tags, cards, key_ideas });
       toast(`Saved “${res.title}”`);
+      clearDraft();
       refreshBadge();
       navigate('#/library/' + res.id);
     } catch (e) {
@@ -162,6 +207,7 @@ export async function render() {
       const res = await api.captureCards(transcript, 4);
       renderDetails(res.cards);
       await ideasJob;
+      saveDraft();
       addMsg('ai').setText('Set. I’ve distilled the key ideas your recall will be graded against — edit them in the panel, they’re what future-you is accountable for. Pick a subject and save.');
     } catch (e) {
       clear(detailList); editors.length = 0; updateCount(); toggleDetails(false);
@@ -176,6 +222,7 @@ export async function render() {
     const composer = el('textarea', { class: 'input', rows: '1', placeholder: 'Describe the topic…' });
     const sendBtn = el('button', { class: 'btn btn-primary', onClick: onSend }, 'Send');
     const makeBtn = el('button', { class: 'btn btn-ghost', style: { display: 'none' }, onClick: () => setupTopic() }, 'Set it up now →');
+    makeBtnRef = makeBtn;
 
     const scrollDown = () => requestAnimationFrame(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }));
 
@@ -207,6 +254,7 @@ export async function render() {
       if (!text) { setupTopic(); return; }
       convo.push({ role: 'assistant', content: text });
       asked += 1;
+      saveDraft();
       composer.focus();
     }
 
@@ -225,6 +273,7 @@ export async function render() {
             addMsg('ai', q);
             convo.push({ role: 'assistant', content: q });
             asked += 1;
+            saveDraft();
             composer.focus();
           } }, `⚯ ${c.title}`));
         }
@@ -238,6 +287,7 @@ export async function render() {
       const isFirst = !convo.some(m => m.role === 'user');
       renderMathIn(addMsg('user', text).node);
       convo.push({ role: 'user', content: text });
+      saveDraft();
       composer.value = ''; composer.style.height = 'auto';
       makeBtn.style.display = '';
       if (isFirst) showConnections(text);   // fire-and-forget, never blocks the chat
@@ -282,8 +332,32 @@ export async function render() {
   }
   view.append(el('div', { class: 'row', style: { gap: '7px', marginBottom: '16px' } }, chatBtn, quickBtn, personBtn));
   view.append(chatWrap, quickWrap, personWrap);
+  if (contentArea) contentArea.addEventListener('input', saveDraft);
+
+  // offer to resume a reflection that was abandoned mid-thought
+  const draft = readDraft();
+  if (draft && ((draft.convo || []).some(m => m.role === 'user') || (draft.content || '').trim()
+      || (draft.ideas || []).length)) {
+    const firstLine = ((draft.convo || []).find(m => m.role === 'user')?.content || draft.content || '').split('\n')[0];
+    const snippet = firstLine.length > 70 ? firstLine.slice(0, 70) + '…' : firstLine;
+    const banner = el('div', { class: 'card row spread', style: { marginBottom: '14px', borderColor: 'var(--accent)' } },
+      el('div', { style: { minWidth: '0' } },
+        el('div', { style: { fontWeight: '580' } }, '📝 Unfinished reflection'),
+        el('div', { class: 'muted', style: { fontSize: '12.5px' } }, `“${snippet}” · ${agoLabel(draft.ts)}`)),
+      el('div', { class: 'row', style: { gap: '8px', flex: 'none' } },
+        el('button', { class: 'btn btn-ghost', onClick: () => { clearDraft(); banner.remove(); } }, 'Discard'),
+        el('button', { class: 'btn btn-primary', onClick: () => { restoreDraft(draft); banner.remove(); } }, 'Resume')));
+    view.insertBefore(banner, view.children[1]);
+  }
 
   return view;
+}
+
+function agoLabel(ts) {
+  const mins = Math.max(1, Math.round((Date.now() - (ts || Date.now())) / 60000));
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.round(mins / 60);
+  return hrs < 24 ? `${hrs} h ago` : `${Math.round(hrs / 24)} d ago`;
 }
 
 // People as topics, photo-free: the cue is the story, the reveal is the name +

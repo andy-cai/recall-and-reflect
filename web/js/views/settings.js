@@ -47,7 +47,7 @@ export async function render() {
     ...(cloud.models || []).map(m => el('option', { value: m, selected: m === cloud.model ? '' : null }, m)));
   const cloudStatus = cloud.key_present
     ? el('span', { class: 'verdict correct' }, '● key found')
-    : el('span', { class: 'verdict wrong' }, '● set ANTHROPIC_API_KEY');
+    : el('span', { class: 'verdict wrong' }, '● set GEMINI_API_KEY');
 
   // theme
   const themeSel = el('select', { class: 'input', style: { maxWidth: '160px' } },
@@ -82,9 +82,9 @@ export async function render() {
     el('div', { style: { padding: '14px 0', borderBottom: '1px solid var(--border)' } },
       el('div', { class: 'row spread' },
         el('div', {},
-          el('div', { style: { fontWeight: '560' } }, 'Cloud assist (Claude)'),
+          el('div', { style: { fontWeight: '560' } }, 'Cloud assist (Gemini)'),
           el('div', { class: 'muted', style: { fontSize: '12.5px', maxWidth: '420px' } },
-            'Off by default. When on, an “Improve with Claude” button appears on cards — only that card’s text is sent, only when you click. Reviews, capture and grading always stay local.')),
+            'Off by default. When on, an “Improve with Gemini” button appears on cards — only that card’s text is sent, only when you click. Free API key at aistudio.google.com. Reviews, capture and grading always stay local.')),
         cloudSw),
       el('div', { class: 'row', style: { gap: '10px', marginTop: '10px' } }, cloudStatus, cloudModelSel)),
     field('Theme', themeSel),

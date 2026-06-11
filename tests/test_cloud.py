@@ -21,13 +21,18 @@ class TestCloudGating(unittest.TestCase):
         with mock.patch.dict(os.environ, {}, clear=True):
             st = self.cloud.status()
             self.assertFalse(st["ready"])
-            self.assertIn("ANTHROPIC_API_KEY", st["reason"])
+            self.assertIn("GEMINI_API_KEY", st["reason"])
 
     def test_key_without_toggle_is_not_ready(self):
-        with mock.patch.dict(os.environ, {"ANTHROPIC_API_KEY": "sk-test"}):
+        with mock.patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"}):
             st = self.cloud.status()
             self.assertFalse(st["ready"])
             self.assertIn("switched off", st["reason"])
+
+    def test_google_api_key_also_accepted(self):
+        self.cloud.set_enabled(True)
+        with mock.patch.dict(os.environ, {"GOOGLE_API_KEY": "test-key"}, clear=True):
+            self.assertTrue(self.cloud.status()["ready"])
 
     def test_complete_json_refuses_when_not_ready(self):
         class Dummy:  # schema class is never touched when gating refuses
@@ -38,9 +43,9 @@ class TestCloudGating(unittest.TestCase):
 
     def test_model_falls_back_to_default_on_unknown(self):
         self.cloud.set_model("gpt-9000")
-        self.assertEqual(self.cloud.model, "claude-opus-4-8")
-        self.cloud.set_model("claude-haiku-4-5")
-        self.assertEqual(self.cloud.model, "claude-haiku-4-5")
+        self.assertEqual(self.cloud.model, "gemini-2.5-flash")
+        self.cloud.set_model("gemini-2.5-pro")
+        self.assertEqual(self.cloud.model, "gemini-2.5-pro")
 
 
 if __name__ == "__main__":

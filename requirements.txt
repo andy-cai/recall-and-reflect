@@ -7,4 +7,3 @@ httpx>=0.27           # talks to local Ollama
 pydantic>=2.7         # structured LLM output validation
 apscheduler>=3.10     # gentle due-review reminder scheduler
 winotify>=1.1 ; sys_platform == "win32"   # Windows toast notifications
-anthropic>=0.92       # opt-in cloud assist (only runs when you click a cloud action)

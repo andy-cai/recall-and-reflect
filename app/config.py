@@ -37,11 +37,12 @@ EMBED_MODEL = "nomic-embed-text"
 
 # --- Cloud assist (strictly opt-in) ---
 # Used ONLY for per-click actions you explicitly invoke (e.g. "Improve with
-# Claude" on a card). Off by default; requires ANTHROPIC_API_KEY in the
-# environment AND the Settings toggle. Reviews, capture chat, and grading
-# never touch the cloud.
-CLOUD_DEFAULT_MODEL = "claude-opus-4-8"
-CLOUD_MODELS = ("claude-opus-4-8", "claude-sonnet-4-6", "claude-haiku-4-5")
+# Gemini" on a card). Off by default; requires GEMINI_API_KEY (free tier at
+# https://aistudio.google.com) AND the Settings toggle. Reviews, capture chat,
+# and grading never touch the cloud.
+CLOUD_DEFAULT_MODEL = "gemini-2.5-flash"
+CLOUD_MODELS = ("gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite")
+CLOUD_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 
 # Default style for generated questions/answers — editable in Settings.
 DEFAULT_GEN_STYLE = (

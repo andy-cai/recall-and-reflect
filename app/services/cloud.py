@@ -1,18 +1,22 @@
-"""Opt-in cloud assist via the Anthropic API (official `anthropic` SDK).
+"""Opt-in cloud assist via the Google Gemini API (free tier).
 
 Strictly opt-in, per-click: nothing here runs unless BOTH are true —
-ANTHROPIC_API_KEY is set in the environment AND the Settings toggle is on —
-and even then only when the user explicitly clicks a cloud action (e.g.
-"Improve with Claude" on a card). Reviews, capture chat, grading, and
-embeddings always stay on the local models. Only the single card/topic text
-involved in the click is sent.
+GEMINI_API_KEY (or GOOGLE_API_KEY) is set in the environment AND the Settings
+toggle is on — and even then only when the user explicitly clicks a cloud
+action (e.g. "Improve with Gemini" on a card). Reviews, capture chat, grading,
+and embeddings always stay on the local models. Only the single card/topic
+text involved in the click is sent.
+
+Get a free key at https://aistudio.google.com (the free tier covers this
+app's per-click usage comfortably).
 """
 
-import importlib.util
+import json
 import os
+import re
 from typing import Any, Optional
 
-from app.config import CLOUD_DEFAULT_MODEL, CLOUD_MODELS
+from app.config import CLOUD_BASE_URL, CLOUD_DEFAULT_MODEL, CLOUD_MODELS
 
 
 class CloudError(Exception):
@@ -33,52 +37,87 @@ class CloudAssist:
         self.model = model if model in CLOUD_MODELS else CLOUD_DEFAULT_MODEL
 
     @staticmethod
-    def key_present() -> bool:
-        return bool(os.environ.get("ANTHROPIC_API_KEY"))
+    def _key() -> str:
+        return os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or ""
 
-    @staticmethod
-    def sdk_installed() -> bool:
-        return importlib.util.find_spec("anthropic") is not None
+    @classmethod
+    def key_present(cls) -> bool:
+        return bool(cls._key())
 
     def status(self) -> dict:
-        ready = self.enabled and self.key_present() and self.sdk_installed()
+        ready = self.enabled and self.key_present()
         reason = None
         if not self.enabled:
             reason = "Cloud assist is switched off."
         elif not self.key_present():
-            reason = "Set ANTHROPIC_API_KEY in the environment, then restart."
-        elif not self.sdk_installed():
-            reason = "Install the SDK: pip install anthropic"
+            reason = "Set GEMINI_API_KEY in the environment (free key at aistudio.google.com), then restart."
         return {"enabled": self.enabled, "model": self.model,
                 "key_present": self.key_present(), "ready": ready, "reason": reason}
 
     # ---------- calls ----------
 
     def complete_json(self, system: str, prompt: str, schema: type,
-                      max_tokens: int = 2000) -> Any:
-        """One structured-output Messages API call. Raises CloudError unless ready."""
+                      max_tokens: int = 2500) -> Any:
+        """One structured-output generateContent call, validated against the
+        pydantic schema. Raises CloudError unless ready."""
         st = self.status()
         if not st["ready"]:
             raise CloudError(st["reason"] or "Cloud assist is not configured.")
-        import anthropic
-        client = anthropic.Anthropic()
+
+        gen_config: dict = {
+            "responseMimeType": "application/json",
+            "temperature": 0.4,
+            "maxOutputTokens": max_tokens,
+        }
+        # Flash models think by default and thoughts eat the output budget —
+        # disable for these short structured tasks. (Pro can't disable; give it room.)
+        if "flash" in self.model:
+            gen_config["thinkingConfig"] = {"thinkingBudget": 0}
+        else:
+            gen_config["maxOutputTokens"] = max(max_tokens, 8000)
+
+        sys_text = (f"{system}\n\nReturn ONLY a JSON object matching this schema "
+                    f"(no prose, no code fences):\n{json.dumps(schema.model_json_schema())}")
+        body = {
+            "systemInstruction": {"parts": [{"text": sys_text}]},
+            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+            "generationConfig": gen_config,
+        }
+        import httpx
         try:
-            response = client.messages.parse(
-                model=self.model,
-                max_tokens=max_tokens,
-                system=system,
-                messages=[{"role": "user", "content": prompt}],
-                output_format=schema,
-            )
-        except anthropic.AuthenticationError:
-            raise CloudError("Anthropic API key was rejected — check ANTHROPIC_API_KEY.")
-        except anthropic.RateLimitError:
-            raise CloudError("Rate limited by the Anthropic API — try again shortly.")
-        except anthropic.APIError as e:
-            raise CloudError(f"Cloud request failed: {getattr(e, 'message', e)}")
-        if response.parsed_output is None:
-            raise CloudError("Cloud model returned no structured output.")
-        return response.parsed_output
+            with httpx.Client(timeout=60.0) as client:
+                resp = client.post(
+                    f"{CLOUD_BASE_URL}/models/{self.model}:generateContent",
+                    headers={"x-goog-api-key": self._key()},
+                    json=body,
+                )
+        except httpx.HTTPError as e:
+            raise CloudError(f"Cloud request failed: {e}")
+        if resp.status_code == 400:
+            raise CloudError("Gemini rejected the request — check that GEMINI_API_KEY is valid.")
+        if resp.status_code == 429:
+            raise CloudError("Free-tier rate limit hit — wait a minute and try again.")
+        if resp.status_code >= 500:
+            raise CloudError(f"Gemini service error ({resp.status_code}) — try again shortly.")
+        if resp.status_code != 200:
+            raise CloudError(f"Cloud request failed (HTTP {resp.status_code}).")
+
+        try:
+            parts = resp.json()["candidates"][0]["content"]["parts"]
+            text = "".join(p.get("text", "") for p in parts).strip()
+        except (KeyError, IndexError, ValueError):
+            raise CloudError("Gemini returned no usable content (possibly safety-blocked).")
+        text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text)
+        try:
+            return schema.model_validate_json(text)
+        except Exception:
+            match = re.search(r"\{[\s\S]*\}", text)
+            if match:
+                try:
+                    return schema.model_validate_json(match.group())
+                except Exception:
+                    pass
+            raise CloudError("Could not parse Gemini's structured output.")
 
     def refine_card(self, topic: str, content: str, question: str, answer: str,
                     feedback: str, style: str) -> dict:

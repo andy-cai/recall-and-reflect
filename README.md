@@ -23,9 +23,10 @@ only to a **local** [Ollama](https://ollama.com) instance — Ollama cloud-proxy
 tags are blocked.
 
 One explicit exception: **cloud assist** (off by default). If you set
-`ANTHROPIC_API_KEY` and flip the toggle in Settings, an "Improve with Claude" button
-appears on cards. It sends only that single card's text, only when you click it.
-Reviews, capture chat, grading, and embeddings never touch the cloud regardless.
+`GEMINI_API_KEY` (free key at [aistudio.google.com](https://aistudio.google.com)) and
+flip the toggle in Settings, an "Improve with Gemini" button appears on cards. It sends
+only that single card's text, only when you click it. Reviews, capture chat, grading,
+and embeddings never touch the cloud regardless.
 
 ## Local models
 
