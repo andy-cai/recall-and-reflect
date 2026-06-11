@@ -19,6 +19,14 @@
         {
           "question": "Why use the t-distribution instead of z for a 5-sample tensile test, and what does it cost you?",
           "answer": "With σ estimated from 5 points, the estimate itself is noisy — t's fatter tails (4 DOF) account for that extra uncertainty. Cost: wider confidence intervals / larger critical values, i.e., you need a bigger effect to claim significance."
+        },
+        {
+          "question": "Your incoming-inspection test passes a bad lot. Type I or Type II error — and why doesn't tightening α from 0.05 to 0.01 fix it?",
+          "answer": "Passing a bad lot is failing to reject a false H0 ('lot is good') — Type II (β, missed detection). α only sets the false-alarm rate on good lots; tightening it demands stronger evidence to reject, which raises β at fixed sample size. The trade is rigid: only more samples (or a bigger effect, or less variance) buys both down. Remember: α is chosen, β must be computed — power = 1 − β."
+        },
+        {
+          "question": "Sketch the standard normal and a t-distribution with ~4 degrees of freedom on the same axes, and mark what the difference does to a 95% interval.",
+          "answer": "A correct sketch shows:\n- Same axes, both curves symmetric and centered at 0\n- t-curve: lower peak, visibly fatter tails — crossing above the normal beyond roughly |x| ≈ 1.5–2\n- 95% critical values marked: ±1.96 for the normal, ±2.78 for t at 4 DOF — the t interval ~40% wider\n- Annotation: the fat tails are the price of estimating σ from few points\n- Convergence note: as DOF grow (≳30) the t-curve collapses onto the normal — the distinction matters only for small samples"
         }
       ]
     },
@@ -35,7 +43,20 @@
         "Jacobi/G-S: iterate on sparse systems; diagonal dominance guarantees convergence",
         "Least squares: minimize $\\|Ax-b\\|^2$ → $A^TA\\hat{x} = A^Tb$; QR/SVD when ill-conditioned"
       ],
-      "cards": []
+      "cards": [
+        {
+          "question": "Your code solves Ax = b for a thousand different b vectors with the same A. Why is factoring once (LU) the right move — and why is forming A⁻¹ explicitly still wrong?",
+          "answer": "LU pays the $O(n^3)$ elimination cost once; each new b is then two triangular substitutions at $O(n^2)$. Computing $A^{-1}$ costs the same $O(n^3)$ but then destroys sparsity (the inverse of a sparse matrix is generally dense) and amplifies rounding error versus solving directly. Rule: never invert — factor and substitute."
+        },
+        {
+          "question": "When does an iterative solver (Jacobi/Gauss-Seidel) beat Gaussian elimination, and what property of A underwrites convergence?",
+          "answer": "On large sparse systems (FEA, CFD, circuit nets) where $O(n^3)$ work and fill-in are unaffordable: each sweep costs only the nonzeros, and you can stop at engineering accuracy. Diagonal dominance guarantees convergence (Gauss-Seidel also converges for symmetric positive definite K); Gauss-Seidel uses freshly updated values within a sweep, roughly halving Jacobi's iteration count. Without dominance or SPD structure, iteration can diverge outright."
+        },
+        {
+          "question": "Rotation and scaling are plain matrix multiplies, but translation isn't. What do homogeneous coordinates change to fix that, and what does it buy a robotics or graphics pipeline?",
+          "answer": "Translation is affine, not linear — it moves the origin, which no n×n matrix can do. Appending a coordinate (w = 1) embeds the space one dimension up, where translation becomes a shear of the w = 1 plane: rotate, scale, AND translate all become one 4×4 multiply. The payoff is composition: a whole kinematic chain collapses into a single matrix product you can invert and interpolate."
+        }
+      ]
     },
     {
       "title": "Eigenvalues, eigenvectors & factorizations",
@@ -54,6 +75,14 @@
         {
           "question": "Why does repeatedly multiplying a random vector by A converge to the dominant eigenvector?",
           "answer": "Expand the vector in the eigenbasis: each multiplication scales component i by $\\lambda_i$. After k steps, ratios go as $(\\lambda_i/\\lambda_1)^k \\to 0$ — the dominant term swamps the rest. Convergence rate is set by $|\\lambda_2/\\lambda_1|$, hence shifts to accelerate."
+        },
+        {
+          "question": "Eigendecomposition vs SVD — when does eigendecomposition stop being an option, and what does the SVD guarantee that it can't?",
+          "answer": "Eigendecomposition needs a square matrix, and even then can be defective (too few eigenvectors) or complex. The SVD $A = U\\Sigma V^T$ exists for ANY matrix — rectangular data, rank-deficient systems — with orthogonal U, V and real σ ≥ 0, giving rank, condition number ($\\sigma_{max}/\\sigma_{min}$), and the pseudo-inverse directly. For symmetric positive matrices the two coincide; reach for SVD the moment the matrix is non-square, non-symmetric, or near-singular."
+        },
+        {
+          "question": "Why do principal stresses always come out real, with mutually perpendicular directions — never complex?",
+          "answer": "The stress tensor is symmetric, and the spectral theorem guarantees every real symmetric matrix has real eigenvalues and a full orthogonal set of eigenvectors. The same theorem is why vibration modes of symmetric K and M are real and orthogonal, and why PCA axes are perpendicular — symmetry is doing the work in all three."
         }
       ]
     },
@@ -74,6 +103,14 @@
         {
           "question": "When does the Lagrangian approach beat Newton for deriving equations of motion?",
           "answer": "Systems with constraints and awkward geometry — pendulums on carts, linkages, rolling: pick generalized coordinates that respect constraints, and constraint forces (which do no work) never appear. Newton requires drawing and eliminating them by hand."
+        },
+        {
+          "question": "Laplace vs Fourier — they look like the same integral. Which questions does each answer, and when does using Fourier flatly fail?",
+          "answer": "Fourier decomposes a signal into sinusoids: it answers 'what is the steady-state response at each frequency?' and needs the signal to be bounded/integrable. Laplace adds a convergence factor ($s = \\sigma + j\\omega$): it answers 'how does the system evolve from its initial conditions — and is it stable?' — transients, steps, and growing solutions included, with stability read from pole locations. Fourier fails on unstable or one-shot transient problems (the integral diverges or ICs vanish); for a stable system, setting $s = j\\omega$ recovers the Fourier picture as a special case."
+        },
+        {
+          "question": "The small-angle pendulum has an amplitude-independent period thanks to sin θ ≈ θ. How big can θ get before the lie matters, and how do you know without solving the full problem?",
+          "answer": "Check the first neglected Taylor term: $\\sin\\theta = \\theta - \\theta^3/6 + \\ldots$, so the relative error is ~$\\theta^2/6$ — about 1% at 14° (0.24 rad) and 4% at 30°. Physically the restoring force softens, so the real period lengthens with amplitude. That truncation check — bound the next term — is the general discipline behind every linearization."
         }
       ]
     },
@@ -90,7 +127,20 @@
         "Divergence: $\\oiint F\\cdot dA = \\iiint \\nabla\\cdot F\\, dV$",
         "Conservation laws: integral ↔ differential form via these theorems (continuity: $\\partial\\rho/\\partial t + \\nabla\\cdot(\\rho V) = 0$)"
       ],
-      "cards": []
+      "cards": [
+        {
+          "question": "A force field lets you skip the line integral entirely and just difference a potential. What quick test certifies that — and what's the topological catch?",
+          "answer": "Check $\\nabla\\times F = 0$: curl-free on a simply connected domain ⟺ $F = \\nabla\\phi$, so work = φ(end) − φ(start), path-independent — gravity and springs work this way, friction never does. The catch: on a domain with a hole (the vortex field around a wire), curl can vanish everywhere yet loops around the hole still do net work — curl-free is only local; the domain's topology completes the proof."
+        },
+        {
+          "question": "How does the divergence theorem turn 'mass is conserved' from a statement about control volumes into a PDE — and why is the same trick behind heat and Maxwell's equations?",
+          "answer": "Write the balance on a closed surface: net outflow $\\oiint \\rho V\\cdot dA$ must equal the loss rate inside. The divergence theorem converts the flux to $\\iiint \\nabla\\cdot(\\rho V)\\,dV$; since the balance holds for EVERY volume, the integrands must match pointwise → $\\partial\\rho/\\partial t + \\nabla\\cdot(\\rho V) = 0$. Any conserved quantity (energy, charge) yields its differential law the same way — 'holds for all volumes' is what deletes the integral signs."
+        },
+        {
+          "question": "A field has zero divergence everywhere. What does that guarantee about flux through any closed surface, and which physical fields live under this rule?",
+          "answer": "Net flux through every closed surface is exactly zero — field lines cannot start or stop, only loop or run to infinity. That's incompressible flow ($\\nabla\\cdot V = 0$: what flows in must flow out) and magnetism ($\\nabla\\cdot B = 0$: no monopoles, so flux entering a magnetic circuit leaves it). Practical use: it lets you move a flux calculation from an awkward surface to any easier surface sharing the same boundary."
+        }
+      ]
     },
     {
       "title": "Solving ODEs & classic PDEs",
@@ -110,6 +160,130 @@
         {
           "question": "Why does the heat equation smooth a jagged initial temperature profile almost instantly, while the wave equation preserves a jagged pulse?",
           "answer": "Separated heat modes decay like $e^{-\\alpha k^2 t}$ — quadratically faster for higher spatial frequency, so sharp features (high k) vanish first. Wave modes only oscillate ($e^{\\pm ikct}$), all frequencies persisting and propagating — the equation is time-reversible, diffusion isn't."
+        },
+        {
+          "question": "Before solving anything, the characteristic roots already tell you the shape of a linear ODE's response. Decode each case: real negative, complex pair, repeated, any root with positive real part.",
+          "answer": "Roots ARE the system's poles. Real negative → pure exponential decay (overdamped); complex pair $\\sigma \\pm j\\omega$ → oscillation at ω inside an $e^{\\sigma t}$ envelope (underdamped if σ < 0); repeated root → the borderline $te^{rt}$ shape (critical damping); any root with positive real part → the solution grows without bound, and no forcing choice can hide it. Damping ratio and natural frequency are just polar coordinates of the root pair."
+        },
+        {
+          "question": "In separation of variables, why do the boundary conditions — not the PDE — decide which sines and cosines appear, and what role does the initial condition play?",
+          "answer": "Separation reduces the PDE to a spatial eigenvalue problem; the BCs select which eigenfunctions survive (fixed ends → $\\sin(n\\pi x/L)$, insulated ends → cosines) and quantize the allowed k's. The PDE itself only dictates how each mode evolves in time (decay vs oscillation). The initial condition then sets each mode's amplitude via orthogonality — a Fourier coefficient calculation. Change the BCs and the entire basis changes; change the IC and only the weights do."
+        }
+      ]
+    },
+    {
+      "title": "Numerical methods: root finding & ODE integration",
+      "subject": "Applied Math",
+      "tags": ["numerical methods"],
+      "content": "Root finding: bisection halves a sign-change bracket — guaranteed, but gains one bit per iteration; Newton $x_{n+1} = x_n - f(x_n)/f'(x_n)$ converges quadratically near the root but needs the derivative and a good start, and diverges where $f' \\approx 0$. Production solvers bracket globally, then polish locally (Brent's method spirit). ODE integration: explicit Euler $y_{n+1} = y_n + hf$ is first order (global error ~h); RK4 samples the slope four times per step for fourth order (~h⁴). Step size is set by accuracy OR stability — explicit methods go unstable when h exceeds ~2/|λ| of the fastest eigenvalue. Stiff systems (fast and slow timescales coexisting) enslave explicit steps to a fast mode that's already decayed; implicit methods (backward Euler, BDF) stay stable at physics-sized steps, paying an algebraic solve per step.",
+      "recall_prompt": "Compare Newton vs bisection (convergence rate, guarantees, failure modes) and Euler vs RK4 (order, cost), then explain stability limits and why stiff systems force implicit methods.",
+      "key_ideas": [
+        "Bisection: guaranteed on a sign-change bracket, linear convergence (1 bit/iteration); Newton: quadratic near the root, but needs $f'$ and can diverge ($f' \\to 0$, bad start)",
+        "Practice = hybrid: bracket for safety, Newton/secant for speed (Brent)",
+        "Explicit Euler error ~h (first order); RK4 ~h⁴ — halving h buys 2× vs 16× accuracy",
+        "Stability is separate from accuracy: explicit Euler requires $h \\lesssim 2/|\\lambda|$ for the fastest decaying mode",
+        "Stiff system = wide eigenvalue spread: the dead fast mode sets the explicit step, not the physics you care about",
+        "Implicit methods (backward Euler, BDF) are stable for any h on decaying modes — cost is a (often nonlinear) solve per step"
+      ],
+      "cards": [
+        {
+          "question": "Newton finds the root in 5 iterations where bisection needs 50 — why would you ever bisect?",
+          "answer": "Newton's quadratic convergence (digits roughly double per iteration) only operates NEAR the root, needs the derivative, and fails ugly: it shoots to infinity where $f' \\approx 0$, cycles, or converges to the wrong root from a bad start. Bisection cannot fail once you've bracketed a sign change — it grinds out exactly one bit per iteration, no derivative, no luck required. Production root-finders (Brent) bracket first and unleash Newton/secant steps only while they behave."
+        },
+        {
+          "question": "Your explicit ODE integration blows up unless the step is absurdly small, yet the solution it eventually produces is smooth and boring. Name the disease and the cure.",
+          "answer": "Stiffness: the system has a fast mode (big |λ|) that decayed away almost immediately, but explicit stability still demands $h \\lesssim 2/|\\lambda_{fast}|$ forever — the step is enslaved to a ghost. The cure is an implicit method (backward Euler, BDF): unconditionally stable for decaying modes, so h is set by the accuracy of the slow dynamics you actually care about, at the price of solving an algebraic system each step. Chemical kinetics, stiff circuits, and fine-meshed thermal models all live here."
+        },
+        {
+          "question": "RK4 costs four function evaluations per step to Euler's one. When is that 4× a bargain, and what problem does it NOT fix?",
+          "answer": "Per unit of accuracy, RK4 wins overwhelmingly on smooth problems: error scales as h⁴ vs h, so matching RK4's accuracy with Euler takes astronomically more steps than 4×. It does not fix stiffness — RK4 is still explicit with a similarly-sized stability region, so the step limit stands — and discontinuous forcing breaks the high order (the error analysis assumes smooth derivatives; integrate up to the discontinuity and restart)."
+        }
+      ]
+    },
+    {
+      "title": "Least squares & regression",
+      "subject": "Applied Math",
+      "tags": ["statistics", "linear algebra"],
+      "content": "Fitting $Ax \\approx b$ by minimizing $\\|Ax - b\\|^2$ gives the normal equations $A^TA\\hat{x} = A^Tb$ — geometrically, $A\\hat{x}$ is the projection of the data vector b onto the column space of A, and the residual is perpendicular to it. $R^2$ reports the fraction of variance explained, but it climbs with every added parameter — honesty requires adjusted $R^2$ or held-out validation. Residual plots are the diagnosis: structure (curvature, funnels, time trends) means the model is wrong, not the data noisy. The fit is certified only inside the data's range — polynomial extrapolation in particular goes feral. Numerics: forming $A^TA$ squares the condition number; use QR or SVD when columns are near-collinear.",
+      "recall_prompt": "Derive least squares two ways (calculus and projection), then walk the honesty checklist: what R² does and doesn't say, what residual plots diagnose, and why extrapolation voids the warranty.",
+      "key_ideas": [
+        "Minimize $\\|Ax-b\\|^2$ → normal equations $A^TA\\hat{x} = A^Tb$; residual orthogonal to every column of A",
+        "Geometry: $A\\hat{x}$ = projection of b onto col(A) — the fit is the shadow, the residual the perpendicular",
+        "$R^2$ rises with EVERY added parameter — use adjusted $R^2$ / validation data to keep it honest",
+        "Structured residuals (curvature, funnel, drift) = wrong model, not noisy data",
+        "Extrapolation outside the data's range is uncertified — polynomials diverge fastest",
+        "Conditioning: $\\kappa(A^TA) = \\kappa(A)^2$ — near-collinear columns demand QR/SVD"
+      ],
+      "cards": [
+        {
+          "question": "Sketch least squares as a projection: the data vector b, the column space of A, the fitted values, and the residual.",
+          "answer": "A correct sketch shows:\n- The column space of A drawn as a plane (a subspace through the origin)\n- The data vector b as an arrow poking out of that plane\n- The fit $A\\hat{x}$ as the foot of the perpendicular — b's shadow on the plane\n- The residual $r = b - A\\hat{x}$ drawn from the plane up to b, with a right angle marked where it meets the plane\n- Annotation: that right angle IS the normal equations ($A^Tr = 0$ — residual orthogonal to every column)\n- Pythagoras noted: $\\|b\\|^2 = \\|A\\hat{x}\\|^2 + \\|r\\|^2$ — the decomposition behind $R^2$\n- Validity: linear-in-parameters models only (the 'plane' must be a subspace)"
+        },
+        {
+          "question": "A fit reports R² = 0.97. Give two distinct ways it can still be worthless for prediction.",
+          "answer": "First, overfit: R² rises with every added parameter, so a high-order model can chase noise and score brilliantly in-sample while predicting garbage — adjusted R² or held-out data exposes it. Second, wrong model shape with strong trend: a straight line through gently curving data explains most variance yet is systematically biased everywhere — only the residual plot shows the curvature. R² measures variance explained, not correctness, and says precisely nothing outside the fitted range."
+        },
+        {
+          "question": "Your residual plot funnels — small scatter at low x, large at high x. What assumption broke, and what does it poison?",
+          "answer": "Homoscedasticity (constant error variance). The coefficient estimates remain unbiased, but ordinary least squares weights every point equally, so the confidence intervals, p-values, and prediction bands are wrong — overconfident exactly where the data is noisiest. Fix with weighted least squares (weights ∝ 1/σ²) or a variance-stabilizing transform like log(y). The plot, not the R², is what caught it."
+        }
+      ]
+    },
+    {
+      "title": "Optimization fundamentals",
+      "subject": "Applied Math",
+      "tags": ["optimization"],
+      "content": "Unconstrained: $\\nabla f = 0$ is necessary; the Hessian classifies min/max/saddle. Gradient descent steps along $-\\nabla f$ — simple and scalable, but it zig-zags down ill-conditioned (long, narrow) valleys, with convergence governed by the Hessian's condition number. Convexity is the prize: for a convex objective over a convex feasible set, ANY local minimum is global — the only certificate that the answer found is THE answer; everything nonconvex is multistart and hope. Constrained: at an optimum on a constraint surface, the objective gradient must align with the constraint gradient — $\\nabla f = \\lambda\\nabla g$ (Lagrange) — because any tangential component would be a feasible improving direction. The multiplier λ is the shadow price: improvement per unit of constraint relaxation.",
+      "recall_prompt": "Explain what convexity certifies and why, how gradient descent behaves in ill-conditioned valleys, and derive the Lagrange condition ∇f = λ∇g as constraint-gradient alignment, including what λ means.",
+      "key_ideas": [
+        "Convex objective + convex feasible set ⟹ local minimum = global — the certificate nonconvex problems never get",
+        "$\\nabla f = 0$ necessary; Hessian positive definite → min, indefinite → saddle",
+        "Gradient descent zig-zags in narrow valleys: convergence degrades with the Hessian's condition number $\\lambda_{max}/\\lambda_{min}$",
+        "Lagrange: at a constrained optimum $\\nabla f = \\lambda\\nabla g$ — no improving direction remains tangent to the constraint",
+        "λ = shadow price: d(optimum)/d(constraint level) — which constraints are worth money to relax",
+        "Nonconvex practice: multistart, accept good-enough local optima, or reformulate toward convexity"
+      ],
+      "cards": [
+        {
+          "question": "Why does gradient descent zig-zag down a long narrow valley, and what property of the problem sets how bad it gets?",
+          "answer": "The negative gradient is perpendicular to the local contour — in an elongated valley that points mostly ACROSS the valley, not along it, so successive steps overshoot side to side while creeping toward the bottom. The Hessian's condition number ($\\lambda_{max}/\\lambda_{min}$, the contour ellipses' aspect ratio) sets the pain: convergence slows roughly as the ratio grows. Fixes reshape the geometry — preconditioning/variable scaling, momentum, or Newton steps that use curvature."
+        },
+        {
+          "question": "At a constrained optimum, why must ∇f be parallel to ∇g? Argue it from what a non-parallel component would let you do.",
+          "answer": "∇g is normal to the constraint surface, so any component of $-\\nabla f$ tangent to the surface is a direction you can move WITHOUT violating the constraint while still decreasing f — meaning the point wasn't optimal. At the true optimum, every improving direction points off the surface, which is exactly $\\nabla f = \\lambda\\nabla g$. The multiplier isn't bookkeeping: λ is the rate the optimum improves per unit the constraint is relaxed — the price tag that tells you which requirement to renegotiate."
+        },
+        {
+          "question": "What does certifying a problem as convex buy you that a million random restarts never can?",
+          "answer": "A proof instead of a sample: convexity makes every local minimum global, so one converged solver run IS the certificate of optimality. Multistart on a nonconvex problem only explores basins — it can report the best minimum found, never that no better one exists. That's why practitioners spend effort reformulating (change of variables, convex relaxation) before reaching for bigger heuristic hammers: the structure is worth more than the compute."
+        }
+      ]
+    },
+    {
+      "title": "Design of experiments",
+      "subject": "Applied Math",
+      "tags": ["statistics", "doe"],
+      "content": "A $2^k$ factorial runs every combination of k factors at two levels, estimating all main effects AND interactions from the same runs — and every effect estimate uses ALL the runs (hidden replication). One-factor-at-a-time (OFAT) can never see an interaction (the effect of A changing with the level of B) and wastes runs besides. Randomizing run order converts time-ordered drift (tool wear, warm-up, ambient) into honest noise instead of bias; blocking gives known nuisance variables (day, batch, machine) their own stratum — block what you can name, randomize what you can't. Replication separates effect size from experimental error, giving the F-test its denominator. Fractional factorials ($2^{k-p}$) cut runs by confounding effects with high-order interactions — resolution tells you which aliases you've accepted.",
+      "recall_prompt": "Explain why factorial designs beat one-factor-at-a-time (interactions and hidden replication), what randomization and blocking each protect against, and what a fractional factorial trades for fewer runs.",
+      "key_ideas": [
+        "$2^k$ factorial: all combinations → main effects AND interactions; each estimate averages over all runs (hidden replication)",
+        "Interaction = effect of A depends on level of B — OFAT is structurally blind to it",
+        "Randomize run order: converts drift and lurking variables into noise instead of bias",
+        "Block known nuisances (day, batch, operator); 'block what you can, randomize what you cannot'",
+        "Replication estimates pure error — the denominator that makes significance testable",
+        "Fractional $2^{k-p}$: fewer runs bought by aliasing; resolution IV+ keeps main effects clear of two-factor interactions"
+      ],
+      "cards": [
+        {
+          "question": "OFAT tuned temperature, then time, and declared both 'optimal' — yet the factorial shows that combined setting is poor. What did OFAT miss, mechanically?",
+          "answer": "The interaction: OFAT measured temperature's effect only at the baseline time, but the temperature effect reverses (or shrinks) at the other time level — crossed lines on an interaction plot. Its 'optimum' is an artifact of the starting corner. A 2×2 factorial estimates the interaction from the same four runs that give both main effects, and each estimate averages all four — better information from fewer runs."
+        },
+        {
+          "question": "Why randomize run order even when you're confident nothing changes over the day?",
+          "answer": "Because if you run all the low-level trials in the morning and high-level in the afternoon, ANY drift — tool wear, warm-up, ambient shift, operator fatigue — lands directly on top of your factor effect, as bias you cannot remove after the fact. Randomization doesn't eliminate drift; it scatters it into the error term, where it honestly inflates noise and the F-test accounts for it. Drift you can NAME deserves blocking instead — randomization is insurance against the lurking variables you can't."
+        },
+        {
+          "question": "A half-fraction 2^(k−1) design cuts the run count in half — when is that nearly free, and what exactly did you pay?",
+          "answer": "You paid in aliases: each effect is confounded with a partner effect (set by the design generator), and the runs literally cannot tell aliased pairs apart. It's nearly free when effect sparsity holds — high-order interactions are implausible, so confounding a main effect or 2-factor interaction with a 3-factor one (resolution IV/V) loses nothing real. It bites at low resolution — resolution III aliases main effects with two-factor interactions, resolution IV aliases two-factor interactions with each other — where a 'significant' effect may belong to its alias, and only fold-over or follow-up runs can break the tie."
         }
       ]
     },
@@ -131,6 +305,10 @@
         {
           "question": "Why does silicon conduct better when heated while copper conducts worse?",
           "answer": "Silicon: carriers must be thermally excited across the ~1.1 eV band gap — more temperature, exponentially more carriers (dominates). Copper: the band is already half-full of carriers; heating just increases phonon scattering, lowering mobility. Gap vs no gap flips the temperature coefficient."
+        },
+        {
+          "question": "Ionic and metallic crystals are both held together by strong electrostatic attraction. Why do metals bend while salts shatter?",
+          "answer": "Metallic bonding is nondirectional — a delocalized electron sea rebonds atoms wherever they land, so planes can slide (dislocations glide) and the metal yields. In an ionic crystal, a half-plane slip brings like charges face-to-face: the slip plane turns repulsive, so instead of flowing, the crystal cleaves. Same bond strength, opposite plasticity — bonding TYPE, not bond energy, decides ductile vs brittle."
         }
       ]
     },
@@ -152,6 +330,10 @@
         {
           "question": "Your accelerated battery test runs at 60°C instead of 25°C. Using Arrhenius logic with Ea ≈ 0.5 eV, roughly what acceleration factor are you claiming — and what's the catch?",
           "answer": "Each ~10°C roughly doubles the rate → ~2^3.5 ≈ 10× faster aging. Catch: Arrhenius extrapolation assumes the SAME mechanism dominates at both temperatures — high-T tests can activate failure modes (e.g., separator/SEI changes) that never occur in service, or miss low-T ones like lithium plating."
+        },
+        {
+          "question": "A catalyst makes a reaction a million times faster yet leaves the final equilibrium mixture untouched. How can both be true?",
+          "answer": "The catalyst opens a lower-$E_a$ pathway, and Arrhenius says both the forward AND reverse rates rise by the same factor — so $K = k_f/k_r$ is unchanged. Equilibrium position is fixed by ΔG of reaction (thermodynamics), which the catalyst never touches; it only shortens the time to get there. Corollary: no catalyst can rescue a reaction that's thermodynamically uphill."
         }
       ]
     },
@@ -168,7 +350,20 @@
         "Curie temperature: thermal energy beats exchange → ferro becomes para",
         "Hard (high coercivity) = magnets; soft (narrow loop) = cores, low AC loss"
       ],
-      "cards": []
+      "cards": [
+        {
+          "question": "Transformer cores and permanent magnets are both 'magnetic iron alloys' — why does each need the OPPOSITE hysteresis loop, and what does choosing wrong cost?",
+          "answer": "A transformer core re-traverses its loop 50/60 times a second, and the loop's enclosed area is energy lost as heat per cycle — so it needs a narrow loop: low coercivity, easy domain-wall motion (soft, e.g. Si-steel laminations). A permanent magnet must hold its state against demagnetizing fields — wide loop, high coercivity and remanence (hard, NdFeB/AlNiCo). Swap them and you get a transformer that cooks itself or a 'magnet' that erases in service."
+        },
+        {
+          "question": "Heating a magnet past its Curie temperature erases it. What is thermal energy actually defeating, and what kind of magnetism survives above Tc?",
+          "answer": "Ferromagnetism rests on the exchange interaction holding neighboring spins parallel within domains; at Tc, kT beats the exchange coupling and the cooperative order melts. The spins themselves remain — the material becomes an ordinary paramagnet, weakly following applied fields. Cooling back restores the ABILITY to magnetize, not the magnetization: the domains re-form randomly unless a field is applied."
+        },
+        {
+          "question": "Liquid oxygen sticks between magnet poles; liquid nitrogen pours straight through. What does that reveal about their electrons?",
+          "answer": "O2 carries two unpaired electrons (in antibonding π* orbitals — an MO-theory result a simple Lewis structure misses), making it paramagnetic and field-attracted. N2 has every electron paired, so it's weakly diamagnetic. Unpaired spins are the entire ballgame: pairing cancels the moments."
+        }
+      ]
     },
     {
       "title": "GD&T & dimensional inspection",
@@ -187,6 +382,14 @@
         {
           "question": "A hole's position tolerance is 0.1 @ MMC. The hole comes in 0.05 larger than its smallest allowed size. What position tolerance does it actually get, and why is that legitimate?",
           "answer": "0.15 — bonus tolerance equal to the departure from MMC. Legitimate because function (a pin must fit through) depends on the combination of size and position: a bigger hole tolerates more location error while still assembling. It's the virtual-condition boundary that's actually being protected."
+        },
+        {
+          "question": "Sketch the complete feature control frame for a hole held at true position ⌀0.2 at MMC relative to datums A, B, C — label every compartment.",
+          "answer": "A correct sketch shows:\n- A rectangular frame divided into compartments, attached by leader to the hole's size callout\n- First compartment: the position symbol (crosshair-in-circle)\n- Second compartment, in order: ⌀ (cylindrical tolerance zone), 0.2 (zone size), circled-M (MMC modifier — bonus tolerance as the hole departs from MMC)\n- Then three datum compartments, left to right: A | B | C — primary, secondary, tertiary; order is meaningful, not alphabetical decoration\n- Annotation: A constrains 3 points (seats the part), B constrains 2, C constrains 1 — mirroring how the part mounts\n- Note: without the ⌀ the zone would be two parallel planes; without the M the tolerance is RFS, no bonus"
+        },
+        {
+          "question": "Two inspectors measure the same part to the same drawing and disagree pass/fail — one seated the part on datum B first. Why does datum ORDER change the answer?",
+          "answer": "Datums constrain degrees of freedom in sequence: the primary takes 3 contact points, secondary 2, tertiary 1. Seating B first tips the part differently on its real, imperfect surfaces, so every measured position shifts relative to the datum reference frame. The order isn't bookkeeping — it must replicate how the part actually mounts in the assembly, and inspection fixtures/CMM alignments must follow it exactly."
         }
       ]
     },
@@ -208,6 +411,14 @@
         {
           "question": "Your mesh-refinement study shows stress at a corner climbing 15% per refinement without leveling off. What's happening and what are the two honest responses?",
           "answer": "It's a singularity — sharp re-entrant corner has theoretically infinite elastic stress, so refinement chases infinity. Either model the real fillet radius and converge on its true peak, or acknowledge the local field is fictitious and assess by stress at a characteristic distance / nominal + concentration factor."
+        },
+        {
+          "question": "Your bolted-bracket model uses bonded contact at every interface and the deflection matches the hand calc. Why can the stresses near the joints still be badly wrong?",
+          "answer": "Bonded contact glues entire faying surfaces — they now carry tension, moment, and shear through faces that in reality can separate, slip, and load the bolts in bearing. Global stiffness barely notices (the load path length is similar), but the LOCAL load path is fiction: bolt loads, prying, and bearing stresses are wrong. When joint behavior matters, switch to frictional contact with bolt pretension; keep bonded only for stiffness-level answers far from the joints."
+        },
+        {
+          "question": "Applying a remote load through a rigid connection vs a deformable one — when does 'rigid' lie, and how does the lie show up?",
+          "answer": "A rigid remote connection forces the attached face to move as a rigid body — fine when the real attached hardware truly is much stiffer than the part. When it isn't, the rigid constraint suppresses the face's natural deformation: artificial stiffness, fake stress concentrations at the connection boundary, and unconservative deflections. Deformable spreads the load while letting the face flex — the default unless you can defend the rigidity physically."
         }
       ]
     },
@@ -225,7 +436,20 @@
         "SWOT/PESTLE/Porter: situational scans — inputs to strategy, not decisions",
         "All are structured conversations; the value is shared, explicit reasoning"
       ],
-      "cards": []
+      "cards": [
+        {
+          "question": "Why does a Pugh matrix score concepts as +/−/same against a DATUM concept instead of rating each on an absolute scale — what failure mode does that prevent?",
+          "answer": "People compare far more reliably than they rate: 'better than the reference at serviceability' is defensible; '7/10' is noise wearing a number. Relative scoring prevents false precision and weight-gaming, and the argument over each +/− is the real output — it surfaces hidden assumptions. Re-running with the winner as the new datum checks that the choice is robust, not an artifact of the reference."
+        },
+        {
+          "question": "Your brainstorm dies because every idea gets critiqued the moment it's spoken. Which tool fixes this, and what's the mechanism?",
+          "answer": "Six Thinking Hats: it separates thinking MODES in time — everyone wears the same hat at once, so green-hat generation happens with black-hat critique explicitly scheduled for later. Premature evaluation kills divergence because people stop offering risky ideas; deferring judgment isn't politeness, it's protecting the search width. The critique still happens — at full strength, just not during ideation."
+        },
+        {
+          "question": "What does the QFD 'roof' add that a plain weighted requirements list cannot — and when does that matter?",
+          "answer": "The roof is a correlation matrix BETWEEN engineering characteristics: it exposes which targets conflict (stiffer ↔ lighter, quieter ↔ cheaper) and which reinforce each other. A flat list lets you promise all targets simultaneously; the roof forces the trade-offs into the open before geometry exists, while each engineering target stays traceable to the weighted customer need that justifies it. It matters most when different subsystems own conflicting characteristics."
+        }
+      ]
     },
     {
       "title": "Tolerance stacks: RSS & Monte Carlo",
@@ -244,6 +468,14 @@
         {
           "question": "A 6-part stack fits fine per RSS but assemblies fail at 8× the predicted rate. The parts measure in-tolerance. What assumptions probably broke?",
           "answer": "Independence and centering: parts from the same mold/lot are correlated, and processes run mean-shifted toward one limit (tool wear, deliberate aim) — RSS's cancellation premise collapses. Monte Carlo with measured distributions (or worst-case on the critical few) gives the honest answer."
+        },
+        {
+          "question": "Worst-case vs RSS on a stack of six equal contributors: RSS allows each part ~2.4× more tolerance. Where does that factor come from, and when must you give it back?",
+          "answer": "Worst-case sums tolerances ($\\Sigma t$); RSS adds in quadrature ($\\sqrt{\\Sigma t^2}$) — for n equal contributors the ratio is $\\sqrt{n}$, so six parts buy √6 ≈ 2.4× looser per-part tolerances for the same assembly limit. The discount is a statistical bet that errors are independent, centered, and roughly normal, with a small accepted reject rate. Give it back when the chain is short (n ≤ 3 — too few terms to cancel), contributors are correlated or mean-shifted, or a single failed assembly is unacceptable (safety interfaces): there, worst-case is the honest call."
+        },
+        {
+          "question": "Sketch the assembly-gap distribution for a 5-part stack, marking the RSS limits and the worst-case limits — the picture that explains why RSS buys tolerance.",
+          "answer": "A correct sketch shows:\n- Horizontal axis: assembly gap; vertical: probability density\n- A bell curve centered on the nominal gap (sums of several independent errors go normal — the CLT at work)\n- RSS limits at ±√(Σt²), drawn to capture ~±3σ of the bell — small reject slivers shaded outside them (the accepted ppm)\n- Worst-case limits further out at ±Σt, with essentially empty tails between them and the RSS limits — that emptiness is the money worst-case wastes\n- Failure-mode annotation: a mean shift slides the whole bell sideways toward one limit, and correlation fattens the bell — both quietly inflate the shaded rejects\n- Validity note: picture holds only for independent, centered, roughly-normal contributors"
         }
       ]
     }

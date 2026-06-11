@@ -118,7 +118,7 @@ benchmark scores, and "What the AI is asked" shows every system prompt verbatim.
 ## Starter curriculum
 
 `seeds/` ships curated example decks (mechanical-engineering core plus battery & test
-engineering — ~95 topics, ~185 cards with key-idea rubrics, task-style recall prompts,
+engineering — ~130 topics, ~500 cards with key-idea rubrics, task-style recall prompts,
 sketch tasks, and contrast cards for confusables). Import any time; re-runs only add
 what's new:
 
