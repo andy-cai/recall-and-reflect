@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recall &amp; Reflect — Reflect chat redesigns</title>
+<style>
+  :root {
+    --accent:#d59a52; --accent-weak:#2d2a1b; --accent-text:#1c1407;
+    --bg:#131d16; --surface:#1b271e; --surface-2:#243027; --border:#2f3b32; --border-strong:#3d4b40;
+    --text:#ece3d1; --text-soft:#c4bca7; --muted:#8b9182;
+    --good:#87ba6c; --easy:#6fa9a0; --easy-weak:#15241f;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(0,0,0,.22), 0 8px 24px rgba(0,0,0,.30);
+    --font:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"Inter",sans-serif;
+    --serif:"Charter","Georgia","Cambria",serif;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:var(--font); background:var(--bg); color:var(--text); font-size:15px; line-height:1.55; }
+  h1,h2 { font-weight:640; letter-spacing:-.02em; margin:0; line-height:1.2; }
+  .wrap { max-width:920px; margin:0 auto; padding:40px 24px 120px; }
+  .muted { color:var(--muted); } .soft { color:var(--text-soft); }
+  .eyebrow { font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+  .vtabs { display:flex; gap:7px; margin:22px 0 18px; flex-wrap:wrap; position:sticky; top:0; z-index:5;
+           background:color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter:blur(8px); padding:10px 0; }
+  .vtab { padding:8px 15px; border-radius:99px; border:1px solid var(--border-strong); background:var(--surface);
+          color:var(--text-soft); font-weight:560; font-size:13.5px; cursor:pointer; font-family:inherit; }
+  .vtab.on { background:var(--accent-weak); color:var(--accent); border-color:var(--accent); }
+  .pane { display:none; } .pane.on { display:block; animation:rise .2s ease; }
+  @keyframes rise { from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none} }
+  .pane-note { font-size:13px; color:var(--muted); margin:16px 2px 0; max-width:680px; }
+  .pane-note b { color:var(--text-soft); }
+  .frame { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+           box-shadow:var(--shadow); padding:30px; }
+
+  /* ============ A · MARGINALIA ============ */
+  .ms { display:grid; grid-template-columns:1fr 190px; gap:26px; }
+  .ms-doc { font-family:var(--serif); font-size:16.5px; line-height:1.75; color:var(--text); }
+  .ms-doc p { margin:0 0 18px; }
+  .ms-doc p .anchor { background:linear-gradient(transparent 65%, var(--accent-weak) 65%); border-radius:2px; }
+  .ms-note-ref { color:var(--accent); font-size:12px; vertical-align:super; font-family:var(--font); font-weight:700; cursor:pointer; }
+  .ms-margin { font-size:12.5px; line-height:1.5; padding-top:4px; border-left:1px solid var(--border); padding-left:16px; }
+  .ms-note { margin-bottom:22px; position:relative; }
+  .ms-note .n { color:var(--accent); font-weight:800; font-size:11px; margin-right:4px; }
+  .ms-note.open { color:var(--text-soft); }
+  .ms-note.open .q { font-style:italic; color:var(--accent); }
+  .ms-note.done { opacity:.45; }
+  .ms-note.done .q { font-style:italic; }
+  .ms-note .tick { color:var(--good); font-size:11px; margin-left:4px; }
+  .ms-write { margin-top:8px; border-top:1px dashed var(--border-strong); padding-top:16px; }
+  .ms-write .cue { font-family:var(--serif); font-style:italic; color:var(--muted); font-size:15px; }
+  .ms-caret { display:inline-block; width:2px; height:18px; background:var(--accent); vertical-align:text-bottom;
+              animation:blink 1.1s steps(1) infinite; margin-left:2px; }
+  @keyframes blink { 50% { opacity:0; } }
+
+  /* ============ B · STREAM ============ */
+  .st { max-width:580px; margin:0 auto; font-family:var(--serif); font-size:17px; line-height:1.8; }
+  .st p { margin:0 0 8px; }
+  .st .dim { opacity:.45; }
+  .st-q { text-align:center; margin:26px 0; font-family:var(--font); }
+  .st-q .orn { color:var(--border-strong); font-size:13px; letter-spacing:.4em; }
+  .st-q .q { font-style:italic; color:var(--accent); font-size:14.5px; margin-top:6px; }
+  .st-q.past { opacity:.4; margin:18px 0; }
+  .st-q.past .q { color:var(--muted); font-size:12.5px; }
+  .st-q.live .q { animation:rise .4s ease; }
+  .st-cue { color:var(--muted); font-style:italic; font-size:15px; margin-top:10px; }
+
+  /* ============ C · SCRIPT ============ */
+  .sc { font-size:15.5px; }
+  .sc-turn { display:grid; grid-template-columns:84px 1fr; gap:20px; padding:18px 4px; border-bottom:1px solid var(--border); }
+  .sc-turn:last-of-type { border-bottom:none; }
+  .sc-who { font-size:10.5px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; padding-top:5px; }
+  .sc-who.you { color:var(--muted); }
+  .sc-who.q { color:var(--accent); }
+  .sc-body { font-family:var(--serif); line-height:1.7; }
+  .sc-turn.qq .sc-body { font-style:italic; color:var(--text-soft); font-size:15px; }
+  .sc-turn.first .sc-body::first-letter { font-size:2.6em; line-height:.95; float:left; padding-right:8px; color:var(--accent); font-style:normal; }
+
+  .composer-mock { margin-top:18px; display:flex; gap:10px; }
+  .composer-mock .in { flex:1; background:var(--surface-2); border:1px solid var(--border-strong); border-radius:11px;
+                       padding:11px 13px; color:var(--muted); font-size:14.5px; }
+  .composer-mock .btn { padding:10px 16px; border-radius:11px; border:1px solid var(--accent); background:var(--accent);
+                        color:var(--accent-text); font-weight:600; }
+  @media (max-width:700px){ .ms { grid-template-columns:1fr; } .ms-margin { border-left:none; padding-left:0; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Recall &amp; Reflect · design preview</div>
+  <h1 style="margin-top:8px">Reflect, without the chatbot bubbles</h1>
+  <p class="muted" style="max-width:640px; margin-top:8px">The premise of Reflect is that <b style="color:var(--text-soft)">you</b> are
+    writing the explanation and the AI only annotates it. Three displays that make that true visually —
+    same data underneath, only the skin changes.</p>
+
+  <div class="vtabs">
+    <button class="vtab on" data-pane="p-a">A · Marginalia</button>
+    <button class="vtab" data-pane="p-b">B · Stream</button>
+    <button class="vtab" data-pane="p-c">C · Script</button>
+  </div>
+
+  <!-- ============ A ============ -->
+  <div class="pane on" id="p-a">
+    <div class="frame">
+      <div class="eyebrow" style="margin-bottom:18px">Reflect · Hall-Petch &amp; grain size</div>
+      <div class="ms">
+        <div class="ms-doc">
+          <p>Hall-Petch: yield strength rises as grain size shrinks — $\sigma_y = \sigma_0 + k/\sqrt{d}$.
+             Finer grains mean more grain boundaries, and <span class="anchor">boundaries block dislocation
+             motion</span><span class="ms-note-ref">¹</span>, so the metal gets stronger without losing much ductility.</p>
+          <p>When a dislocation reaches a boundary the slip plane orientation changes, so it can't simply
+             glide across — it piles up with others behind it until the local stress concentration is big
+             enough to <span class="anchor">trigger a source in the neighbouring grain</span><span class="ms-note-ref">²</span>.</p>
+          <div class="ms-write">
+            <span class="cue">Keep writing — or answer the margin…</span><span class="ms-caret"></span>
+          </div>
+        </div>
+        <div class="ms-margin">
+          <div class="ms-note done">
+            <span class="n">¹</span><span class="q">What physically stops the dislocation — why can't it just cross?</span>
+            <span class="tick">✓ answered</span>
+          </div>
+          <div class="ms-note open">
+            <span class="n">²</span><span class="q">Does $\sigma_0 + k/\sqrt{d}$ keep working as d → nanometers?</span>
+            <div class="muted" style="font-size:11px; margin-top:5px">answer in the document ↩</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="pane-note"><b>The idea:</b> your reflection reads as one continuous manuscript in serif — the artifact you're
+      actually producing. The AI never gets a "message"; it gets a pencil note in the margin, anchored (¹ ²) to the phrase
+      it questions, highlighted softly in the text. Answered notes fade with a ✓; the live one glows ochre. Writing
+      continues seamlessly at the caret — no send-bubble rhythm. On narrow screens the margin folds inline (variant B,
+      automatically). Saving stores exactly this document as the topic's content.</p>
+  </div>
+
+  <!-- ============ B ============ -->
+  <div class="pane" id="p-b">
+    <div class="frame" style="padding:40px 30px">
+      <div class="eyebrow" style="margin-bottom:22px; text-align:center">Reflect · Hall-Petch &amp; grain size</div>
+      <div class="st">
+        <p class="dim">Hall-Petch: yield strength rises as grain size shrinks — $\sigma_y = \sigma_0 + k/\sqrt{d}$.
+           Finer grains mean more boundaries, and boundaries block dislocation motion.</p>
+        <div class="st-q past">
+          <div class="q">what physically stops the dislocation — why can't it just cross?</div>
+        </div>
+        <p class="dim">The slip plane orientation changes across the boundary, so dislocations pile up until the
+           stress concentration triggers a source in the next grain.</p>
+        <div class="st-q live">
+          <div class="orn">· · ·</div>
+          <div class="q">does $\sigma_0 + k/\sqrt{d}$ keep working as d → nanometers?</div>
+        </div>
+        <p class="st-cue">keep thinking…<span class="ms-caret"></span></p>
+      </div>
+    </div>
+    <p class="pane-note"><b>The idea:</b> a zen-writing column — one centered stream of your prose, large serif, nothing
+      that looks like an app. Questions arrive as quiet centered interstitials (a small ornament + one italic line) that
+      <b>fade into the stream once answered</b>, and earlier paragraphs dim so the live thought holds focus. The
+      meditative option — closest to your "meditation before?" note. Cheapest to build, and it doubles as Marginalia's
+      mobile layout.</p>
+  </div>
+
+  <!-- ============ C ============ -->
+  <div class="pane" id="p-c">
+    <div class="frame">
+      <div class="eyebrow" style="margin-bottom:6px">Reflect · Hall-Petch &amp; grain size</div>
+      <div class="sc">
+        <div class="sc-turn first">
+          <div class="sc-who you">You</div>
+          <div class="sc-body">Hall-Petch: yield strength rises as grain size shrinks — $\sigma_y = \sigma_0 + k/\sqrt{d}$.
+            Finer grains mean more boundaries, and boundaries block dislocation motion.</div>
+        </div>
+        <div class="sc-turn qq">
+          <div class="sc-who q">Q ·</div>
+          <div class="sc-body">What physically stops the dislocation — why can't it just cross?</div>
+        </div>
+        <div class="sc-turn">
+          <div class="sc-who you">You</div>
+          <div class="sc-body">The slip plane orientation changes across the boundary, so dislocations pile up
+            until the stress concentration triggers a source in the next grain.</div>
+        </div>
+        <div class="sc-turn qq">
+          <div class="sc-who q">Q ·</div>
+          <div class="sc-body">Does $\sigma_0 + k/\sqrt{d}$ keep working as d → nanometers?</div>
+        </div>
+      </div>
+      <div class="composer-mock"><div class="in">Your answer…</div><div class="btn">→</div></div>
+    </div>
+    <p class="pane-note"><b>The idea:</b> a printed-interview page — caps speaker rail, hairline rules, serif body, a drop
+      cap opening your first thought, the AI reduced to an italic "Q ·". Editorial and calm, reads beautifully when you
+      revisit the transcript in the Library. The most conventional of the three, lowest risk.</p>
+  </div>
+
+  <div class="frame" style="margin-top:40px; background:var(--surface-2)">
+    <div class="eyebrow" style="margin-bottom:8px">Shared across all three</div>
+    <p class="soft" style="font-size:13.5px">Same conversation data, draft autosave, connection chips, and key-ideas panel —
+    only the rendering changes, so the pick is reversible. Marginalia is the boldest and the best metaphor (you write,
+    it annotates); Stream is the most meditative and the simplest; Script is the safest. Saved transcripts in the
+    Library would render in the same style.</p>
+  </div>
+</div>
+<script>
+  document.querySelectorAll('.vtab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.vtab').forEach(b => b.classList.toggle('on', b === btn));
+      document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id === btn.dataset.pane));
+    });
+  });
+</script>
+</body>
+</html>
