@@ -1,0 +1,13 @@
+{
+  "name": "Recall & Reflect",
+  "short_name": "Recall",
+  "description": "Local-first spaced repetition with effortful recall.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#131d16",
+  "theme_color": "#131d16",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

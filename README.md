@@ -100,6 +100,17 @@ Review grading is the latency-sensitive path. Two knobs:
 - Every LLM call is token-capped (`num_predict`) so a rambling generation can't stall a
   review. The model is kept warm (`keep_alive 30m`) and warmed at startup.
 
+## Desktop shortcut
+
+```bat
+powershell -ExecutionPolicy Bypass -File tools\make_shortcut.ps1
+```
+
+puts a "Recall & Reflect" icon on your Desktop that launches the app (server console
+starts minimized). Alternatively, with the app open in Edge/Chrome use
+*menu → Apps → Install Recall & Reflect* — you get a standalone window with the app
+icon, no browser chrome. Icons are generated from one design by `tools/gen_icons.py`.
+
 ## Tests
 
 ```bat
