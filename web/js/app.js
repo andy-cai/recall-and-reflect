@@ -1,6 +1,7 @@
 // App shell + hash router.
 import { state, el, clear, applyTheme } from './store.js';
 import { api } from './api.js';
+import { setAmbient } from './ambient.js';
 
 import * as today from './views/today.js';
 import * as reflect from './views/reflect.js';
@@ -27,6 +28,9 @@ const ROUTES = {
   settings: { mod: settings, label: 'Settings', icon: 'settings' },
 };
 const NAV = ['today', 'reflect', 'recall', 'library', 'stats'];
+
+// living background per view: full effect while writing, quieter elsewhere
+const AMBIENT = { reflect: 'reflect', today: 'today', recall: 'recall', library: 'library', stats: 'library', settings: '' };
 
 function svg(paths) {
   return el('span', { class: 'ico', html:
@@ -57,6 +61,7 @@ async function route() {
   const entry = ROUTES[name] || ROUTES.today;
 
   for (const [k, b] of Object.entries(navButtons)) b.classList.toggle('active', k === name);
+  setAmbient(AMBIENT[name] ?? '');
 
   if (currentCleanup) { try { currentCleanup(); } catch {} currentCleanup = null; }
   clear(mainEl);

@@ -95,6 +95,22 @@ def connections(req: ConnectionsReq):
     return {"connections": out}
 
 
+class PrettifyReq(BaseModel):
+    text: str
+
+
+@router.post("/prettify")
+def prettify(req: PrettifyReq):
+    """Typeset informal math ('sigma_y = sigma0 + k/sqrt(d)') as $...$ TeX."""
+    llm = get_llm()
+    if not llm.status()["available"]:
+        return {"text": req.text}
+    try:
+        return {"text": llm.prettify_math(req.text)}
+    except OllamaError:
+        return {"text": req.text}   # never block the manuscript on this
+
+
 class SubjectReq(BaseModel):
     transcript: str
 

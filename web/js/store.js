@@ -67,6 +67,7 @@ export function applyTheme(theme) {
     ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
     : (theme || 'light');
   document.documentElement.setAttribute('data-theme', resolved);
+  dispatchEvent(new Event('rr-theme'));   // ambient layer re-skins itself
 }
 
 export function relDate(iso) {

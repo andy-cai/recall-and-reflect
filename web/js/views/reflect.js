@@ -24,6 +24,7 @@ export async function render() {
   let asked = 0, phase = 'gathering';
   const editors = [];               // detail-question editors
   let addMsg = () => ({ node: null, setText() {}, typing() {} });
+  let addStatus = (t) => addMsg('ai', t);   // quiet status line (not a margin note)
   let contentArea = null;
   let makeBtnRef = null;
 
@@ -208,36 +209,71 @@ export async function render() {
       renderDetails(res.cards);
       await ideasJob;
       saveDraft();
-      addMsg('ai').setText('Set. I’ve distilled the key ideas your recall will be graded against — edit them in the panel, they’re what future-you is accountable for. Pick a subject and save.');
+      addStatus('Set. I’ve distilled the key ideas your recall will be graded against — edit them in the panel, they’re what future-you is accountable for. Pick a subject and save.');
     } catch (e) {
       clear(detailList); editors.length = 0; updateCount(); toggleDetails(false);
       await ideasJob;
-      addMsg('ai').setText('Got it — I’ll prompt you to recall this topic at review. Pick a subject and save.');
+      addStatus('Got it — I’ll prompt you to recall this topic at review. Pick a subject and save.');
     }
   }
 
-  // ---------- chat vs manual ----------
+  // ---------- manuscript (Marginalia) vs manual ----------
+  // No chatbot bubbles: your words form a continuous serif manuscript, and the
+  // AI's questions live in the margin as numbered pencil-notes anchored to the
+  // phrase that prompted them. Answering (writing the next paragraph) fades the
+  // note with a ✓. Informal math is echoed back typeset ($...$) by the model.
   if (llmOk) {
-    const log = el('div', { class: 'chat-log' });
-    const composer = el('textarea', { class: 'input', rows: '1', placeholder: 'Describe the topic…' });
-    const sendBtn = el('button', { class: 'btn btn-primary', onClick: onSend }, 'Send');
+    const doc = el('div', { class: 'ms-doc' });
+    const marginCol = el('div', { class: 'ms-margin' });
+    const cue = el('div', { class: 'ms-cue' }, GREETING);
+    let noteCount = 0, openNote = null;
+
+    const composer = el('textarea', { class: 'ms-compose', rows: '1', placeholder: 'Start writing…' });
+    const sendBtn = el('button', { class: 'btn btn-primary', style: { padding: '7px 14px' }, onClick: onSend }, 'Add ↵');
     const makeBtn = el('button', { class: 'btn btn-ghost', style: { display: 'none' }, onClick: () => setupTopic() }, 'Set it up now →');
     makeBtnRef = makeBtn;
+    const writeRow = el('div', { class: 'ms-write' }, composer,
+      el('div', { class: 'row', style: { gap: '6px', justifyContent: 'flex-end', marginTop: '8px' } }, makeBtn, sendBtn));
+    doc.append(cue, writeRow);
+    addStatus = (t) => {
+      doc.insertBefore(el('div', { class: 'ms-cue', style: { marginTop: '4px' } }, t), writeRow);
+      scrollDown();
+    };
 
     const scrollDown = () => requestAnimationFrame(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }));
 
     addMsg = (role, text = '') => {
-      const body = el('span', {}, text);
-      const node = el('div', { class: 'msg ' + role }, body);
-      log.append(node); scrollDown();
+      if (role === 'user') {
+        cue.remove();
+        const node = el('p', {}, text);
+        doc.insertBefore(node, writeRow);
+        if (openNote) {   // writing again counts the open margin note as engaged
+          openNote.classList.remove('open');
+          openNote.classList.add('done');
+          openNote.append(el('span', { class: 'tick' }, ' ✓'));
+          openNote = null;
+        }
+        scrollDown();
+        return { node, setText(v) { node.textContent = v; renderMathIn(node); }, typing() {} };
+      }
+      // assistant → margin note, anchored to the latest paragraph
+      noteCount += 1;
+      const paras = doc.querySelectorAll('p');
+      const lastP = paras[paras.length - 1];
+      if (lastP) lastP.append(el('sup', { class: 'ms-ref' }, String(noteCount)));
+      const body = el('span', { class: 'q' }, text);
+      const note = el('div', { class: 'ms-note open' }, el('span', { class: 'n' }, noteCount + ' '), body);
+      marginCol.append(note);
+      openNote = note;
+      composer.placeholder = 'Answer the margin — or keep writing…';
+      scrollDown();
       let t = null;
       return {
-        node,
-        setText(v) { body.textContent = v; scrollDown(); },
+        node: note,
+        setText(v) { body.textContent = v; },
         typing(on) {
-          if (on && !t) { t = el('span', { class: 'typing' }, el('span'), el('span'), el('span')); node.append(t); }
+          if (on && !t) { t = el('span', { class: 'typing' }, el('span'), el('span'), el('span')); note.append(t); }
           else if (!on && t) { t.remove(); t = null; }
-          scrollDown();
         },
       };
     };
@@ -277,7 +313,7 @@ export async function render() {
             composer.focus();
           } }, `⚯ ${c.title}`));
         }
-        log.append(chips);
+        doc.insertBefore(chips, writeRow);
       } catch {}
     }
 
@@ -285,12 +321,23 @@ export async function render() {
       const text = composer.value.trim();
       if (!text || phase === 'cards' || sendBtn.disabled) return;
       const isFirst = !convo.some(m => m.role === 'user');
-      renderMathIn(addMsg('user', text).node);
+      const para = addMsg('user', text);
+      renderMathIn(para.node);
       convo.push({ role: 'user', content: text });
+      const ci = convo.length - 1;
       saveDraft();
+      // echo back with informal math typeset (and gently corrected) as TeX
+      api.prettify(text).then(r => {
+        const pretty = (r && r.text || '').trim();
+        if (pretty && pretty !== text) {
+          para.setText(pretty);
+          convo[ci].content = pretty;
+          saveDraft();
+        }
+      }).catch(() => {});
       composer.value = ''; composer.style.height = 'auto';
       makeBtn.style.display = '';
-      if (isFirst) showConnections(text);   // fire-and-forget, never blocks the chat
+      if (isFirst) showConnections(text);   // fire-and-forget, never blocks writing
       if (asked < MAX_Q) await requestFollowup();
       else await setupTopic();
     }
@@ -298,10 +345,8 @@ export async function render() {
     composer.addEventListener('input', () => { composer.style.height = 'auto'; composer.style.height = Math.min(200, composer.scrollHeight) + 'px'; });
     composer.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSend(); } });
 
-    addMsg('ai', GREETING);
     chatWrap.append(el('div', { class: 'reflect-grid' },
-      el('div', { class: 'chat' }, log,
-        el('div', { class: 'composer' }, composer, el('div', { class: 'stack', style: { gap: '6px' } }, sendBtn, makeBtn))),
+      el('div', { class: 'card ms-frame' }, el('div', { class: 'ms' }, doc, marginCol)),
       topicPanel));
     setTimeout(() => composer.focus(), 50);
   } else {

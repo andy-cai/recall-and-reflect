@@ -1,6 +1,7 @@
 import { el, toast, applyTheme, state, infoTip } from '../store.js';
 import { api } from '../api.js';
 import { refreshBadge } from '../app.js';
+import { ambientEnabled, setAmbientEnabled } from '../ambient.js';
 
 export async function render() {
   const s = await api.getSettings();
@@ -58,6 +59,10 @@ export async function render() {
   let notif = !!s.notifications;
   const sw = el('div', { class: 'switch' + (notif ? ' on' : ''), onClick: () => { notif = !notif; sw.classList.toggle('on', notif); } }, el('i'));
 
+  // living backgrounds
+  let amb = ambientEnabled();
+  const ambSw = el('div', { class: 'switch' + (amb ? ' on' : ''), onClick: () => { amb = !amb; ambSw.classList.toggle('on', amb); } }, el('i'));
+
   function field(label, control, hint) {
     return el('div', { class: 'row spread', style: { padding: '14px 0', borderBottom: '1px solid var(--border)' } },
       el('div', {}, el('div', { style: { fontWeight: '560' } }, label), hint ? el('div', { class: 'muted', style: { fontSize: '12.5px', maxWidth: '420px' } }, hint) : null),
@@ -88,6 +93,7 @@ export async function render() {
         cloudSw),
       el('div', { class: 'row', style: { gap: '10px', marginTop: '10px' } }, cloudStatus, cloudModelSel)),
     field('Theme', themeSel),
+    field('Living backgrounds', ambSw, 'Slow ambient scenes behind each view (halo + fireflies while reflecting). Off = flat. Also respects your OS reduced-motion setting.'),
     field('Due reminders', sw, 'A gentle Windows notification when reviews pile up.'),
     el('div', { class: 'row', style: { justifyContent: 'flex-end', paddingTop: '16px' } }, saveBtn)));
 
@@ -113,6 +119,7 @@ export async function render() {
         cloud_enabled: cloudOn,
         cloud_model: cloudModelSel.value || undefined,
       });
+      setAmbientEnabled(amb);
       localStorage.setItem('rr-theme', themeSel.value);
       applyTheme(themeSel.value);
       state.settings = await api.getSettings();

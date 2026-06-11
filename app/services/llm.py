@@ -126,6 +126,10 @@ class TopicList(BaseModel):
     topics: list[TopicItem] = Field(default_factory=list)
 
 
+class PrettyText(BaseModel):
+    text: str = Field(default="", description="the same text with math typeset as $...$ TeX")
+
+
 class FocusPlan(BaseModel):
     subjects: list[str] = Field(default_factory=list, description="existing subject names the user wants to prioritize")
     learning_ids: list[int] = Field(default_factory=list, description="ids of specific topics the user wants to prioritize")
@@ -233,6 +237,18 @@ Rewrite the card to address the feedback while keeping it a focused active-recal
 prompt: one idea, answerable in a sentence or two, why/how/when-it-fails phrasing
 preferred over definitions. Keep what the feedback didn't complain about. Output only
 the structured object with the improved question and answer."""
+
+_PRETTY_SYSTEM = """You typeset the math in a learner's note. They write informally — "sigma_y = sigma0 +
+k/sqrt(d)", "P_cr = pi^2 EI over (KL)^2", "omega_n equals root k over m" — and you return
+THE SAME TEXT with every mathematical expression converted to proper inline $...$ TeX
+(\\sigma_y = \\sigma_0 + k/\\sqrt{d} etc.).
+
+Rules:
+- Do NOT change their prose wording, sentence order, or ideas. Only the math notation.
+- Fix obvious slips in the equations themselves (a dropped square, a flipped ratio) when
+  the surrounding text makes the intent unambiguous — silently, in the TeX.
+- If a passage has no math, return it unchanged.
+Output only the structured object."""
 
 _FOCUS_SYSTEM = """The learner tells you what they want to prioritize in their reviews (an exam, a project,
 a vague theme). Match their request against their ACTUAL subjects and topic titles.
@@ -544,6 +560,20 @@ class LLMService:
         system = _STUDENT_SYSTEM + f"\n\nThe topic being taught to you: {topic}"
         messages = [{"role": "system", "content": system}, *history]
         yield from self._chat_stream(messages, temperature=0.7, num_predict=120)
+
+    def prettify_math(self, text: str) -> str:
+        """Echo the learner's paragraph back with informal math typeset as TeX."""
+        messages = [
+            {"role": "system", "content": _PRETTY_SYSTEM},
+            {"role": "user", "content": text[:2000]},
+        ]
+        result = self._complete_json(messages, PrettyText, temperature=0.1,
+                                     num_predict=900, fast=True)
+        out = result.text.strip()
+        # Refuse rewrites that drifted from the original (the model must only typeset)
+        if not out or abs(len(out) - len(text)) > max(80, len(text)):
+            return text
+        return out
 
     def refine_card(self, topic: str, content: str, question: str, answer: str,
                     feedback: str) -> dict:

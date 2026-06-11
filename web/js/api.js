@@ -50,6 +50,7 @@ export const api = {
   // capture
   captureCards: (transcript, n = 4) => jfetch('POST', '/api/capture/cards', { transcript, n }),
   captureIdeas: (transcript) => jfetch('POST', '/api/capture/ideas', { transcript }),
+  prettify: (text) => jfetch('POST', '/api/capture/prettify', { text }),
   captureSubject: (transcript) => jfetch('POST', '/api/capture/subject', { transcript }),
   followupStream: (messages) => streamText('/api/capture/followup', { messages }),
 
