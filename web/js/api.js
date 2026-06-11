@@ -46,6 +46,9 @@ export const api = {
   getSettings: () => jfetch('GET', '/api/settings'),
   updateSettings: (b) => jfetch('PUT', '/api/settings', b),
   llmStatus: () => jfetch('GET', '/api/llm/status'),
+  prompts: () => jfetch('GET', '/api/prompts'),
+  cloudLog: () => jfetch('GET', '/api/cloud/log'),
+  clearCloudLog: () => jfetch('POST', '/api/cloud/log/clear'),
 
   // capture
   captureCards: (transcript, n = 4, use_cloud = false) => jfetch('POST', '/api/capture/cards', { transcript, n, use_cloud }),
@@ -82,6 +85,11 @@ export const api = {
   suspendCard: (id, suspended) => jfetch('POST', `/api/cards/${id}/suspend`, { suspended }),
   refineCard: (id, b) => jfetch('POST', `/api/cards/${id}/refine`, b),
   buryCard: (id, days = 1) => jfetch('POST', `/api/cards/${id}/bury`, { days }),
+  setPrivate: (id, isPrivate) => jfetch('POST', `/api/learnings/${id}/private`, { private: isPrivate }),
+
+  // people (living person cards)
+  personUpdate: (id, text) => jfetch('POST', `/api/learnings/${id}/person_update`, { text }),
+  personAssociation: (id, text) => jfetch('POST', `/api/learnings/${id}/association`, { text }),
 
   // review
   queue: ({ tag = null, learning_id = null, subject = null, limit = null, focus = null, mode = null } = {}) => {

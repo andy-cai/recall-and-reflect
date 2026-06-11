@@ -45,6 +45,7 @@ class Repository:
             conversation=row["conversation"],
             notes=row["notes"],
             priority=row["priority"] if "priority" in row.keys() else 0,
+            private=bool(row["private"]) if "private" in row.keys() else False,
             created_at=from_iso(row["created_at"]),
             is_active=bool(row["is_active"]),
             tags=self.get_tags_for_learning(row["id"]),
@@ -55,13 +56,15 @@ class Repository:
     def create_learning(
         self, title: str, content: str, reflection: Optional[str] = None,
         subject: Optional[str] = None, tags: Optional[list[str]] = None,
-        conversation: Optional[str] = None,
+        conversation: Optional[str] = None, private: bool = False,
     ) -> int:
         now = to_iso(datetime.now())
+        if (subject or "").strip().lower() == "people":
+            private = True   # People are private by construction, not by convention
         lid = self.db.execute(
-            "INSERT INTO learnings (title, content, reflection, subject, conversation, created_at, is_active) "
-            "VALUES (?, ?, ?, ?, ?, ?, 1)",
-            (title, content, reflection, (subject or None), (conversation or None), now),
+            "INSERT INTO learnings (title, content, reflection, subject, conversation, private, created_at, is_active) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, 1)",
+            (title, content, reflection, (subject or None), (conversation or None), 1 if private else 0, now),
         )
         if tags:
             self.set_learning_tags(lid, tags)
@@ -134,6 +137,7 @@ class Repository:
         self, learning_id: int, title: str, content: str,
         reflection: Optional[str] = None, subject: Optional[str] = None,
         tags: Optional[list[str]] = None, notes: Optional[str] = None,
+        private: Optional[bool] = None,
     ) -> None:
         self.db.execute(
             "UPDATE learnings SET title = ?, content = ?, reflection = ?, subject = ?, notes = ? WHERE id = ?",
@@ -141,12 +145,27 @@ class Repository:
         )
         if tags is not None:
             self.set_learning_tags(learning_id, tags)
+        if private is not None or (subject or "").strip().lower() == "people":
+            self.set_private(learning_id, bool(private) or (subject or "").strip().lower() == "people")
 
     def set_subject(self, learning_id: int, subject: Optional[str]) -> None:
         self.db.execute(
             "UPDATE learnings SET subject = ? WHERE id = ?",
             ((subject or None), learning_id),
         )
+        if (subject or "").strip().lower() == "people":
+            self.set_private(learning_id, True)
+
+    def set_private(self, learning_id: int, private: bool) -> None:
+        self.db.execute("UPDATE learnings SET private = ? WHERE id = ?",
+                        (1 if private else 0, learning_id))
+
+    def people_names(self) -> list[str]:
+        """Names of saved People — the redaction list for outbound cloud payloads."""
+        rows = self.db.fetch_all(
+            "SELECT title FROM learnings WHERE is_active = 1 "
+            "AND LOWER(TRIM(COALESCE(subject,''))) = 'people'")
+        return [r["title"].strip() for r in rows if r["title"].strip()]
 
     def delete_learning(self, learning_id: int) -> None:
         self.db.execute("DELETE FROM learnings WHERE id = ?", (learning_id,))
@@ -713,6 +732,67 @@ class Repository:
         self.db.execute(
             "UPDATE learnings SET reflection = COALESCE(reflection || char(10) || char(10), '') || ? "
             "WHERE id = ?", (text, learning_id))
+
+    # ---------- People (living person cards) ----------
+
+    def append_person_update(self, learning_id: int, text: str) -> None:
+        """A person changes; their card should too. Appends a dated line to the
+        topic content AND to every card's reveal, so the next review is current."""
+        line = f"{datetime.now().strftime('%Y-%m-%d')}: {text.strip()}"
+        with self.db.get_connection() as conn:
+            row = conn.execute("SELECT content FROM learnings WHERE id = ?", (learning_id,)).fetchone()
+            if row is not None:
+                conn.execute("UPDATE learnings SET content = ? WHERE id = ?",
+                             ((row["content"] or "").rstrip() + "\n" + line, learning_id))
+            for r in conn.execute(
+                    "SELECT id, answer FROM questions WHERE learning_id = ?", (learning_id,)).fetchall():
+                conn.execute("UPDATE questions SET answer = ? WHERE id = ?",
+                             ((r["answer"] or "").rstrip() + "\n" + line, r["id"]))
+            conn.commit()
+
+    _ASSOC_PREFIXES = ("your association:", "🧷 your association:")
+
+    def set_person_association(self, learning_id: int, text: str) -> None:
+        """Replace the self-invented memory hook: stored in notes, and the
+        'Your association: …' line in each card answer is rewritten in place."""
+        text = text.strip()
+        self.set_notes(learning_id, text or None)
+        line = f"Your association: {text}" if text else ""
+        with self.db.get_connection() as conn:
+            rows = conn.execute(
+                "SELECT id, answer FROM questions WHERE learning_id = ?", (learning_id,)).fetchall()
+            for r in rows:
+                lines = [ln for ln in (r["answer"] or "").splitlines()
+                         if not any(ln.strip().lower().startswith(p) for p in self._ASSOC_PREFIXES)]
+                while lines and not lines[-1].strip():
+                    lines.pop()
+                if line:
+                    lines.append(line)
+                conn.execute("UPDATE questions SET answer = ? WHERE id = ?",
+                             ("\n".join(lines), r["id"]))
+            conn.commit()
+
+    # ---------- cloud audit log ----------
+
+    def log_cloud(self, action: str, model: str, chars: int, redacted: int,
+                  ok: bool, detail: str = "") -> None:
+        self.db.execute(
+            "INSERT INTO cloud_log (ts, action, model, chars, redacted, ok, detail) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (to_iso(datetime.now()), action, model, int(chars), int(redacted),
+             1 if ok else 0, detail[:300]),
+        )
+
+    def cloud_log_entries(self, limit: int = 100) -> list[dict]:
+        rows = self.db.fetch_all(
+            "SELECT * FROM cloud_log ORDER BY id DESC LIMIT ?", (limit,))
+        return [dict(r) for r in rows]
+
+    def clear_cloud_log(self) -> int:
+        with self.db.get_connection() as conn:
+            cur = conn.execute("DELETE FROM cloud_log")
+            conn.commit()
+            return cur.rowcount
 
     def calibration(self, days: int = 90) -> dict:
         """Confidence × AI-verdict accuracy, plus the subject where mid/high

@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from app.config import CLOUD_MODELS, DEFAULT_GEN_STYLE, DEFAULT_MODEL
 from app.db.repository import Repository
 from app.services.cloud import get_cloud
-from app.services.llm import OllamaError, get_llm
+from app.services.llm import OllamaError, get_llm, prompt_catalog
 
 router = APIRouter(prefix="/api", tags=["settings"])
 
@@ -88,3 +88,31 @@ def update_settings(body: SettingsUpdate):
 @router.get("/llm/status")
 def llm_status():
     return get_llm().status()
+
+
+@router.get("/prompts")
+def prompts():
+    """Every system prompt the app sends, verbatim, with its routing — so
+    Settings can show exactly what each model is asked to do."""
+    llm = get_llm()
+    cloud = get_cloud()
+    return {
+        "prompts": prompt_catalog(),
+        "main_model": llm.resolve_model() or llm.preferred,
+        "fast_model": llm.resolve_fast_model() or llm.preferred,
+        "cloud_model": cloud.model,
+        "cloud_ready": cloud.status()["ready"],
+        "gen_style": llm.gen_style,
+    }
+
+
+@router.get("/cloud/log")
+def cloud_log(limit: int = 100):
+    """The audit trail: every request that ever went to Gemini (when, what,
+    how many characters, how many People names were redacted first)."""
+    return {"entries": Repository().cloud_log_entries(max(1, min(500, limit)))}
+
+
+@router.post("/cloud/log/clear")
+def clear_cloud_log():
+    return {"cleared": Repository().clear_cloud_log()}

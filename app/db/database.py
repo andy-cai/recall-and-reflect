@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS learnings (
     conversation TEXT,                     -- raw capture transcript (JSON)
     notes TEXT,                            -- free notes added over time
     priority INTEGER NOT NULL DEFAULT 0,   -- 1 = focused: reviewed first, new cards first
+    private INTEGER NOT NULL DEFAULT 0,    -- 1 = never sent to any cloud model (People always are)
     created_at TEXT NOT NULL,
     is_active INTEGER NOT NULL DEFAULT 1
 );
@@ -91,6 +92,19 @@ CREATE TABLE IF NOT EXISTS settings (
     value TEXT
 );
 
+-- Audit trail for the opt-in cloud assist: one row per outbound request, so
+-- Settings can show exactly what ever left this machine.
+CREATE TABLE IF NOT EXISTS cloud_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts TEXT NOT NULL,
+    action TEXT NOT NULL,         -- 'follow-up' | 'key ideas' | 'cards' | 'card rewrite'
+    model TEXT NOT NULL,
+    chars INTEGER NOT NULL,       -- characters of your material in the payload
+    redacted INTEGER NOT NULL,    -- saved People names replaced with [name]
+    ok INTEGER NOT NULL,          -- 1 = Gemini answered, 0 = request failed
+    detail TEXT                   -- error text on failure, else empty
+);
+
 CREATE INDEX IF NOT EXISTS idx_key_ideas_learning ON key_ideas(learning_id);
 CREATE INDEX IF NOT EXISTS idx_questions_learning ON questions(learning_id);
 CREATE INDEX IF NOT EXISTS idx_questions_next_review ON questions(next_review_at);
@@ -138,6 +152,10 @@ class Database:
             conn.execute("ALTER TABLE learnings ADD COLUMN notes TEXT")
         if "priority" not in cols:
             conn.execute("ALTER TABLE learnings ADD COLUMN priority INTEGER NOT NULL DEFAULT 0")
+        if "private" not in cols:
+            conn.execute("ALTER TABLE learnings ADD COLUMN private INTEGER NOT NULL DEFAULT 0")
+            # People were always private in spirit; make it so in data too
+            conn.execute("UPDATE learnings SET private = 1 WHERE LOWER(TRIM(COALESCE(subject,''))) = 'people'")
         rcols = {r["name"] for r in conn.execute("PRAGMA table_info(reviews)")}
         if "idea_results" not in rcols:
             # per-idea rubric outcomes for recall cards, JSON: [{"id":..,"result":"hit|partial|miss"}]

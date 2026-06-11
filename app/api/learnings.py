@@ -44,6 +44,8 @@ class LearningIn(BaseModel):
     cards: list[CardIn] = []
     key_ideas: list[str] = []  # the rubric the topic's free recall is graded against
     recall_card: bool = True   # auto-add a free-recall prompt for the topic
+    private: bool = False      # never sent to any cloud model (People always are)
+    notes: Optional[str] = None
 
 
 def _derive_title(content: str) -> str:
@@ -74,7 +76,10 @@ def create_learning(body: LearningIn):
     repo = Repository()
     title = body.title.strip() or _derive_title(body.content)
     lid = repo.create_learning(title, body.content.strip(), body.reflection,
-                              subject=body.subject, tags=body.tags, conversation=body.conversation)
+                              subject=body.subject, tags=body.tags, conversation=body.conversation,
+                              private=body.private)
+    if body.notes and body.notes.strip():
+        repo.set_notes(lid, body.notes.strip())
     n = _persist_cards(repo, lid, body.cards)
     if body.key_ideas:
         repo.set_key_ideas(lid, body.key_ideas)
@@ -108,6 +113,7 @@ def list_learnings(search: str = "", tag: Optional[str] = None):
                 "title": it["learning"].title,
                 "subject": it["learning"].subject or "",
                 "priority": it["learning"].priority,
+                "private": it["learning"].private,
                 "created_at": it["learning"].created_at.isoformat() if it["learning"].created_at else None,
                 "tags": it["learning"].tags,
                 "card_count": it["card_count"],
@@ -132,7 +138,7 @@ def get_learning(learning_id: int):
             "id": learning.id, "title": learning.title, "content": learning.content,
             "reflection": learning.reflection, "subject": learning.subject or "",
             "conversation": learning.conversation, "notes": learning.notes or "",
-            "priority": learning.priority, "tags": learning.tags,
+            "priority": learning.priority, "private": learning.private, "tags": learning.tags,
             "created_at": learning.created_at.isoformat() if learning.created_at else None,
         },
         "key_ideas": repo.get_key_ideas(learning_id),
@@ -157,6 +163,7 @@ class LearningUpdate(BaseModel):
     notes: Optional[str] = None
     tags: list[str] = []
     key_ideas: Optional[list[str]] = None
+    private: Optional[bool] = None
 
 
 @router.put("/learnings/{learning_id}")
@@ -164,10 +171,63 @@ def update_learning(learning_id: int, body: LearningUpdate):
     repo = Repository()
     repo.update_learning(learning_id, body.title.strip(), body.content.strip(),
                          reflection=body.reflection, subject=body.subject,
-                         tags=body.tags, notes=body.notes)
+                         tags=body.tags, notes=body.notes, private=body.private)
     if body.key_ideas is not None:
         repo.set_key_ideas(learning_id, body.key_ideas)
     _embed_async(learning_id, body.title, body.content)
+    return {"ok": True}
+
+
+class PrivateReq(BaseModel):
+    private: bool
+
+
+@router.post("/learnings/{learning_id}/private")
+def set_private(learning_id: int, body: PrivateReq):
+    """Mark a topic private: it is refused by every cloud path, like People.
+    People topics cannot be un-marked."""
+    repo = Repository()
+    learning = repo.get_learning(learning_id)
+    if not learning:
+        return JSONResponse({"error": "not_found"}, status_code=404)
+    if (learning.subject or "").strip().lower() == "people" and not body.private:
+        return JSONResponse({"error": "People topics are always private."}, status_code=400)
+    repo.set_private(learning_id, body.private)
+    return {"ok": True, "private": body.private}
+
+
+class PersonNoteReq(BaseModel):
+    text: str
+
+
+@router.post("/learnings/{learning_id}/person_update")
+def person_update(learning_id: int, body: PersonNoteReq):
+    """'Anything new with them?' — append a dated line to a person's story,
+    on the topic and on every card reveal, so the next review is current."""
+    repo = Repository()
+    learning = repo.get_learning(learning_id)
+    if not learning:
+        return JSONResponse({"error": "not_found"}, status_code=404)
+    if (learning.subject or "").strip().lower() != "people":
+        return JSONResponse({"error": "Only People topics take person updates."}, status_code=400)
+    if not body.text.strip():
+        return JSONResponse({"error": "empty"}, status_code=400)
+    repo.append_person_update(learning_id, body.text.strip())
+    _embed_async(learning_id, learning.title, learning.content)
+    return {"ok": True}
+
+
+@router.post("/learnings/{learning_id}/association")
+def person_association(learning_id: int, body: PersonNoteReq):
+    """Rework the memory hook after a miss: replaces the 'Your association'
+    line on the person's cards (a stronger self-made image is the fix)."""
+    repo = Repository()
+    learning = repo.get_learning(learning_id)
+    if not learning:
+        return JSONResponse({"error": "not_found"}, status_code=404)
+    if (learning.subject or "").strip().lower() != "people":
+        return JSONResponse({"error": "Only People topics have associations."}, status_code=400)
+    repo.set_person_association(learning_id, body.text)
     return {"ok": True}
 
 
@@ -324,9 +384,12 @@ def refine_card(card_id: int, body: RefineReq):
     style = get_llm().gen_style
 
     if body.use_cloud:
-        if (learning.subject if learning else "").strip().lower() == "people":
+        is_people = ((learning.subject or "") if learning else "").strip().lower() == "people"
+        if is_people or (learning.private if learning else False):
             return JSONResponse(
-                {"error": "People topics never leave this machine. Use the local rewrite."},
+                {"error": ("People topics never leave this machine. Use the local rewrite."
+                           if is_people else
+                           "This topic is marked private and never leaves this machine. Use the local rewrite.")},
                 status_code=403)
         try:
             card = get_cloud().refine_card(topic, content, q.question, q.answer,

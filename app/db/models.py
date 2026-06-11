@@ -15,6 +15,7 @@ class Learning:
     conversation: Optional[str] = None
     notes: Optional[str] = None
     priority: int = 0
+    private: bool = False
     created_at: Optional[datetime] = None
     is_active: bool = True
     tags: list[str] = field(default_factory=list)
