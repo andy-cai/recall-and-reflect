@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recall &amp; Reflect — living backgrounds</title>
+<style>
+  :root {
+    --accent:#d59a52; --accent-weak:#2d2a1b;
+    --bg:#131d16; --surface:#1b271e; --surface-2:#243027; --border:#2f3b32; --border-strong:#3d4b40;
+    --text:#ece3d1; --text-soft:#c4bca7; --muted:#8b9182;
+    --sage:#6fa9a0; --good:#87ba6c;
+    --font:"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+    --serif:"Charter","Georgia",serif;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:var(--font); background:#0d1511; color:var(--text); font-size:15px; line-height:1.55; }
+  .top { max-width:980px; margin:0 auto; padding:34px 24px 0; }
+  h1 { font-weight:640; letter-spacing:-.02em; margin:0; }
+  .muted { color:var(--muted); }
+  .eyebrow { font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+  .vtabs { display:flex; gap:7px; margin:18px 0; flex-wrap:wrap; }
+  .vtab { padding:8px 15px; border-radius:99px; border:1px solid var(--border-strong); background:var(--surface);
+          color:var(--text-soft); font-weight:560; font-size:13.5px; cursor:pointer; font-family:inherit; }
+  .vtab.on { background:var(--accent-weak); color:var(--accent); border-color:var(--accent); }
+
+  .stage-wrap { max-width:980px; margin:0 auto; padding:0 24px 60px; }
+  .stage { position:relative; height:78vh; min-height:540px; border-radius:18px; overflow:hidden;
+           border:1px solid var(--border); box-shadow:0 18px 60px rgba(0,0,0,.45); }
+  .bg { position:absolute; inset:0; display:none; }
+  .bg.on { display:block; }
+  .bg canvas { position:absolute; inset:0; width:100%; height:100%; }
+
+  /* sample content floated over every background, to judge readability */
+  .sample { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; }
+  .sample .card { width:min(560px, 86%); background:color-mix(in srgb, var(--surface) 88%, transparent);
+                  backdrop-filter:blur(6px); border:1px solid var(--border); border-radius:16px; padding:26px 30px;
+                  box-shadow:0 8px 30px rgba(0,0,0,.35); }
+  .sample .doc { font-family:var(--serif); font-size:16px; line-height:1.7; }
+  .sample sup { color:var(--accent); font-weight:700; font-size:11px; }
+  .sample .note { font-size:12.5px; font-style:italic; color:var(--accent); margin-top:14px;
+                  border-top:1px dashed var(--border-strong); padding-top:10px; }
+  .pane-note { max-width:980px; margin:14px auto 0; padding:0 24px; font-size:13px; color:var(--muted); }
+  .pane-note b { color:var(--text-soft); }
+
+  /* ===== 1 · AURORA SILK (pure CSS) ===== */
+  #bg-aurora { background:linear-gradient(180deg, #101b13, #131d16 55%, #0e1812); }
+  #bg-aurora .blob { position:absolute; width:75vmax; height:75vmax; border-radius:50%; filter:blur(90px);
+                     mix-blend-mode:screen; opacity:.5; }
+  #bg-aurora .b1 { background:radial-gradient(closest-side, rgba(40,80,55,.85), transparent 70%);
+                   top:-30%; left:-20%; animation:drift1 95s ease-in-out infinite alternate; }
+  #bg-aurora .b2 { background:radial-gradient(closest-side, rgba(111,169,160,.32), transparent 70%);
+                   bottom:-35%; right:-25%; animation:drift2 120s ease-in-out infinite alternate; }
+  #bg-aurora .b3 { background:radial-gradient(closest-side, rgba(213,154,82,.16), transparent 68%);
+                   top:10%; right:-35%; width:60vmax; height:60vmax; animation:drift3 150s ease-in-out infinite alternate; }
+  @keyframes drift1 { to { transform:translate(14%, 10%) scale(1.15); } }
+  @keyframes drift2 { to { transform:translate(-12%, -8%) scale(1.1); } }
+  @keyframes drift3 { to { transform:translate(-18%, 14%) scale(.92); } }
+
+  /* ===== 6 · HALO (pure CSS, echoes the logo) ===== */
+  #bg-halo { background:radial-gradient(120% 100% at 50% 115%, #16241b 0%, #131d16 45%, #0e1812 100%); }
+  #bg-halo .ring { position:absolute; width:130vmin; height:130vmin; top:-55vmin; right:-40vmin;
+                   border-radius:50%; filter:blur(28px); opacity:.34;
+                   background:conic-gradient(from 210deg, transparent 0 38deg, rgba(213,154,82,.55) 105deg,
+                              rgba(213,154,82,.4) 230deg, rgba(111,169,160,.18) 300deg, transparent 322deg 360deg);
+                   -webkit-mask:radial-gradient(closest-side, transparent 62%, #000 66%, #000 78%, transparent 82%);
+                   mask:radial-gradient(closest-side, transparent 62%, #000 66%, #000 78%, transparent 82%);
+                   animation:halo-spin 240s linear infinite, halo-breathe 16s ease-in-out infinite alternate; }
+  #bg-halo .spark { position:absolute; top:18%; right:22%; width:10px; height:10px; border-radius:50%;
+                    background:#ece3d1; box-shadow:0 0 18px 6px rgba(236,227,209,.35);
+                    animation:halo-breathe 16s ease-in-out infinite alternate; }
+  @keyframes halo-spin { to { transform:rotate(360deg); } }
+  @keyframes halo-breathe { from { opacity:.30; scale:1; } to { opacity:.48; scale:1.04; } }
+</style>
+</head>
+<body>
+  <div class="top">
+    <div class="eyebrow">Recall &amp; Reflect · living backgrounds</div>
+    <h1 style="margin-top:8px">Six slow-breathing backgrounds</h1>
+    <p class="muted" style="max-width:660px; margin-top:8px">All in the forest/ochre palette, all deliberately slow
+      (most loops are 60–240 s — motion you sense rather than watch). A Marginalia sample floats on each so you can
+      judge readability. The build will honor <code>prefers-reduced-motion</code> and a Settings toggle.</p>
+    <div class="vtabs">
+      <button class="vtab on" data-bg="bg-aurora">1 · Aurora Silk</button>
+      <button class="vtab" data-bg="bg-embers">2 · Fireflies</button>
+      <button class="vtab" data-bg="bg-contour">3 · Contour Lines</button>
+      <button class="vtab" data-bg="bg-ridges">4 · Misty Ridgelines</button>
+      <button class="vtab" data-bg="bg-threads">5 · Memory Threads</button>
+      <button class="vtab" data-bg="bg-halo">6 · Halo</button>
+    </div>
+  </div>
+
+  <div class="stage-wrap">
+    <div class="stage">
+      <div class="bg on" id="bg-aurora"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+      <div class="bg" id="bg-embers"><canvas></canvas></div>
+      <div class="bg" id="bg-contour"><canvas></canvas></div>
+      <div class="bg" id="bg-ridges"><canvas></canvas></div>
+      <div class="bg" id="bg-threads"><canvas></canvas></div>
+      <div class="bg" id="bg-halo"><div class="ring"></div><div class="spark"></div></div>
+
+      <div class="sample">
+        <div class="card">
+          <div class="eyebrow" style="margin-bottom:12px">Reflect · Hall-Petch &amp; grain size</div>
+          <div class="doc">Hall-Petch: yield strength rises as grain size shrinks — <i>σ<sub>y</sub> = σ₀ + k/√d</i>.
+            Finer grains mean more boundaries, and boundaries block dislocation motion<sup>¹</sup>…</div>
+          <div class="note">¹ does σ₀ + k/√d keep working as d → nanometers?</div>
+        </div>
+      </div>
+    </div>
+    <div class="pane-note" id="note"></div>
+  </div>
+
+<script>
+const NOTES = {
+  'bg-aurora': '<b>Aurora Silk</b> — three vast blurred light fields (deep green, sage-teal, a whisper of ochre) drifting through each other on 95–150 s loops. The classic “breathing room” background: nothing to look at, everything to feel. Pure CSS, zero CPU when idle.',
+  'bg-embers': '<b>Fireflies</b> — a forest at dusk: faint ochre and cream sparks rising slowly, swaying, occasionally brightening. The motion metaphor is the app itself — small memories drifting up to be caught. Canvas, ~40 particles, trivially cheap.',
+  'bg-contour': '<b>Contour Lines</b> — a topographic map breathing: concentric elevation rings around an off-center summit, organically wobbling on a ~60 s cycle, every fourth ring in faint ochre. The engineer’s option — it reads as a drawing, not a decoration.',
+  'bg-ridges': '<b>Misty Ridgelines</b> — five layered valley silhouettes in graded greens drifting at different speeds (slow parallax), with mist pooling between them. Calm depth; the horizon feel suits long writing sessions.',
+  'bg-threads': '<b>Memory Threads</b> — dozens of fine horizontal threads undulating like a slow field; every sixth thread carries an ochre glint. Evokes weaving — ideas being threaded together. The most “alive” of the six while staying quiet.',
+  'bg-halo': '<b>Halo</b> — the brand made atmosphere: one enormous, soft ochre loop (the logo’s open ring) hanging beyond the top-right corner, rotating once every four minutes and breathing every 16 s, the cream spark glowing in its gap. Minimal, intentional, unmistakably yours.',
+};
+
+let raf = null, active = 'bg-aurora';
+const stage = document.querySelector('.stage');
+
+function fit(cv) {
+  const r = stage.getBoundingClientRect();
+  cv.width = r.width * devicePixelRatio; cv.height = r.height * devicePixelRatio;
+  const g = cv.getContext('2d'); g.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  return [g, r.width, r.height];
+}
+
+/* ===== Fireflies ===== */
+function embers(cv) {
+  const [g, W, H] = fit(cv);
+  const P = Array.from({length: 42}, () => ({
+    x: Math.random()*W, y: Math.random()*H, r: .8+Math.random()*1.8,
+    vy: 4+Math.random()*9, sway: 10+Math.random()*26, ph: Math.random()*7,
+    tw: .4+Math.random()*1.2, cream: Math.random() < .25 }));
+  return t => {
+    g.clearRect(0,0,W,H);
+    const grad = g.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0,'#0f1a13'); grad.addColorStop(1,'#131d16');
+    g.fillStyle = grad; g.fillRect(0,0,W,H);
+    for (const p of P) {
+      const y = ((p.y - t*p.vy) % (H+40) + H+40) % (H+40) - 20;
+      const x = p.x + Math.sin(t*.3 + p.ph) * p.sway;
+      const a = .25 + .55 * (0.5 + 0.5*Math.sin(t*p.tw + p.ph*3));
+      g.beginPath();
+      g.fillStyle = p.cream ? `rgba(236,227,209,${a})` : `rgba(213,154,82,${a})`;
+      g.shadowColor = p.cream ? 'rgba(236,227,209,.8)' : 'rgba(213,154,82,.8)';
+      g.shadowBlur = 8;
+      g.arc(x, y, p.r, 0, 7); g.fill(); g.shadowBlur = 0;
+    }
+  };
+}
+
+/* ===== Contour Lines ===== */
+function contours(cv) {
+  const [g, W, H] = fit(cv);
+  const cx = W*.66, cy = H*.38;
+  const rings = Array.from({length: 16}, (_, i) => ({
+    R: 46 + i*54,
+    h: Array.from({length: 4}, (_, k) => ({ a: (8+Math.random()*16)*(1+i*.06), f: k+2, ph: Math.random()*7, s: (Math.random()-.5)*.16 })),
+  }));
+  return t => {
+    g.fillStyle = '#121c15'; g.fillRect(0,0,W,H);
+    rings.forEach((ring, i) => {
+      g.beginPath();
+      for (let s = 0; s <= 140; s++) {
+        const th = s/140 * Math.PI*2;
+        let r = ring.R;
+        for (const w of ring.h) r += w.a * Math.sin(w.f*th + w.ph + t*w.s*3);
+        const x = cx + r*Math.cos(th), y = cy + r*Math.sin(th);
+        s ? g.lineTo(x,y) : g.moveTo(x,y);
+      }
+      g.closePath();
+      g.strokeStyle = i % 4 === 2 ? 'rgba(213,154,82,.13)' : 'rgba(111,169,160,.085)';
+      g.lineWidth = 1.1;
+      g.stroke();
+    });
+  };
+}
+
+/* ===== Misty Ridgelines ===== */
+function ridges(cv) {
+  const [g, W, H] = fit(cv);
+  const layers = [
+    { base:.52, amp:38, sp:3.4,  col:'#1b2a20', v: 4 },
+    { base:.62, amp:46, sp:2.6,  col:'#172418', v: 7 },
+    { base:.72, amp:52, sp:2.0,  col:'#152013', v: 11 },
+    { base:.82, amp:60, sp:1.5,  col:'#101a12', v: 16 },
+    { base:.92, amp:64, sp:1.2,  col:'#0d1610', v: 22 },
+  ];
+  return t => {
+    const sky = g.createLinearGradient(0,0,0,H);
+    sky.addColorStop(0,'#16251c'); sky.addColorStop(.6,'#121d15'); sky.addColorStop(1,'#0e1711');
+    g.fillStyle = sky; g.fillRect(0,0,W,H);
+    for (const L of layers) {
+      g.beginPath(); g.moveTo(0,H);
+      for (let x = 0; x <= W; x += 6) {
+        const u = (x + t*L.v) / W * L.sp * Math.PI*2;
+        const y = H*L.base + L.amp*(Math.sin(u)*.6 + Math.sin(u*2.7+1.3)*.3 + Math.sin(u*5.1+4)*.1);
+        g.lineTo(x, y);
+      }
+      g.lineTo(W,H); g.closePath();
+      g.fillStyle = L.col; g.fill();
+      const mist = g.createLinearGradient(0, H*L.base-70, 0, H*L.base+50);
+      mist.addColorStop(0,'rgba(196,188,167,0)');
+      mist.addColorStop(1,'rgba(196,188,167,.045)');
+      g.fillStyle = mist; g.fillRect(0, H*L.base-70, W, 120);
+    }
+  };
+}
+
+/* ===== Memory Threads ===== */
+function threads(cv) {
+  const [g, W, H] = fit(cv);
+  const N = 34;
+  const lines = Array.from({length: N}, (_, i) => ({
+    y0: (i+1)/(N+1) * H,
+    a1: 6+Math.random()*14, f1: 1+Math.random()*1.6, p1: Math.random()*7, s1: .12+Math.random()*.2,
+    a2: 3+Math.random()*7,  f2: 3+Math.random()*2.4, p2: Math.random()*7, s2: .2+Math.random()*.3,
+    gold: i % 6 === 3,
+  }));
+  return t => {
+    g.fillStyle = '#121c15'; g.fillRect(0,0,W,H);
+    for (const L of lines) {
+      g.beginPath();
+      for (let x = 0; x <= W; x += 8) {
+        const y = L.y0
+          + L.a1*Math.sin(x/W*L.f1*Math.PI*2 + L.p1 + t*L.s1*3)
+          + L.a2*Math.sin(x/W*L.f2*Math.PI*2 + L.p2 + t*L.s2*3);
+        x ? g.lineTo(x,y) : g.moveTo(x,y);
+      }
+      g.strokeStyle = L.gold ? 'rgba(213,154,82,.14)' : 'rgba(111,169,160,.07)';
+      g.lineWidth = L.gold ? 1.3 : 1;
+      g.stroke();
+    }
+  };
+}
+
+const FACT = { 'bg-embers': embers, 'bg-contour': contours, 'bg-ridges': ridges, 'bg-threads': threads };
+let painter = null;
+
+function activate(id) {
+  active = id;
+  document.querySelectorAll('.bg').forEach(b => b.classList.toggle('on', b.id === id));
+  document.querySelectorAll('.vtab').forEach(b => b.classList.toggle('on', b.dataset.bg === id));
+  document.getElementById('note').innerHTML = NOTES[id];
+  cancelAnimationFrame(raf); painter = null;
+  const f = FACT[id];
+  if (f) {
+    const cv = document.querySelector(`#${id} canvas`);
+    painter = f(cv);
+    const loop = (ms) => { painter(ms/1000); raf = requestAnimationFrame(loop); };
+    raf = requestAnimationFrame(loop);
+  }
+}
+document.querySelectorAll('.vtab').forEach(b => b.addEventListener('click', () => activate(b.dataset.bg)));
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) cancelAnimationFrame(raf);
+  else activate(active);
+});
+addEventListener('resize', () => activate(active));
+activate('bg-aurora');
+</script>
+</body>
+</html>
