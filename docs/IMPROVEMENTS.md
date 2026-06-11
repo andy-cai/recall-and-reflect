@@ -51,7 +51,8 @@ Personalized parameters are FSRS's main advantage over SM-2 — leaving them def
 forfeits most of it.
 
 Add a golden-vector test suite against the reference implementation so the scheduler can
-never silently drift again (there are currently **zero tests** in the repo).
+never silently drift again (`tests/` covers the FSRS port's internal consistency, but not
+agreement with reference vectors).
 
 ### 1.2 Use the metacognitive signals you already collect
 

@@ -1,5 +1,7 @@
 # Recall & Reflect
 
+[![tests](https://github.com/andy-cai/recall-and-reflect/actions/workflows/tests.yml/badge.svg)](https://github.com/andy-cai/recall-and-reflect/actions/workflows/tests.yml)
+
 A local-first spaced-repetition app built around two ideas from learning science:
 
 - **Reflect** — capturing should make *you* think. Instead of a form, you talk to it.
@@ -13,7 +15,53 @@ A local-first spaced-repetition app built around two ideas from learning science
   but there's always a hint ladder, and a miss is never punished.
 
 Scheduling uses **FSRS** (the modern successor to SM-2), so reviews land right around
-the edge of forgetting.
+the edge of forgetting. Runs on Windows, macOS and Linux — due-review toast reminders
+are Windows-only, everything else is cross-platform.
+
+## Quick start
+
+Prerequisites: [Python](https://www.python.org) 3.9+. For the AI features, install
+[Ollama](https://ollama.com) and pull a local model — `ollama pull qwen3:14b` for a
+12 GB+ GPU, `ollama pull qwen3:8b` for 8 GB (see [Local models](#local-models); the
+app uses whatever is installed).
+
+**Windows** — first run creates a venv and installs deps:
+
+```bat
+run.bat
+```
+
+**macOS / Linux:**
+
+```bash
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+python run.py
+```
+
+The app opens at <http://127.0.0.1:8765>. Without Ollama running it still works — you
+just write cards manually and self-grade reviews.
+
+## What it feels like
+
+Reflect is a conversation, not a form:
+
+> **You:** learned why bolted joints barely feel the external load — the clamped
+> members are a much stiffer spring than the bolt, so the bolt only sees a sliver of P
+>
+> **R&R:** What sets the size of that sliver physically — and what changes the
+> moment the joint separates?
+>
+> **You:** C = kb/(kb+km), small because members ≫ bolt in stiffness. If it ever
+> separates, the bolt takes the full alternating load → fatigue death
+>
+> **R&R:** Saved. Your rubric for future recall: bolt and members share load as
+> springs in parallel — bolt sees only C·P while clamped — separation hands it
+> everything — preload is the fatigue shield.
+
+Days later, Recall flips it: you reproduce that from memory, the local AI checks your
+recall against the rubric idea by idea (✓/◐/✕), pokes at what you missed, and FSRS
+schedules the next encounter.
 
 ## Privacy
 
@@ -23,11 +71,11 @@ only to a **local** [Ollama](https://ollama.com) instance — Ollama cloud-proxy
 tags are blocked.
 
 One explicit exception: **cloud assist** (off by default). Set `GEMINI_API_KEY` —
-either in the environment (`setx GEMINI_API_KEY "..."`, then relaunch) or in a
-git-ignored `.env` file at the repo root (free key at
-[aistudio.google.com](https://aistudio.google.com)) — and flip the toggle in Settings.
-You get an "Improve with Gemini" button on cards and a per-session Private/Gemini
-switch in Reflect. Reviews, grading, and embeddings never touch the cloud regardless.
+either in your shell environment or in a git-ignored `.env` file at the repo root
+(copy `.env.example`; free key at [aistudio.google.com](https://aistudio.google.com)) —
+and flip the toggle in Settings. You get an "Improve with Gemini" button on cards and a
+per-session Private/Gemini switch in Reflect. Reviews, grading, and embeddings never
+touch the cloud regardless.
 
 Four guarantees around that exception:
 
@@ -52,19 +100,6 @@ wait on a chain of thought. Pick models in Settings; the app falls back to whate
 installed. Settings → "The models" explains each recommendation with published
 benchmark scores, and "What the AI is asked" shows every system prompt verbatim.
 
-## Quick start
-
-```bat
-:: 1. Install Ollama and pull the local model (one time)
-ollama pull qwen2.5:7b
-
-:: 2. Launch — first run creates a venv and installs deps
-run.bat
-```
-
-Then it opens at <http://127.0.0.1:8765>. Without Ollama running the app still works —
-you just write cards manually and self-grade reviews.
-
 ## How it works
 
 | Stage | What happens |
@@ -72,7 +107,7 @@ you just write cards manually and self-grade reviews.
 | **Reflect** | Free-flow chat → 2–3 generative follow-ups (skippable) → the AI distills editable **key ideas** (the rubric your recall is graded against) + optional detail questions → save. |
 | **Recall** | Free recall (type it) → confidence → AI grades **per key idea** (✓/◐/✕ checklist) + one Socratic poke → rate (1–4, with the verdict-consistent rating pre-highlighted — `Enter` takes it). Confident misses return at the end of the session and a bit sooner next time (hypercorrection). An idea missed twice in a row earns its own drill card. **Sketch tasks** ("Sketch the S-N curve…") are drawn on nearby paper; the reveal is a feature checklist (axes, shape, landmarks), and anything you type about your drawing gets the AI check. |
 | **Organize** | Each note gets a **Subject** (its home area). The Library's *Explore* view groups concepts by subject, and the local AI can suggest subjects for an uncategorized backlog (you approve). |
-| **Focus** | Prioritize what matters now: star topics in the Library, focus a whole subject, or just tell Today *“vibrations final next week”* — the local model matches it to your real topics (you confirm). Focused topics jump every queue and claim the new-card budget first. |
+| **Focus** | Prioritize what matters now: star topics in the Library, focus a whole subject, or just tell Today *"vibrations final next week"* — the local model matches it to your real topics (you confirm). Focused topics jump every queue and claim the new-card budget first. |
 | **Rhythm** | Come back after days away to a **welcome-back ramp** (spread the pile over N days, keep today's most-at-risk). Evenings offer a small **wind-down session** — today's misses and new captures, timed for sleep consolidation. |
 | **Connect** | With a local embed model (`ollama pull nomic-embed-text`), topics link up: **related concepts** in the Library, one-click **contrast cards** for confusables (Tresca vs. von Mises), **connection chips** while you capture, semantic search, and duplicate warnings on bulk add. |
 | **Teach** | Topics that are solid (stability ≥ 3 weeks) occasionally swap a review for a **teach-back**: explain it simply while the local AI plays a confused first-year. Also on-demand (🎓 in the Library). The transcript joins the topic's reflection; rating counts as a review. |
@@ -82,24 +117,26 @@ you just write cards manually and self-grade reviews.
 
 ## Starter curriculum
 
-`seeds/` ships curated decks (mechanical engineering core, battery engineering,
-internship topics — ~95 topics, ~185 cards with key-idea rubrics, task-style recall
-prompts, and contrast cards for confusables). Import any time; re-runs skip what exists:
+`seeds/` ships curated example decks (mechanical-engineering core plus battery & test
+engineering — ~95 topics, ~185 cards with key-idea rubrics, task-style recall prompts,
+sketch tasks, and contrast cards for confusables). Import any time; re-runs only add
+what's new:
 
-```bat
-python tools\seed_curriculum.py
+```bash
+python tools/seed_curriculum.py            # --dry-run to preview
 ```
 
 New topics ease into review at your new-per-day cap; focus a subject on Today to pull
-its topics forward. Edit or add decks as JSON in `seeds/`.
+its topics forward. Edit or add your own decks as JSON in `seeds/` — the format is
+plain (see any existing file), and `tests/test_seeds.py` validates them.
 
 ## Math
 
 Card text supports `$...$` / `$$...$$` TeX. To render it offline, vendor KaTeX once
 (needs internet for the download; never a CDN at runtime):
 
-```bat
-python tools\get_katex.py
+```bash
+python tools/get_katex.py
 ```
 
 Without it, math falls back to readable styled source.
@@ -117,28 +154,32 @@ Review grading is the latency-sensitive path. Two knobs:
   review; if a cap still truncates or empties a response, the call retries once
   uncapped. The model is kept warm (`keep_alive 30m`) and warmed at startup.
 
-## Desktop shortcut
+## Run it like an app
+
+In Edge/Chrome use *menu → Apps → Install Recall & Reflect* — you get a standalone
+window with the app icon, no browser chrome (any OS). On Windows there's also a
+desktop shortcut that launches the server minimized and opens the app:
 
 ```bat
 powershell -ExecutionPolicy Bypass -File tools\make_shortcut.ps1
 ```
 
-puts a "Recall & Reflect" icon on your Desktop that launches the app (server console
-starts minimized). Alternatively, with the app open in Edge/Chrome use
-*menu → Apps → Install Recall & Reflect* — you get a standalone window with the app
-icon, no browser chrome. Icons are generated from one design by `tools/gen_icons.py`.
+Icons are generated from one design by `tools/gen_icons.py`.
 
 ## Tests
 
-```bat
+```bash
 python -m unittest discover tests
 ```
+
+CI runs the suite on Linux and Windows, Python 3.9 and 3.12.
 
 ## Stack
 
 - **Backend:** Python + FastAPI + SQLite. Ports the FSRS-4.5 engine.
 - **Frontend:** plain HTML/CSS/ES-modules — no build step, runs offline.
-- **AI:** local Ollama (`qwen2.5:7b` by default). Optional, with graceful fallback.
+- **AI:** local Ollama — prefers `qwen3:14b`, falls back to any installed model.
+  Optional, with graceful degradation.
 
 ## Keyboard
 
@@ -149,4 +190,4 @@ rewrite, punt it to tomorrow, or suspend it, without leaving the session.
 
 ## License
 
-MIT — personal learning tool.
+[MIT](LICENSE) — a personal learning tool, shared in case it's useful to you.
