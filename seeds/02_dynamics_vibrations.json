@@ -224,6 +224,14 @@
         {
           "question": "Why is the 90° phase lag a more reliable resonance indicator than the amplitude peak?",
           "answer": "The phase crosses 90° exactly at $r = 1$ regardless of damping, while the amplitude peak shifts below resonance ($r = \\sqrt{1-2\\zeta^2}$) and flattens as ζ grows — at high damping there may be no visible peak at all."
+        },
+        {
+          "question": "Sketch the forced-response magnitude $X/(F_0/k)$ and phase $\\phi$ vs $r = \\omega/\\omega_n$ for $\\zeta$ = 0.1, 0.3, 0.7 (two stacked plots).",
+          "answer": "Magnitude: every curve starts at 1 at r = 0 (static deflection).\nζ = 0.1 peaks ≈ 5 (= 1/2ζ) just BELOW r = 1, at $r = \\sqrt{1-2\\zeta^2}$; ζ = 0.3 lower and broader; ζ = 0.7 essentially monotonic — no peak (none exists for $\\zeta > 1/\\sqrt{2}$).\nAll curves fall together like $1/r^2$ for r ≫ 1 (mass-controlled, damping irrelevant there).\nPhase: 0° at r = 0, EXACTLY 90° at r = 1 for every ζ, → 180° asymptote.\nLow ζ = step-like phase transition; high ζ = gradual S-curve through the same 90° pivot."
+        },
+        {
+          "question": "Rank $\\omega_n$, $\\omega_d$, and the forced amplitude-peak frequency for an underdamped system, and name a case where confusing them costs you.",
+          "answer": "$\\omega_{peak} = \\omega_n\\sqrt{1-2\\zeta^2} < \\omega_d = \\omega_n\\sqrt{1-\\zeta^2} < \\omega_n$. Free ring-down oscillates at $\\omega_d$; forced amplitude peaks at $\\omega_{peak}$; the 90° phase crossing marks $\\omega_n$ itself. At ζ = 0.3 the spread is several percent — tune an absorber or notch filter to the amplitude peak instead of $\\omega_n$ and you've mistuned it; above $\\zeta = 1/\\sqrt{2}$ there is no peak to find at all."
         }
       ]
     },
@@ -244,6 +252,10 @@
         {
           "question": "A motor runs at 600 RPM but a structure with f_n = 30 Hz resonates anyway. How?",
           "answer": "600 RPM = 10 Hz fundamental, but non-sinusoidal forcing (imbalance + bearing/cogging harmonics) contains the 3rd harmonic at 30 Hz — Fourier superposition means any harmonic can excite resonance, not just the fundamental."
+        },
+        {
+          "question": "Why does the whole impulse-response/convolution machinery collapse for a system with a hardening (cubic) spring?",
+          "answer": "Convolution IS superposition: response to a sum of impulses = sum of impulse responses, which requires linearity. With $kx + \\epsilon x^3$ the response depends on amplitude, so no single h(t) characterizes the system — doubling the input doesn't double the output. You're left with numerical integration of the EOM (or approximations like describing functions); resonance even bends over into jump phenomena."
         }
       ]
     },
@@ -268,6 +280,10 @@
         {
           "question": "Why must an accelerometer's natural frequency be far ABOVE the measured band, while a vibrometer's must be far below?",
           "answer": "The seismic mass reads relative motion Z. For r≪1, $Z \\approx \\ddot{y}/\\omega_n^2$ — proportional to acceleration (stiff, high-$\\omega_n$ sensor). For r≫1 the mass stands still in space and $Z \\approx$ base displacement (soft, low-$\\omega_n$ sensor)."
+        },
+        {
+          "question": "Sketch the transmissibility family TR vs r for $\\zeta$ = 0.05, 0.2, 0.5, marking the crossover and the design regions.",
+          "answer": "Axes: TR vertical (log scale typical), $r = \\omega/\\omega_n$ horizontal; all curves start at TR = 1 at r = 0.\nResonant peaks near r = 1, height ≈ 1/(2ζ) for light damping.\nEVERY curve re-crosses TR = 1 at exactly $r = \\sqrt{2}$ — the crossover is damping-independent.\nBeyond $\\sqrt{2}$ (isolation region, TR < 1) the curve order INVERTS: ζ = 0.5 now transmits most, ζ = 0.05 least.\nRoll-off: undamped falls ~$1/r^2$; damped curves flatten toward ~$2\\zeta/r$ — the damper is the high-frequency leak path."
         }
       ]
     },
@@ -316,6 +332,10 @@
         {
           "question": "Why can a force applied at a certain point fail to excite one of the modes entirely?",
           "answer": "The modal force is the projection $\\phi_i^T F$: if the force acts at a node of mode i (or distributes orthogonally to it), the projection is zero and that mode receives no energy — the basis of choosing shaker and mount locations."
+        },
+        {
+          "question": "A machine resonates at its fixed running frequency, so you bolt on a small spring-mass tuned to that frequency. Why does the main mass stop moving — and what new risk did you just buy?",
+          "answer": "Tuned absorber: at the anti-resonance the absorber mass oscillates so its spring force exactly cancels the applied force — the main mass sits still while the small mass works hard. The price: the 2-DOF system now has TWO natural frequencies straddling the old one, so every run-up crosses a new resonance, and any drift in running speed detunes the cancellation. Absorbers suit constant-speed machines; variable-speed ones need damping designed in (Den Hartog tuning)."
         }
       ]
     },
@@ -336,6 +356,147 @@
         {
           "question": "A guitar string sounds 'musical' but a struck cantilever sounds 'clangy'. Explain with mode spacing.",
           "answer": "String overtones are integer multiples of the fundamental (wave equation) — a harmonic series the ear hears as one pitch. Beam bending modes go as $(\\beta_n L)^2 \\approx$ ratios 1 : 6.27 : 17.5 — inharmonic partials, heard as metallic clang."
+        },
+        {
+          "question": "Sketch the first three bending mode shapes of a cantilever beam, marking nodes and the boundary behavior at each end.",
+          "answer": "Root (fixed end): zero displacement AND zero slope for every mode — curves leave the wall flat.\nFree end: maximum amplitude, zero curvature (no moment or shear there).\nMode 1: no interior node, tip swings — quarter-wave look.\nMode 2: one interior node, roughly 3/4 of the way to the tip.\nMode 3: two interior nodes (near mid-span and near the tip).\nLabel frequencies inharmonic: $\\omega_n \\propto (\\beta_n L)^2$, ratios ≈ 1 : 6.27 : 17.5 — not 1 : 2 : 3."
+        }
+      ]
+    },
+    {
+      "title": "Lagrange's equations & generalized coordinates",
+      "subject": "Dynamics",
+      "tags": ["dynamics", "energy methods"],
+      "content": "Lagrange: $\\frac{d}{dt}\\frac{\\partial L}{\\partial \\dot{q}_i} - \\frac{\\partial L}{\\partial q_i} = Q_i$ with $L = T - U$ — one equation per generalized coordinate $q_i$, a minimal set of variables respecting the constraints. The payoff: ideal (workless) constraint forces never enter, so cart-pendulums, rolling bodies, and linkages fall out without free-body gymnastics. Nonconservative effects enter as generalized forces via virtual work ($Q_i = \\delta W/\\delta q_i$); viscous damping via Rayleigh's dissipation function. For small oscillations, expand T and U to quadratic order about equilibrium to read off [M] and [K] directly. Newton still wins when you need the constraint forces themselves (bearing loads) — Lagrange hides exactly those.",
+      "recall_prompt": "Write Lagrange's equations and walk a cart-pendulum: choose generalized coordinates, build T and U, explain where the constraint forces went — and state when you'd fall back to Newton.",
+      "key_ideas": [
+        "$\\frac{d}{dt}\\frac{\\partial L}{\\partial \\dot{q}_i} - \\frac{\\partial L}{\\partial q_i} = Q_i$, $L = T - U$ — one EOM per generalized coordinate",
+        "Generalized coordinates = a minimal, constraint-respecting set; ideal constraint forces do no virtual work and vanish from the formulation",
+        "Beats Newton when constraint reactions are unwanted unknowns (pendulum on cart, rolling, multi-link)",
+        "Nonconservative forces enter through virtual work as $Q_i$; viscous damping via Rayleigh's dissipation function",
+        "Small oscillations: quadratic $T = \\frac{1}{2}\\dot{q}^T M \\dot{q}$, $U = \\frac{1}{2}q^T K q$ → [M], [K] → eigenproblem",
+        "Newton/D'Alembert when you NEED reactions (bearing sizing): Lagrange eliminates exactly what you're after"
+      ],
+      "cards": [
+        {
+          "question": "Same linkage, two questions — equations of motion, and bearing loads. Why might you use Lagrange for the first but Newton for the second?",
+          "answer": "Lagrange eliminates workless constraint forces by construction — fastest route to the motion, but the joint reactions literally aren't in the equations. Newton/D'Alembert free bodies expose every reaction, at the cost of carrying them through the algebra. Standard practice: Lagrange for $\\ddot{q}(t)$, then back-substitute the accelerations into free bodies to recover the forces."
+        },
+        {
+          "question": "What property of constraint forces lets Lagrange ignore them — and what common situation breaks that property?",
+          "answer": "Ideal constraints act perpendicular to every permitted motion (normal forces, frictionless pins, rolling without slip), so they do zero virtual work and drop out of $\\delta W$. Friction sliding ALONG a constraint does work — it must be reinstated by hand as a generalized force $Q_i$, or the 'free' Lagrangian answer silently violates energy bookkeeping."
+        },
+        {
+          "question": "How do you get a multi-DOF vibration model — [M] and [K] matrices — straight out of a Lagrangian, without drawing a single free body?",
+          "answer": "Find equilibrium ($\\partial U/\\partial q = 0$), then expand to quadratic order: $T = \\frac{1}{2}\\dot{q}^T M \\dot{q}$ and $U = \\frac{1}{2}q^T K q$ — M is the velocity Hessian of T, K the Hessian of U. Lagrange's equations then read $M\\ddot{q} + Kq = 0$, ready for the eigenproblem. Coupling terms appear automatically as off-diagonal entries — the place hand-derived FBDs most often go wrong."
+        }
+      ]
+    },
+    {
+      "title": "Critical speeds & shaft whirl",
+      "subject": "Vibrations",
+      "tags": ["rotordynamics"],
+      "content": "Jeffcott rotor: a disk of mass m mid-span on a flexible shaft (lateral stiffness k), CM offset e from the geometric center. The deflected shaft center orbits — whirl — and for imbalance-driven (synchronous, 1×) whirl the amplitude follows the rotating-imbalance curve with critical speed $\\omega_{cr} = \\sqrt{k/m}$, the shaft's lateral natural frequency. Below critical the heavy spot whirls outboard; above it the response phase flips 180° and the rotor spins about its mass center — self-centering, residual orbit → e. Supercritical operation is routine (turbines, spindles): traverse the critical quickly with enough damping, since amplitude at the critical is damping-limited. Gyroscopic moments make whirl frequencies speed-dependent — forward whirl stiffens, backward softens — so true criticals come from Campbell-diagram crossings with the 1× line.",
+      "recall_prompt": "Walk the Jeffcott rotor: define whirl and critical speed, explain the 180° phase flip and self-centering above critical, and what governs safely running supercritical.",
+      "key_ideas": [
+        "Jeffcott rotor critical speed $\\omega_{cr} = \\sqrt{k/m}$ — the shaft's lateral bending natural frequency",
+        "Below critical: heavy spot whirls outboard (deflection in phase with imbalance)",
+        "Above critical: 180° phase flip — rotor spins about its CM, geometric center orbits at → e (self-centering)",
+        "At the critical, amplitude is damping-limited — traverse fast, with damping; dwell is what kills",
+        "Synchronous (1×) whirl from imbalance is the common case; whirl = orbit of the shaft center",
+        "Gyroscopic effects split forward/backward whirl with speed — Campbell diagram crossings give true criticals"
+      ],
+      "cards": [
+        {
+          "question": "A pump rotor actually runs smoother above its critical speed than just below it. Where has the mass center gone, and what's the residual orbit?",
+          "answer": "Above critical the response lags the imbalance by ~180°: the shaft deflects opposite the heavy spot, so the CM moves toward the spin axis while the geometric center orbits with radius approaching e — the rotor self-centers and spins about its own CM. Below critical, deflection and eccentricity add instead. The residual orbit e is set by manufacturing, not speed."
+        },
+        {
+          "question": "What limits how slowly you may accelerate a supercritical turbine through its critical speed?",
+          "answer": "At the critical, steady-state amplitude is damping-limited (≈ e/2ζ for imbalance excitation) — but it takes time to build. Sweep fast enough and the transient never approaches steady state, staying inside seal and blade-tip clearances; dwell there and it will. Allowable dwell is set by damping, balance quality, and clearance — hence run-up rate limits and 'do not loiter' speed bands in operating manuals."
+        },
+        {
+          "question": "Why does a long slender shaft whirl at a dangerously low speed, and which design change raises the first critical fastest?",
+          "answer": "$\\omega_{cr} = \\sqrt{k/m}$ with mid-span lateral stiffness $k = 48EI/L^3$ — critical speed falls like $L^{-3/2}$. Shortening the span (or adding a steady bearing mid-span) exploits the cube and wins fastest; diameter is next best ($I \\propto d^4$, so $\\omega_{cr} \\propto d^2$). Material swaps barely move it — steel and 'stronger' steel share E."
+        }
+      ]
+    },
+    {
+      "title": "Balancing: static vs dynamic",
+      "subject": "Dynamics",
+      "tags": ["rotordynamics", "balancing"],
+      "content": "Static (single-plane) unbalance: the CM sits off the spin axis — detectable at rest (heavy side rolls down on knife edges), corrected by one mass in one plane. Dynamic (couple) unbalance: the principal inertia axis is tilted from the spin axis (nonzero products of inertia) — invisible at rest because the CM is on-axis, but at speed $H = I\\omega$ must precess, producing a rotating couple that shakes the two bearings 180° out of phase. A couple cannot be cancelled from one plane: long rotors (rule of thumb L/D ≳ 0.5, or anything fast) need two-plane balancing. General unbalance = static + couple superposed; two planes correct both. Balancing machines measure bearing vibration amplitude and phase, then solve influence coefficients for correction masses. ISO balance grades fix $e_{per}\\,\\omega = G$ (mm/s): the eccentricity budget shrinks inversely with speed.",
+      "recall_prompt": "Contrast static vs dynamic unbalance — what each looks like at rest and at speed, why a couple needs two correction planes, and how ISO G grades scale the allowable residual with speed.",
+      "key_ideas": [
+        "Static unbalance: CM off the spin axis — shows at rest (rolls on knife edges); one-plane fix",
+        "Dynamic/couple unbalance: spin axis not a principal axis (products of inertia) — a rotating couple, invisible at rest, bearings shake 180° out of phase",
+        "One correction plane can only move the CM — cancelling a couple requires masses in two separated planes",
+        "Long or fast rotors (L/D ≳ 0.5) need two-plane balancing; disks can get away with one",
+        "General unbalance = static + couple; two planes correct both simultaneously",
+        "ISO grades: $e_{per}\\omega = G$ mm/s — double the speed, halve the allowable eccentricity"
+      ],
+      "cards": [
+        {
+          "question": "A driveshaft passes a knife-edge balance check perfectly, yet hammers both bearings at speed — out of phase with each other. What survived the check, and why won't any single correction mass fix it?",
+          "answer": "Couple (dynamic) unbalance: the CM is on the axis, so gravity sees nothing at rest, but the principal axis is tilted — at speed $H = I\\omega$ precesses and the bearings carry a rotating couple (the 180° phase split is the fingerprint). A single mass in one plane can only relocate the CM — it adds static unbalance, never a counter-couple. Equal and opposite masses in two separated planes are required."
+        },
+        {
+          "question": "Why do ISO balance grades let a slow paper-mill roll carry far more residual unbalance than a turbocharger of the same mass?",
+          "answer": "Grades hold $e_{per}\\,\\omega = G$ constant (mm/s): the disturbing force is $me\\omega^2$, so keeping bearing severity comparable forces $e \\propto 1/\\omega$. A turbo at 100× the speed gets 1/100 the eccentricity budget — which is why high-speed rotors are balanced as assemblies, on their own bearings, while the roll tolerates workshop balancing."
+        }
+      ]
+    },
+    {
+      "title": "Gyroscopic effects & precession",
+      "subject": "Dynamics",
+      "tags": ["rotordynamics", "3d dynamics"],
+      "content": "Euler's law $\\vec{M} = d\\vec{H}/dt$: torque changes angular momentum's direction, not just its magnitude. Apply a moment transverse to a fast spin and the axis doesn't tip over — it precesses, chasing the torque vector; the visible response appears 90° around the rotation from the applied push. Steady precession with perpendicular axes: $M = I_{spin}\\,\\omega_{spin}\\,\\Omega_{prec}$ — faster spin means slower, 'stiffer' precession. The flip side: forcing a spinning rotor to slew (aircraft engine in pitch, turbine in a turning ship, slewing grinding spindle) generates a gyroscopic reaction couple $I\\omega\\Omega$ on its bearings. In rotordynamics the same physics makes whirl speeds speed-dependent: gyroscopic moments raise forward-whirl and lower backward-whirl frequencies (Campbell diagram).",
+      "recall_prompt": "State M = dH/dt and the steady-precession relation, apply the 90°-later rule to a spinning top and an aircraft propeller, and explain the bearing couple created by slewing a rotor.",
+      "key_ideas": [
+        "$\\vec{M} = d\\vec{H}/dt$ — transverse torque rotates the spin axis (precession) rather than tipping it",
+        "Steady precession, perpendicular axes: $M = I\\,\\omega_{spin}\\,\\Omega_{prec}$ — fast spin → slow precession",
+        "The response shows up 90° later in the sense of rotation than the applied push",
+        "Slewing a spinning rotor extracts a gyroscopic reaction couple $I\\omega\\Omega$ from its bearings",
+        "Gyroscopic moments raise forward-whirl and lower backward-whirl frequencies with speed (Campbell diagram)",
+        "Precession rate rises as spin decays ($\\Omega = M/I\\omega$) — the dying top's quickening wobble"
+      ],
+      "cards": [
+        {
+          "question": "Why doesn't a fast-spinning top fall over — and why does its wobble speed UP as the spin dies?",
+          "answer": "Gravity's torque about the pivot is horizontal; $d\\vec{H}/dt = \\vec{M}$ moves the (axis-aligned) momentum vector horizontally too — the axis sweeps a cone (precession) instead of falling: $\\Omega = mgr/(I\\omega)$. As friction bleeds $\\omega$, $\\Omega$ must rise to generate the same dH/dt — the characteristic quickening wobble before it finally tips when spin can no longer sustain the motion."
+        },
+        {
+          "question": "On takeoff, a taildragger with a clockwise-from-cockpit propeller raises its tail — and the airplane swerves left. Trace the gyroscopic cause.",
+          "answer": "Raising the tail pitches the nose down: a torque applied to a fast-spinning disk. The propeller responds 90° later in its rotation sense, turning the applied pitch into a yaw — left, for clockwise-from-cockpit rotation — with magnitude $M = I\\omega\\Omega_{pitch}$ that the rudder must cancel. Same physics loads engine mounts and bearings whenever any aircraft pitches or yaws with a big rotor turning."
+        }
+      ]
+    },
+    {
+      "title": "Random vibration & PSD",
+      "subject": "Vibrations",
+      "tags": ["random vibration", "psd"],
+      "content": "Road, rocket, and turbulence loads aren't sinusoids — they're stationary, roughly Gaussian random processes, specified by the acceleration power spectral density W(f) in g²/Hz: how mean-square acceleration is distributed over frequency. The overall level is $G_{rms} = \\sqrt{\\int W(f)\\,df}$ — the square root of the area under the PSD. A lightly damped SDOF on broadband input responds almost entirely in the narrow band around its own $f_n$ — output looks like a sine at $f_n$ with slowly wandering random amplitude. Miles' equation integrates that resonant band: $\\sigma = \\sqrt{\\frac{\\pi}{2} f_n Q\\, W(f_n)}$ gives the 1σ response acceleration, valid for flat-enough input near $f_n$, light damping, and linearity. Being Gaussian, peaks beyond 3σ occur ~0.3% of the time — hence 3σ design loads, and fatigue accumulated by counting cycles at ≈ $f_n$.",
+      "recall_prompt": "Explain how a PSD specifies random loading and compute $G_{rms}$ from it, then derive the idea of Miles' equation — what a resonator extracts from broadband input, the 1σ/3σ logic, and the assumptions that break it.",
+      "key_ideas": [
+        "Random loading is statistical: PSD $W(f)$ [g²/Hz]; $G_{rms} = \\sqrt{\\int W\\,df}$ — area under the PSD",
+        "A high-Q SDOF samples only the band ~$f_n/Q$ wide around its own frequency — response ≈ sine at $f_n$ with random amplitude",
+        "Miles: $\\sigma = \\sqrt{\\frac{\\pi}{2} f_n Q W(f_n)}$ — the 1σ response acceleration to flat broadband input",
+        "Gaussian response: design to 3σ (~0.3% exceedance); fatigue counts cycles at ≈ $f_n$",
+        "With flat input, response grows like $\\sqrt{f_n}$ — stiffening can RAISE random response; damping ($\\sqrt{Q}$) is the reliable lever",
+        "Assumptions: input flat near $f_n$, light damping, single mode, linear — notched or narrowband inputs void Miles"
+      ],
+      "cards": [
+        {
+          "question": "Your avionics bracket sees a flat 0.04 g²/Hz spec, and the structures group wants to stiffen it 'to reduce vibration'. When does stiffening make the response WORSE?",
+          "answer": "Miles: $\\sigma = \\sqrt{\\frac{\\pi}{2} f_n Q W(f_n)}$ — with a flat PSD, raising $f_n$ raises rms acceleration like $\\sqrt{f_n}$. Stiffening only pays if the input PSD rolls off above the old $f_n$, or if damping comes along ($\\sigma \\propto \\sqrt{Q}$). Displacement DOES drop (≈ $\\sigma/(2\\pi f_n)^2$) — so first decide whether acceleration or relative displacement is what breaks your part."
+        },
+        {
+          "question": "A 6 g sine dwell at $f_n$ versus a broadband random input with 6 $G_{rms}$ overall: why aren't these comparable g-for-g for a Q = 25 resonator?",
+          "answer": "Sine at resonance is coherent: response = Q × input = 150 g, deterministic. Random spreads its power — the resonator harvests only the ~$f_n/Q$ band, responding as $\\sqrt{\\frac{\\pi}{2} f_n Q W}$, growing like $\\sqrt{Q}$ not Q; the answer also depends on W at $f_n$, not the overall $G_{rms}$. And random 'amplitude' is a statistic — design peaks are 3σ excursions, not a fixed number."
+        },
+        {
+          "question": "Sketch how a lightly damped SDOF turns a flat input acceleration PSD into a response PSD.",
+          "answer": "Axes: PSD [g²/Hz] vs frequency (log-log is natural).\nInput: flat line at W.\nResponse = $|H(f)|^2 W$: tracks the input at f ≪ $f_n$, erupts in a resonant spike at $f_n$.\nSpike landmarks: peak height ≈ $Q^2 W$, half-power width ≈ $f_n/Q$.\nNearly all response area lives in the spike: $\\sigma^2 \\approx \\frac{\\pi}{2} f_n Q W$ — Miles' equation is just this area.\nValid for light damping and input flat across the spike; a second mode would add a second spike."
         }
       ]
     }

@@ -23,6 +23,10 @@
         {
           "question": "Where do weld lines form, why are they weak, and what are two ways to deal with them?",
           "answer": "Where separated flow fronts rejoin (behind holes, multi-gate fill). The fronts arrive cool with poorly entangled chains and trapped volatiles → weak, visible seam. Fixes: move gates to relocate the line to a low-stress area, raise melt/mold temperature or venting to improve knitting."
+        },
+        {
+          "question": "Injection molding a thermoset instead of a thermoplastic flips the process logic. What reverses, and what can you no longer do?",
+          "answer": "Thermoplastic: melt hot, inject into a COLD mold, freeze — cycle set by cooling, sprues/regrind recyclable. Thermoset: inject a warm reactive charge into a HOT mold and hold while it crosslinks — cycle set by cure kinetics, and the chemistry is one-way: no regrind, flash is scrap, and a part stuck in the press just cures harder. Get the assignment wrong and you either cure resin in the barrel or melt your 'cured' part in service."
         }
       ]
     },
@@ -39,7 +43,20 @@
         "Blown film: bubble inflation, blow-up ratio sets biaxial orientation",
         "All exploit polymer melt strength — amorphous window or controlled crystallization"
       ],
-      "cards": []
+      "cards": [
+        {
+          "question": "Why is a PET soda bottle (stretch blow molded) both clear AND strong, while an extrusion blow-molded HDPE jug is neither?",
+          "answer": "ISBM stretches the preform biaxially just above $T_g$: strain-induced crystallization produces crystallites too small to scatter light — strength and barrier properties rise while clarity survives. EBM merely inflates a melt parison with little orientation; HDPE then crystallizes thermally into large spherulites — translucent and weaker. EBM's consolation prizes: handles and offset necks, paid for with a pinch-off weld at the base."
+        },
+        {
+          "question": "Where does a deep thermoformed cup come out dangerously thin, and what process tricks fight it?",
+          "answer": "Wherever the sheet forms last — bottom corners of deep draws: once sheet touches the cool tool it freezes and stops stretching, so all remaining draw concentrates in the still-free material. Countermeasures: plug assist (pre-stretch the middle mechanically before vacuum), billow/pressure pre-inflation, zoned sheet heating, and simply limiting draw ratio. Starting thicker works but wastes material everywhere else."
+        },
+        {
+          "question": "In blown film, what does the blow-up ratio actually control, and how does a badly chosen one show up in the product?",
+          "answer": "BUR sets the transverse stretch of the bubble; together with axial draw-down it fixes the MD/TD orientation balance. Balanced biaxial orientation gives balanced tear and tensile properties; an unbalanced film is strong one way and splits easily along the heavily oriented direction — trash bags that unzip lengthwise. Bubble stability bounds how far you can push it."
+        }
+      ]
     },
     {
       "title": "Machining mechanics: merchant circle & milling",
@@ -58,6 +75,14 @@
         {
           "question": "Why does climb milling give better tool life and finish, and when must you avoid it?",
           "answer": "The tooth enters at full chip thickness and exits thin — no rubbing/burnishing at entry, less work hardening, heat leaves in the chip. Avoid it on machines with backlash (the cutter can yank the table into itself) or when breaking through hard scale (entry impact)."
+        },
+        {
+          "question": "Sketch Merchant's force circle for orthogonal cutting, showing the one resultant decomposed three ways.",
+          "answer": "Setup: tool with rake angle α, chip shearing along a plane at angle φ from the cut direction.\nThe resultant force R is the DIAMETER of the circle; every decomposition is a chord pair.\nPair 1 (measured): cutting force $F_c$ horizontal, thrust $F_t$ vertical.\nPair 2 (shear plane): $F_s$ along the shear plane at φ, $F_n$ perpendicular.\nPair 3 (rake face): friction F along the chip-tool face, normal N — friction angle β between R and N.\nLandmark: $\\phi = 45° + \\alpha/2 - \\beta/2$ ties the picture together.\nValid for 2-D orthogonal cutting with a thin shear plane and continuous chip — not for built-up edge or 3-D oblique cuts."
+        },
+        {
+          "question": "Why does built-up edge appear at low-to-moderate cutting speeds, vanish at high speed, and what does it do while it lives?",
+          "answer": "At moderate speed and pressure, work material pressure-welds onto the rake face and grows as a false cutting edge; it periodically tears off, taking tool coating with it and smearing fragments onto the surface — erratic finish, drifting size, accelerated wear. Higher speed heats and softens the interface so the weld can't anchor — one reason finish IMPROVES with cutting speed. The standard fixes: more speed, sharper/more positive rake, better lubrication."
         }
       ]
     },
@@ -74,7 +99,20 @@
         "Shaping: reciprocating cutter — internal gears and teeth near shoulders",
         "Generation processes average out cutter errors → accurate involutes"
       ],
-      "cards": []
+      "cards": [
+        {
+          "question": "Why does grinding, of all material-removal processes, so readily temper or even re-harden a hardened steel surface — and what are the telltales?",
+          "answer": "Specific energy is enormous: grits cut with highly negative effective rake, and much of the action is plowing and rubbing, so nearly all energy becomes heat concentrated in a thin surface layer. Overheat → temper burn (softened, straw/blue oxide) or worse, re-austenitize and quench → brittle untempered martensite with cracks. Telltales: discoloration, nital-etch patterns, grinding cracks; fixes: sharper/fresher dressing, more coolant, lighter depth, softer wheel grade."
+        },
+        {
+          "question": "One gear sits 2 mm from a shoulder; another is an internal ring gear. Hobbing or shaping for each — and what physically forces the choice?",
+          "answer": "Both must be shaped. A hob is a worm-shaped cutter that needs axial approach and over-run room along the blank — it can't stop dead at a shoulder, and it can't reach inside a ring at all. The gear shaper's reciprocating pinion cutter works in a blind shoulder gap and cuts internal teeth. Free cylindrical blanks go to hobbing: continuous generation is faster and the production default."
+        },
+        {
+          "question": "Why is broaching unbeatable for a production keyway, but a non-starter for a blind hole or a one-off part?",
+          "answer": "Every tooth on the broach sits slightly deeper than the last, so one stroke does roughing through finishing with the tolerance ground into the tool — seconds per part, no operator skill. But the tool is part-specific and expensive (justified only by volume), and the broach plus chips must pass THROUGH the feature — blind geometry leaves them nowhere to go."
+        }
+      ]
     },
     {
       "title": "Casting processes & solidification defects",
@@ -98,6 +136,10 @@
         {
           "question": "Hot tears vs shrinkage cavities — both come from solidification shrinkage. What distinguishes them?",
           "answer": "Hot tear: the *mold or geometry constrains* contraction while the alloy is mushy and weak → cracks at hot spots/re-entrant corners (fix constraints, radii). Shrinkage cavity: nothing constrains it, the last-freezing region simply runs out of liquid feed → internal void (fix feeding/risers)."
+        },
+        {
+          "question": "Sketch a cross-section of a cast plate with a boss, showing where the shrinkage cavity forms without a riser — and where it goes with one.",
+          "answer": "Without riser: cavity sits in the casting's last-to-freeze region — the thermal center of the thick boss, as an internal void or surface pipe.\nWith riser: a compact cylinder atop the boss, connected by a short neck; the pipe now forms harmlessly in the RISER top, casting sound.\nWhy it works, visibly: riser drawn with larger V/A (modulus) than the section it feeds — Chvorinov says it freezes last.\nArrows showing directional solidification: thin far edges freeze first, front sweeps toward the riser; optional chill at the far end strengthens the gradient.\nFailure cases to note: neck too thin (freezes early, cavity returns to the boss) or feeding distance exceeded (centerline shrinkage mid-plate)."
         }
       ]
     },
@@ -118,6 +160,14 @@
         {
           "question": "Why does a forged connecting rod outlast an identical machined-from-billet one in fatigue?",
           "answer": "Forging makes the grain flow (and elongated inclusions) follow the part's contour, so defects lie parallel to the load path rather than cut through it; machining billet exposes transverse grain ends at the surface — exactly where fatigue starts."
+        },
+        {
+          "question": "Same alloy, same final shape: when do you work it hot and when cold — and what does each choice cost you?",
+          "answer": "Hot (above recrystallization temperature): flow stress drops several-fold and ductility is effectively unlimited (continuous recrystallization) — but you accept oxide scale, loose tolerances from thermal contraction, and zero strengthening. Cold: strain hardening gives strength for free, with tight tolerance and good finish — but forces are high, the ductility budget is finite, and inter-pass anneals may be needed. The standard route uses both: hot-work the big reductions, cold-work the final passes for properties and precision."
+        },
+        {
+          "question": "What causes chevron (centerburst) cracking inside a drawn bar that looks perfect on the surface, and which two process knobs remove it?",
+          "answer": "With low reduction per pass and a steep die angle, plastic deformation stays near the surface and never penetrates to the centerline; the core gets dragged along in hydrostatic TENSION and tears periodically — internal arrowhead voids invisible from outside. Fix by making deformation reach the center: increase reduction per pass and/or decrease die angle. Nasty because it ships undetected — a classic argument for ultrasonic inspection of cold-drawn stock."
         }
       ]
     },
@@ -138,6 +188,14 @@
         {
           "question": "Why does a high-strength steel bracket spring back more than the mild-steel version bent on the same tooling?",
           "answer": "Springback is the elastic recovery: strain recovered ≈ $\\sigma_y/E$. Higher yield with the same modulus stores more elastic strain through the thickness → more angle loss. Compensate with overbend or coining the bend line."
+        },
+        {
+          "question": "Sketch the through-thickness stress in a sheet bend at full punch load and after release, showing why springback happens.",
+          "answer": "Section through the bend: outer fibers in tension, inner in compression, neutral surface between.\nAt load: stress profile yielded (flat-topped) near both surfaces, with an elastic core straddling the neutral axis.\nUnloading = superposing an opposite elastic moment: the stored elastic strain releases, angle opens, radius grows — that recovery IS springback.\nAfter release: locked-in residual stresses, reversed in sign near each surface.\nAnnotations: springback grows with $\\sigma_y/E$ and with R/t (gentle bends have a fat elastic core); cures marked — overbend past target, or coin/bottom the bend to crush the elastic core."
+        },
+        {
+          "question": "In deep drawing, wrinkling and tearing are the two walls of the process window. What causes each, and which single setting trades one against the other?",
+          "answer": "Wrinkling: the flange is being squeezed to a smaller circumference, putting it in compressive hoop stress — too little blank-holder force and the thin annulus buckles into waves. Tearing: the cup wall transmits the entire punch load — too much holder force (or draw ratio) and wall tension exceeds strength, fracturing just off the punch radius. Blank-holder force is the dial: the working window lives between the two walls, and lubrication/draw beads widen it."
         }
       ]
     },
@@ -154,7 +212,20 @@
         "Properties scale with fiber fraction and alignment; voids kill compression/fatigue",
         "Cure cycle (temp/pressure/vacuum) is part of the design, not an afterthought"
       ],
-      "cards": []
+      "cards": [
+        {
+          "question": "Voids that barely dent a laminate's tensile strength can devastate its compression and interlaminar shear performance. Why the asymmetry?",
+          "answer": "Tension is carried by the fibers, which bridge right past small voids. Compression depends on the MATRIX shear-supporting fibers against microbuckling, and interlaminar shear is pure matrix — voids gut exactly those load paths and seed delaminations. Rule of thumb: every 1% void content costs several percent of ILSS — which is why porosity, not stiffness, is what cure QA chases."
+        },
+        {
+          "question": "Infusion or prepreg for a structural composite shell — what actually drives the decision?",
+          "answer": "Prepreg buys the highest, most consistent fiber fraction (~60%) and tough, B-staged resin systems — at the price of freezer logistics, out-time limits, debulks, and an oven/autoclave cure. Infusion uses room-temperature dry fabric on one-sided tools at Vf ~50%, but the resin must be low-viscosity (so less toughened) and filling becomes an engineering problem — race-tracking and dry spots are on you. Part size vs oven, budget, rate, and required knockdowns decide."
+        },
+        {
+          "question": "What is the intermediate dwell in a two-step prepreg cure cycle for — and what goes wrong if you ramp straight to cure temperature?",
+          "answer": "At the dwell, resin viscosity passes through its minimum while still ungelled: vacuum and pressure can consolidate plies, bleed excess resin, and let volatiles escape. Ramp straight up and the resin gels before compaction finishes — locked-in voids, resin-rich layers, low fiber fraction. The cure cycle is consolidate-first, crosslink-second."
+        }
+      ]
     },
     {
       "title": "Additive manufacturing: the seven families",
@@ -174,6 +245,10 @@
         {
           "question": "Why does an FDM part fail at maybe 30-50% of its tensile strength when loaded across layers (Z), and what do you do about it?",
           "answer": "Z strength relies on diffusion bonding between already-cooled roads — incomplete chain entanglement plus inter-road voids act as crack starters. Orient the load in-plane, or move to a powder/resin process where layers fuse more completely."
+        },
+        {
+          "question": "Polymer SLS prints overhangs with no supports, yet metal powder-bed fusion demands forests of them. What two jobs are metal supports actually doing?",
+          "answer": "They're anchors and heat sinks more than scaffolding. The huge thermal gradients of laser-melted metal create residual stresses that curl unanchored regions up into the recoater — supports tie the part to the plate. And loose powder is a thermal insulator: an unsupported metal overhang can't dump its melt heat, so it balls into dross; supports conduct it away. SLS escapes both because its warm powder cake supports loads and the thermal gradients are mild."
         }
       ]
     },
@@ -190,7 +265,20 @@
         "Sintering: solid-state diffusion densification, big predictable shrinkage",
         "Residual porosity = the critical flaw population (Weibull strength)"
       ],
-      "cards": []
+      "cards": [
+        {
+          "question": "Why does doubling a chip's die area more than double the cost of a WORKING die?",
+          "answer": "Yield falls roughly exponentially with area for a given defect density ($Y \\approx e^{-DA}$): random particles kill big dies disproportionately often. Meanwhile fewer large dies fit per fixed-cost wafer, so cost per good die ≈ wafer cost/(dies × yield) compounds both penalties. This is the economic argument for chiplets and for cleanrooms measured in particles per cubic meter."
+        },
+        {
+          "question": "A sintered ceramic part must hit a ±0.1% dimension. Why is that hard, and how do engineers actually achieve it?",
+          "answer": "Sintering densifies the green compact by diffusion, shrinking ~15–20% linearly — and the shrinkage tracks local green density, so any compaction gradient becomes distortion, not just size error. The playbook: oversize the green part by a calibrated factor, compact uniformly (isostatic pressing helps), control the firing schedule — then diamond-grind only the few surfaces where the tolerance truly lives."
+        },
+        {
+          "question": "When in the ceramic process route do you machine features, and why does waiting until after firing cost an order of magnitude more?",
+          "answer": "Machine green or bisque: the unfired compact cuts like chalk with ordinary tooling — just scale every dimension for sinter shrinkage. After firing the part is near diamond hardness, so only slow diamond grinding works, and every grinding scratch is a new surface flaw in a material whose strength IS its worst flaw (Weibull). Plan: green-machine everything, fire, grind only the critical interfaces."
+        }
+      ]
     },
     {
       "title": "Micro & macro economics for engineers",
@@ -210,6 +298,126 @@
         {
           "question": "Why are cartels (like OPEC) chronically unstable without enforcement?",
           "answer": "Each member's dominant strategy is to cheat: with price held above marginal cost, secretly producing extra units is highly profitable — but when everyone defects, price collapses to competitive levels (a prisoner's dilemma). Stability needs monitoring and punishment mechanisms."
+        },
+        {
+          "question": "A toll authority raises prices 20% and total revenue FALLS. What does that reveal about demand — and under what conditions would the same hike have raised revenue?",
+          "answer": "Demand was elastic (|%ΔQ| > %ΔP): drivers had substitutes — other routes, transit, staying home — so quantity fell more than price rose. The hike raises revenue only where demand is inelastic: few substitutes, small share of budget, short time horizon (habits haven't adjusted). Pricing power is about elasticity, not costs — and elasticity itself grows with time as people find alternatives."
+        }
+      ]
+    },
+    {
+      "title": "Welding & joining processes",
+      "subject": "Manufacturing",
+      "tags": ["joining", "metals"],
+      "content": "Fusion welding melts base metal. Arc family: stick/SMAW (cheap, field-tolerant, slag), MIG/GMAW (continuous wire is both electrode and filler — fast, automatable, the production default), TIG/GTAW (non-consumable tungsten with separate filler — precise heat control, clean, slow: thin sections, Al, stainless, Ti), submerged arc for thick plate; plus resistance spot welding for sheet assemblies and laser/EB for deep, narrow, low-distortion joints. Every fusion weld drags a heat-affected zone behind it — base metal thermally cycled but never melted: grain growth, untempered martensite in hardenable steels, or overaged zones in Al — usually the weakest link. Cooling welds shrink → residual tension along the bead and distortion; hydrogen plus a hard HAZ plus restraint gives delayed cold cracking (preheat, low-hydrogen consumables). Brazing (>450 °C) and soldering (<450 °C) draw a lower-melting filler into the joint by capillary action — base metal never melts: dissimilar pairs, minimal distortion, strength set by joint shear area. Adhesives spread load over whole areas and join anything, limited by temperature, creep, peel, and surface prep.",
+      "recall_prompt": "Map the joining landscape: assign stick/MIG/TIG to the jobs each wins, explain why the HAZ rather than the bead usually fails, where distortion and cold cracking come from, and when brazing or adhesives beat welding outright.",
+      "key_ideas": [
+        "MIG: consumable wire = electrode + filler, continuous → fast production; TIG: non-consumable tungsten, decoupled filler → precise, clean, slow",
+        "The HAZ — heated but never melted — is usually the weak link: grain growth, untempered martensite (steels) or overaging (Al)",
+        "Weld metal shrinks as it cools → residual tension at the bead + distortion; manage with sequence, fixturing, balance, stress relief",
+        "Cold cracking = hydrogen + hard microstructure + restraint; preheat slows cooling and lets hydrogen escape",
+        "Brazing/soldering: capillary filler below base-metal melting — dissimilar metals, low distortion, strength from joint shear area, not filler bulk",
+        "Adhesives load whole areas and tolerate dissimilar/thin parts, but creep, peel, temperature, and surface prep govern"
+      ],
+      "cards": [
+        {
+          "question": "Production steel frames get MIG; thin-wall titanium aerospace parts get TIG. What about each process forces the split?",
+          "answer": "MIG's wire is electrode and filler at once, fed continuously — high deposition, easy automation, tolerant technique, but heat and filler arrive coupled, with spatter. TIG decouples them: the tungsten arc sets heat, filler is added (or not) by hand, and full inert shielding suits reactive metals — at several times less speed and more skill. Swap them and you get contaminated, burned-through Ti on one side and absurd cycle times on the other."
+        },
+        {
+          "question": "When does brazing beat welding even though the brazed joint is 'weaker'?",
+          "answer": "Brazing never melts the base metal: no HAZ wrecking a heat treatment, little distortion on thin or precision parts, and dissimilar pairs (carbide tooth to steel saw body) join happily. Loaded in shear over a generous lap area, capillary-filled joints carry serious load — the filler's low strength is bought back with area. It loses when service temperature approaches the filler's melting range or the design can't provide shear area."
+        },
+        {
+          "question": "A welded 4140 bracket cracks BESIDE the weld bead, hours after welding finished. Walk the mechanism and the prevention.",
+          "answer": "The HAZ next to the fusion line austenitized, then the surrounding cold mass quenched it to untempered martensite; joint restraint holds residual tension across it, and hydrogen from the arc diffuses to the hard zone — delayed (cold) cracking, hours or days later. Prevention is the classic triad: preheat (slower cooling → softer HAZ, hydrogen escapes), low-hydrogen consumables kept dry, and post-weld tempering."
+        }
+      ]
+    },
+    {
+      "title": "SPC & process capability",
+      "subject": "Manufacturing",
+      "tags": ["quality", "statistics"],
+      "content": "Every process varies. Common-cause variation is the stable, predictable noise of the system itself; special-cause variation is an assignable event — tool wear step, new material lot, fixture knock. Control charts (x̄-R or x̄-s) plot subgroup statistics against control limits set at ±3σ OF THE PROCESS, computed from its own data — they exist to flag special causes: a point beyond the limits, or runs/trends/zone violations (Western Electric rules). Control limits are the voice of the process; spec limits are the voice of the customer — never draw specs on a control chart. Capability compares the two voices once the process is stable: $C_p = (USL-LSL)/6\\sigma$ measures potential spread fit and ignores centering; $C_{pk} = \\min(USL-\\mu,\\ \\mu-LSL)/3\\sigma$ punishes off-center running; 1.33 is a common minimum. Capability computed on an unstable process is fiction. And adjusting a stable process in response to common-cause noise — tampering — adds variance (Deming's funnel).",
+      "recall_prompt": "Explain common vs special cause and how a control chart separates them, why control limits aren't spec limits, then compute and interpret Cp vs Cpk for an off-center process — and argue why capability is meaningless before stability.",
+      "key_ideas": [
+        "Common cause = the process's own stable noise; special cause = assignable events — only special causes justify chasing",
+        "Control limits = ±3σ of the charted statistic, computed FROM the process — not spec limits (process voice vs customer voice)",
+        "Signals: point beyond 3σ, runs above/below center, steady trends (Western Electric zone rules catch drifts early)",
+        "$C_p = (USL-LSL)/6\\sigma$ — potential fit, blind to centering; $C_{pk} = \\min(USL-\\mu, \\mu-LSL)/3\\sigma$ — punishes off-center",
+        "High Cp + low Cpk ⇒ precise but mis-aimed: re-center (cheap); both low ⇒ too much variation (hard, change the system)",
+        "Stability first: capability of an unstable process is fiction; adjusting on common-cause noise (tampering) inflates variance"
+      ],
+      "cards": [
+        {
+          "question": "Sketch an x̄ control chart of a turning process whose tool is steadily wearing, marking where the chart first signals.",
+          "answer": "Centerline at the grand mean; UCL and LCL at ±3σ of the subgroup means, computed from the process — no spec limits anywhere on the chart.\nEarly points: random scatter about the centerline, no pattern (common cause only).\nThen a slow, steady climb of consecutive points as the tool wears the diameter larger.\nFirst signal: the run/trend rules fire BEFORE any point crosses a limit — mark the string of consecutive rising points (or a run above centerline).\nLater, a point beyond the UCL circled — the unmistakable signal.\nCaption: the chart detects the drift; it says nothing about whether parts are in spec yet."
+        },
+        {
+          "question": "A supplier reports Cp = 2.0 but Cpk = 0.7 on your critical bore. What exactly is wrong, roughly how bad is the fallout, and why is this the GOOD kind of bad news?",
+          "answer": "The spread is excellent — 6σ fits the tolerance twice over — but the mean sits way off-center: the near spec limit is only $3 \\times 0.7 = 2.1\\sigma$ away, so roughly 2% of parts fall outside it. It's good news because re-aiming a process (tool offset, setpoint) is cheap and fast; if instead Cp ≈ Cpk ≈ 0.7, the problem would be variation itself — a redesign-the-system job."
+        },
+        {
+          "question": "Why does 'nudge the machine after every part that measures off nominal' make a stable process produce WORSE parts?",
+          "answer": "On a stable process, each deviation is common-cause noise carrying zero information about the next part — compensating for it injects that noise into the settings, roughly doubling the output variance (Deming's funnel experiment). The discipline: act on special-cause signals only; reduce common-cause variation by improving the system, not by chasing individual parts."
+        }
+      ]
+    },
+    {
+      "title": "Surface engineering & coatings",
+      "subject": "Manufacturing",
+      "tags": ["surfaces", "coatings"],
+      "content": "Parts fail from the surface in — fatigue, wear, and corrosion all start there — so treatments buy one of four things: compressive residual stress, hardness, a barrier, or sacrificial protection. Mechanical: shot peening hammers the surface into residual compression, delaying fatigue crack initiation; rolling does the same for fillets and threads. Conversion coatings grow from the substrate itself: anodizing thickens aluminum's own oxide (porous → dye and seal; Type III hardcoat for wear), phosphate/black oxide give steel a paint base and mild protection. Electroplating (Zn, Ni, Cr, Cd) is cheap and thin but throwing power leaves recesses starved, and plating high-strength steel charges it with hydrogen — bake soon after or risk delayed fracture. Hot-dip galvanizing piles on thick sacrificial zinc. For tools: PVD (sputtered/evaporated TiN, AlTiN, DLC — line-of-sight, ~200–500 °C, thin and hard, compressive) vs CVD (gas-phase reaction — conformal, thicker, but ~900–1000 °C process heat that can ruin a substrate's heat treatment). Galvanic position decides failure style: sacrificial coatings protect even when scratched; noble ones concentrate attack at every pinhole.",
+      "recall_prompt": "Tour the surface toolbox — peening, anodizing, plating, galvanizing, PVD/CVD: state what each buys, the mechanism behind it, and one way each bites back.",
+      "key_ideas": [
+        "Surface treatments buy one of four things: compressive residual stress (fatigue), hardness (wear), barrier (corrosion), or sacrificial protection",
+        "Shot peening: plastic dimpling → residual compression exactly where fatigue cracks initiate",
+        "Anodizing GROWS aluminum's own oxide (conversion, not deposition): porous then sealed/dyed; Type III hardcoat for wear",
+        "Electroplating: cheap, thin, recess-starved (throwing power) — and hydrogen embrittlement on high-strength steel unless baked promptly",
+        "PVD: line-of-sight, 200–500 °C, thin hard compressive films; CVD: conformal from gas but ~900–1000 °C — can undo the substrate's heat treatment",
+        "Galvanic position sets failure style: anodic coatings (Zn) protect even scratched; noble coatings (Ni, Cr) pit savagely at pinholes"
+      ],
+      "cards": [
+        {
+          "question": "A scratched zinc coating keeps protecting steel, but a scratched nickel coating makes rusting WORSE than bare steel. Why?",
+          "answer": "Zinc is anodic to iron: it corrodes preferentially and cathodically protects the exposed scratch — the coating spends itself on your behalf. Nickel is noble to iron: the tiny exposed steel becomes the anode feeding a huge cathode, and the unfavorable area ratio concentrates all the attack into the pinhole — fast, deep pitting. Pick coatings by galvanic position first, barrier quality second."
+        },
+        {
+          "question": "Why must a zinc- or cadmium-plated high-strength bolt be baked within hours of plating, and what failure does skipping the bake produce?",
+          "answer": "Plating evolves atomic hydrogen that diffuses into the steel; in high-strength grades it migrates to stressed regions and triggers delayed brittle fracture — the bolt snaps days later under static preload, no warning. Baking (~190 °C for several hours, promptly — before hydrogen settles into traps) drives it out. Mild steel shrugs this off; the susceptibility climbs steeply with strength level."
+        },
+        {
+          "question": "Carbide inserts happily take CVD coatings, but HSS end mills must get PVD. What constraint forces that — and what does PVD throw in for free?",
+          "answer": "CVD runs at ~900–1000 °C — far above HSS tempering temperature, so it would anneal the tool soft (carbide doesn't care and enjoys CVD's thick, conformal layers). PVD deposits at ~200–500 °C, below the temper, preserving hardness; it's line-of-sight, but its films carry compressive residual stress — friendly to the sharp edges fine cutters need."
+        }
+      ]
+    },
+    {
+      "title": "Jigs, fixtures & workholding",
+      "subject": "Manufacturing",
+      "tags": ["fixturing", "process planning"],
+      "content": "A fixture locates and holds the workpiece against cutting forces; a jig additionally guides the tool (drill bushings). Deterministic location is the 3-2-1 principle: three points define the primary plane (largest, most stable surface), two more a line (secondary), one kills the last translation — six points, six DOF. More contact than that is overconstraint: a real, imperfect part rocks between redundant points or gets clamped into elastic distortion and springs out of tolerance after release. Clamps hold; they must not locate or deform — place them opposite locators, over solid support, and arrange the cut so cutting forces drive the part INTO locators rather than relying on clamp friction. Fixture datums should be the design's GD&T datums, reused across operations — switching datums stacks tolerance between setups. The round-pin/diamond-pin pair locates on two holes without fighting their center-distance tolerance. Thin or delicate parts: vacuum, magnets, soft jaws, adjustable supports that touch only after location.",
+      "recall_prompt": "Lay out a milling fixture for a bracket: apply 3-2-1, place clamps relative to locators and cutting forces, choose datums consistent with the GD&T, and explain the round-plus-diamond pin trick.",
+      "key_ideas": [
+        "3-2-1: six points remove six DOF — 3 define the primary plane, 2 a line, 1 the final translation",
+        "Overconstraint (a redundant 4th coplanar point) makes a real part rock or clamp into distortion — locate kinematically",
+        "Clamps hold, locators locate: clamp opposite locators into solid support; direct cutting forces INTO locators, never trust clamp friction alone",
+        "Fixture datums = design (GD&T) datums, reused every operation — switching datums between setups stacks tolerance",
+        "Round pin + diamond pin on two holes: full location without fighting the center-distance tolerance",
+        "Jig = also guides the tool (drill bushings); fixture = locates and holds only"
+      ],
+      "cards": [
+        {
+          "question": "Why does a precision fixture support a rough casting on exactly three points under its big face — never four — and what do you add when the part flexes under cutting load?",
+          "answer": "Three points define a plane for ANY real surface; a fourth coplanar point is redundant — the imperfect casting either rocks between diagonals or gets clamped flat into elastic distortion and springs back out of tolerance when released. For flexible parts, add adjustable supports that are brought up to touch AFTER the three locators have located, then locked — they carry load without participating in location."
+        },
+        {
+          "question": "Two tight pins in two reamed holes will jam — or rattle. How does the round-plus-diamond pin scheme fix this, and what does each pin control?",
+          "answer": "The round pin in hole one fixes X and Y. A second full pin would have to agree with the hole pair's center-distance tolerance — overconstraint along the line of centers, hence jam or slop. The diamond (relieved) pin presents contact only ACROSS the line of centers: it controls rotation about the first pin while floating freely along the center line. Full, repeatable location that always assembles."
+        },
+        {
+          "question": "A part lifts and chatters during a heavy slot cut even though the clamps were torqued 'plenty tight'. Which fixture-design rule was broken?",
+          "answer": "Cutting forces were resisted by clamp friction instead of solid metal. The rule: orient the cut and the fixture so forces drive the part into locators — a positive stop in the feed direction, the primary locating plane taking the downward component. Friction is not a locator: it degrades with vibration, chips, and coolant exactly when forces peak. Clamps exist to maintain contact, not to fight the cut."
         }
       ]
     }
