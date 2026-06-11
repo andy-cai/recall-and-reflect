@@ -114,7 +114,7 @@ async function list() {
       starBtn(l),
       el('div', { style: { flex: '1', minWidth: '0' } },
         el('div', { class: 'title' }, l.title),
-        el('div', { class: 'meta' }, `${l.card_count} card${l.card_count !== 1 ? 's' : ''} · ${agoDate(l.created_at)}`, l.tags.length ? ' · ' + l.tags.join(', ') : '')),
+        el('div', { class: 'meta' }, `${l.card_count} card${l.card_count !== 1 ? 's' : ''} · ${agoDate(l.created_at)}`, l.tags.length ? ' · ' + l.tags.join(', ') : '', l.private ? ' · private' : '')),
       l.due_count > 0 ? el('span', { class: 'pill-due' }, `${l.due_count} due`) : el('span', { class: 'pill-ok' }, 'scheduled'));
   }
 
@@ -174,7 +174,7 @@ async function list() {
         starBtn(l),
         el('div', { style: { flex: '1', minWidth: '0' } },
           el('div', { class: 'title' }, l.title),
-          el('div', { class: 'meta' }, (l.subject ? l.subject + ' · ' : '') + `${l.card_count} card${l.card_count !== 1 ? 's' : ''} · ${agoDate(l.created_at)}`)),
+          el('div', { class: 'meta' }, (l.subject ? l.subject + ' · ' : '') + `${l.card_count} card${l.card_count !== 1 ? 's' : ''} · ${agoDate(l.created_at)}` + (l.private ? ' · private' : ''))),
         l.due_count > 0 ? el('span', { class: 'pill-due' }, `${l.due_count} due`) : el('span', { class: 'pill-ok' }, 'scheduled')));
     }
     content.append(rows);
@@ -208,10 +208,30 @@ async function detail(id) {
     toast(prio ? 'Focused. Goes first in sessions' : 'Unfocused');
   } }, prio ? '★ Focused' : '☆ Focus');
 
+  // Private: this topic is refused by every cloud path, like People.
+  // People topics are always private; the button becomes a fixed marker.
+  const isPeople = (L.subject || '').trim().toLowerCase() === 'people';
+  let priv = isPeople || !!L.private;
+  const privBtn = el('button', {
+    class: 'btn' + (priv ? ' on-accent' : ''),
+    title: isPeople ? 'People topics never leave this machine.'
+                    : 'Private topics are never sent to any cloud model, like People.',
+    onClick: async () => {
+      if (isPeople) { toast('People are always private.'); return; }
+      priv = !priv;
+      try {
+        await api.setPrivate(id, priv);
+        privBtn.textContent = priv ? 'Private' : 'Mark private';
+        privBtn.classList.toggle('on-accent', priv);
+        toast(priv ? 'Private. This topic never goes to the cloud.' : 'No longer marked private.');
+      } catch (e) { priv = !priv; toast(e.message); }
+    } }, priv ? 'Private' : 'Mark private');
+
   const solid = data.cards.some(c => c.card_type === 'recall' && c.stability >= 21);
   view.append(el('div', { class: 'row spread', style: { marginBottom: '18px' } },
     el('button', { class: 'btn btn-ghost', onClick: () => navigate('#/library') }, '← Library'),
     el('div', { class: 'row', style: { gap: '8px' } },
+      privBtn,
       focusBtn,
       (llmOk && solid) ? el('button', { class: 'btn', title: 'Explain it simply; the AI plays a confused student',
         onClick: () => navigate('#/recall?teach=' + id) }, 'Teach it') : null,

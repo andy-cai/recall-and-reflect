@@ -403,6 +403,78 @@ textarea.input { min-height: 92px; line-height: 1.5; }
 .spin { width: 16px; height: 16px; border: 2px solid var(--border-strong); border-top-color: var(--accent); border-radius: 50%; display: inline-block; animation: rot .7s linear infinite; }
 @keyframes rot { to { transform: rotate(360deg); } }
 
+/* ---------- Route loader: ideas finding each other ---------- */
+.loader { display: grid; place-items: center; padding: 14px; color: var(--accent); }
+.loader circle { fill: currentColor; }
+.loader line { stroke: currentColor; stroke-width: 1; opacity: .32; stroke-linecap: round; }
+
+/* ---------- Nav fireflies (hover) ---------- */
+.nav-item { position: relative; overflow: hidden; }
+.nav-item .ico svg { transition: filter .25s ease; }
+.nav-item:hover .ico svg { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 55%, transparent)); }
+.nav-item .mote {
+  position: absolute; bottom: 4px; width: 3px; height: 3px; border-radius: 50%;
+  background: var(--accent); opacity: 0; pointer-events: none;
+  box-shadow: 0 0 7px 1px color-mix(in srgb, var(--accent) 55%, transparent);
+  animation: mote-rise 1.05s ease-out forwards;
+}
+@keyframes mote-rise {
+  12% { opacity: .9; }
+  100% { transform: translate(var(--drift, 0px), -26px); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-item .mote { animation: none; opacity: 0; }
+}
+
+/* ---------- Sketch tasks (Recall) ---------- */
+.sketch-note { margin-top: 14px; font-size: 12.5px; color: var(--easy);
+  letter-spacing: .04em; }
+
+/* ---------- Person reviews (People stay yours to judge) ---------- */
+.person-acts { display: flex; gap: 6px; justify-content: center; margin-top: 10px; }
+
+/* ---------- Settings: model guide ---------- */
+.bench-row { display: grid; grid-template-columns: 110px 1fr 44px; gap: 10px; align-items: center; margin-top: 6px; }
+.bench-row .lbl { font-size: 11.5px; color: var(--muted); }
+.bench-row .val { font-size: 12px; color: var(--text-soft); text-align: right; font-variant-numeric: tabular-nums; }
+.bench-bar { height: 7px; border-radius: 4px; background: var(--surface-2); overflow: hidden; position: relative; }
+.bench-bar > i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--accent); }
+.bench-bar > i.range { background: color-mix(in srgb, var(--accent) 38%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent); }
+.model-row { padding: 13px 0; border-bottom: 1px solid var(--border); }
+.model-row:last-child { border-bottom: none; }
+.model-row .name { font-family: ui-monospace, monospace; font-size: 13.5px; font-weight: 600; }
+.model-row .badge-soft { font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--muted); background: var(--surface-2); border-radius: 999px; padding: 2px 9px; }
+
+/* ---------- Settings: prompt transparency ---------- */
+.prompt-row { border-bottom: 1px solid var(--border); }
+.prompt-row:last-child { border-bottom: none; }
+.prompt-row summary { list-style: none; cursor: pointer; padding: 11px 2px; display: flex; align-items: center; gap: 10px; }
+.prompt-row summary::-webkit-details-marker { display: none; }
+.prompt-row summary .chev { color: var(--muted); font-size: 11px; flex: none; transition: transform .15s; }
+.prompt-row[open] summary .chev { transform: rotate(90deg); }
+.prompt-row .pname { font-weight: 580; font-size: 14px; flex: none; }
+.prompt-row .pwhat { color: var(--muted); font-size: 12.5px; flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prompt-pre { margin: 0 0 12px; padding: 13px 15px; border-radius: 10px; background: var(--surface-2);
+  border: 1px solid var(--border); font-family: ui-monospace, monospace; font-size: 12px;
+  line-height: 1.55; white-space: pre-wrap; color: var(--text-soft); max-height: 340px; overflow: auto; }
+.chip-tag { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  border-radius: 999px; padding: 2px 8px; flex: none; background: var(--surface-2); color: var(--muted); }
+.chip-tag.fast { color: var(--easy); background: var(--easy-weak); }
+.chip-tag.main { color: var(--accent); background: var(--accent-weak); }
+.chip-tag.cloud { color: var(--hard); background: var(--hard-weak); }
+
+/* ---------- Settings: sent-to-cloud log ---------- */
+.cloud-log-row { display: flex; gap: 10px; align-items: baseline; padding: 8px 2px;
+  border-bottom: 1px solid var(--border); font-size: 13px; }
+.cloud-log-row:last-child { border-bottom: none; }
+.cloud-log-row .when { color: var(--muted); font-size: 12px; flex: none; width: 118px; }
+.cloud-log-row .what { flex: 1; min-width: 0; }
+.cloud-log-row .meta { color: var(--muted); font-size: 12px; flex: none; }
+.cloud-log-row .err { color: var(--again); font-size: 12px; }
+
 /* ---------- Responsive ---------- */
 @media (max-width: 800px) {
   .app-shell { grid-template-columns: 1fr; }

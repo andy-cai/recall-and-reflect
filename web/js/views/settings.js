@@ -1,10 +1,15 @@
-import { el, toast, applyTheme, state, infoTip } from '../store.js';
+import { el, clear, toast, applyTheme, state, infoTip } from '../store.js';
 import { api } from '../api.js';
 import { refreshBadge } from '../app.js';
 import { ambientEnabled, setAmbientEnabled } from '../ambient.js';
+import { BENCH_COLS, BENCH_NOTE, MODEL_GUIDE } from '../models-info.js';
 
 export async function render() {
-  const s = await api.getSettings();
+  const [s, promptInfo, logData] = await Promise.all([
+    api.getSettings(),
+    api.prompts().catch(() => null),
+    api.cloudLog().catch(() => null),
+  ]);
   const view = el('div', { class: 'view' });
   view.append(el('div', { class: 'page-head' }, el('h1', {}, 'Settings')));
 
@@ -78,7 +83,7 @@ export async function render() {
       el('div', { class: 'row spread' }, el('div', { style: { fontWeight: '560' } }, 'Target retention', infoTip('The chance you want of recalling a topic when it comes due. Higher = more frequent reviews. FSRS uses this to time each one; 90% is the sweet spot.')), retLabel),
       el('div', { style: { margin: '8px 0' } }, retSlider), retNote),
     field('AI model (local)', el('div', { class: 'row', style: { gap: '10px' } }, llmStatus, modelSel), 'Runs entirely on your machine via Ollama. Cloud models are blocked.'),
-    field('Fast model (grading)', fastSel, 'Snappier reviews: a small model (e.g. qwen3:4b) grades recall and matches focus requests. Capture quality stays on the main model.'),
+    field('Fast model (grading)', fastSel, 'Snappier reviews: a small model (qwen3:4b or qwen2.5:3b) grades recall and matches focus requests; the app turns reasoning off for these calls so verdicts land in a beat. Capture quality stays on the main model.'),
     el('div', { style: { padding: '14px 0', borderBottom: '1px solid var(--border)' } },
       el('div', { style: { fontWeight: '560' } }, 'Question style'),
       el('div', { class: 'muted', style: { fontSize: '12.5px', margin: '2px 0 8px' } },
@@ -97,11 +102,25 @@ export async function render() {
     field('Due reminders', sw, 'A gentle Windows notification when reviews pile up.'),
     el('div', { class: 'row', style: { justifyContent: 'flex-end', paddingTop: '16px' } }, saveBtn)));
 
+  // ---------- the models: why these, with published scores ----------
+  view.append(section('The models', 'Why each one is on the list, and how they score on published benchmarks.',
+    buildModelGuide(), false));
+
+  // ---------- prompt transparency: exactly what each model is asked ----------
+  if (promptInfo && promptInfo.prompts) {
+    view.append(section('What the AI is asked', 'Every system prompt, verbatim, with where it runs.',
+      buildPromptPanel(promptInfo), false));
+  }
+
+  // ---------- sent-to-cloud audit log ----------
+  view.append(section('Sent to cloud', 'Every request that ever went to Gemini from this app.',
+    buildCloudLog(logData ? logData.entries || [] : null), false));
+
   view.append(el('div', { class: 'card', style: { marginTop: '16px', background: 'var(--surface-2)' } },
     el('div', { class: 'row', style: { gap: '10px' } },
       el('div', { class: 'muted', style: { fontSize: '13px' } },
         el('b', { style: { color: 'var(--text-soft)' } }, 'Your data stays on this machine. '),
-        'Notes and reviews live in a local SQLite file, and routine operation talks only to a local Ollama. The single exception is the opt-in Gemini assist above, which sends one card or one Reflect session at a time, only when you choose it. People topics are never sent, under any setting.'))));
+        'Notes and reviews live in a local SQLite file, and routine operation talks only to a local Ollama. The single exception is the opt-in Gemini assist above: explicit per-click or per-session, refused for People and for topics you mark private, with saved People names replaced by [name] in every payload, and every request recorded in the log above.'))));
 
   async function save() {
     saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
@@ -132,4 +151,128 @@ export async function render() {
   }
 
   return view;
+}
+
+// ---------- collapsible card ----------
+function section(title, sub, body, open = false) {
+  const chev = el('span', { class: 'muted', style: { fontSize: '12px', flex: 'none' } }, open ? '▾' : '▸');
+  const content = el('div', { style: { display: open ? '' : 'none', marginTop: '8px' } }, body);
+  const head = el('div', { class: 'row spread subj-head', style: { padding: '2px' }, onClick: () => {
+    open = !open;
+    content.style.display = open ? '' : 'none';
+    chev.textContent = open ? '▾' : '▸';
+  } },
+    el('div', {},
+      el('div', { style: { fontWeight: '560' } }, title),
+      sub ? el('div', { class: 'muted', style: { fontSize: '12.5px' } }, sub) : null),
+    chev);
+  return el('div', { class: 'card', style: { marginTop: '16px' } }, head, content);
+}
+
+// ---------- model guide: prose + published-benchmark bars ----------
+function buildModelGuide() {
+  const byId = Object.fromEntries(MODEL_GUIDE.map(m => [m.id, m]));
+
+  function bars(m) {
+    const rows = [];
+    for (const col of BENCH_COLS) {
+      let inner = null, val = '';
+      if (m.bench && m.bench[col.key] != null) {
+        inner = el('i', { style: { width: m.bench[col.key] + '%' } });
+        val = m.bench[col.key].toFixed(1);
+      } else if (m.range) {
+        const lo = byId[m.range.lo]?.bench?.[col.key];
+        const hi = byId[m.range.hi]?.bench?.[col.key];
+        if (lo != null && hi != null) {
+          inner = el('i', { class: 'range', style: { left: lo + '%', width: Math.max(2, hi - lo) + '%' } });
+          val = '~';
+        }
+      }
+      if (inner) {
+        rows.push(el('div', { class: 'bench-row' },
+          el('span', { class: 'lbl', title: col.hint }, col.label),
+          el('div', { class: 'bench-bar' }, inner),
+          el('span', { class: 'val' }, val)));
+      }
+    }
+    return rows;
+  }
+
+  const wrap = el('div', {});
+  let lastGroup = null;
+  for (const m of MODEL_GUIDE) {
+    if (m.group !== lastGroup) {
+      lastGroup = m.group;
+      wrap.append(el('div', { class: 'eyebrow', style: { margin: '16px 0 2px' } }, m.group));
+    }
+    wrap.append(el('div', { class: 'model-row' },
+      el('div', { class: 'row', style: { gap: '10px', marginBottom: '4px' } },
+        el('span', { class: 'name' }, m.id),
+        m.badge ? el('span', { class: 'badge-soft' }, m.badge) : null),
+      el('div', { class: 'soft', style: { fontSize: '13px', lineHeight: '1.5' } }, m.why),
+      bars(m),
+      (m.src || m.note) ? el('div', { class: 'muted', style: { fontSize: '11.5px', marginTop: '6px' } }, m.src || m.note) : null));
+  }
+  wrap.append(el('div', { class: 'muted', style: { fontSize: '12px', marginTop: '14px', lineHeight: '1.5' } }, BENCH_NOTE));
+  return wrap;
+}
+
+// ---------- prompt transparency ----------
+function buildPromptPanel(info) {
+  const wrap = el('div', {});
+  wrap.append(el('div', { class: 'muted', style: { fontSize: '12.5px', margin: '2px 0 8px', lineHeight: '1.5' } },
+    'Verbatim: this is exactly what each model receives, plus your Question style where marked. ',
+    'Grading and everything marked "fast" never leaves Ollama.'));
+  for (const p of info.prompts) {
+    const chips = [
+      el('span', { class: 'chip-tag ' + p.runs },
+        p.runs === 'fast' ? `fast · ${info.fast_model}` : `main · ${info.main_model}`),
+      p.cloud ? el('span', { class: 'chip-tag cloud', title: 'Routes to Gemini when you explicitly choose cloud assist' },
+        `+ ${info.cloud_model}`) : null,
+      p.styled ? el('span', { class: 'chip-tag', title: 'Your Question style from above is appended' }, 'styled') : null,
+      p.reasoning === 'off' ? el('span', { class: 'chip-tag', title: 'Model reasoning is switched off for speed on this call' }, 'no thinking') : null,
+    ];
+    wrap.append(el('details', { class: 'prompt-row' },
+      el('summary', {},
+        el('span', { class: 'chev' }, '▸'),
+        el('span', { class: 'pname' }, p.name),
+        el('span', { class: 'pwhat' }, p.what),
+        ...chips),
+      el('pre', { class: 'prompt-pre' }, p.system)));
+  }
+  return wrap;
+}
+
+// ---------- sent-to-cloud log ----------
+function buildCloudLog(entries) {
+  const wrap = el('div', {});
+  if (entries === null) {
+    wrap.append(el('div', { class: 'muted', style: { fontSize: '13px' } }, 'Could not load the log.'));
+    return wrap;
+  }
+  function renderEntries(list) {
+    clear(wrap);
+    if (!list.length) {
+      wrap.append(el('div', { class: 'muted', style: { fontSize: '13px', padding: '6px 2px' } },
+        'No cloud requests on record. Anything that leaves this machine from now on is listed here.'));
+      return;
+    }
+    for (const e of list) {
+      const when = new Date(e.ts).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      wrap.append(el('div', { class: 'cloud-log-row' },
+        el('span', { class: 'when' }, when),
+        el('span', { class: 'what' }, e.action,
+          e.redacted ? el('span', { class: 'muted' }, ` · ${e.redacted} name${e.redacted !== 1 ? 's' : ''} redacted`) : null),
+        el('span', { class: 'meta' }, `${e.model} · ${e.chars} chars`),
+        e.ok ? null : el('span', { class: 'err', title: e.detail || '' }, 'failed')));
+    }
+    wrap.append(el('div', { class: 'row', style: { justifyContent: 'flex-end', marginTop: '10px' } },
+      el('button', { class: 'btn-ghost', style: { fontSize: '12.5px' }, onClick: async () => {
+        await api.clearCloudLog();
+        toast('Log cleared');
+        renderEntries([]);
+      } }, 'Clear log')));
+  }
+  renderEntries(entries);
+  return wrap;
 }

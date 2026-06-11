@@ -7,6 +7,27 @@ service except a *local* Ollama instance on this machine.
 import os
 from pathlib import Path
 
+
+def load_dotenv(path: Path) -> None:
+    """Tiny .env loader (KEY=VALUE lines) so secrets like GEMINI_API_KEY can live
+    in a git-ignored file instead of the shell environment. Real environment
+    variables always win; this never overrides one."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key, value = key.strip(), value.strip().strip("'\"")
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
 APP_NAME = "Recall & Reflect"
 APP_VERSION = "0.1.0"
 

@@ -6,6 +6,16 @@ import { renderMathIn } from '../math.js';
 
 const CONF = { 1: 'Guessing', 2: 'Pretty sure', 3: 'Certain' };
 
+// People are yours to judge (no AI grading); sketch tasks are drawn on paper.
+const isPerson = (c) => (c.subject || '').toLowerCase() === 'people';
+const isSketch = (c) => /\bsketch\b/i.test(c.front || '');
+const firstName = (c) => (c.title || '').trim().split(/\s+/)[0] || 'them';
+
+function sketchNote() {
+  return el('div', { class: 'sketch-note' },
+    'Paper task: sketch it on nearby paper, then reveal and check feature by feature.');
+}
+
 function hintFor(c, level) {
   // Topic-recall cards hint with a rubric line — a real retrieval cue.
   if (c.ideas && c.ideas.length) {
@@ -115,7 +125,8 @@ export async function render({ params } = {}) {
 
     const qcard = el('div', { class: 'q-card' },
       el('div', { class: 'src' }, c.title ? `from · ${c.title}` : ''),
-      el('div', { class: 'q' }, c.front));
+      el('div', { class: 'q' }, c.front),
+      isSketch(c) ? sketchNote() : null);
     stage.append(qcard);
 
     // quiet per-card actions: fix a bad question, or punt without rating
@@ -125,7 +136,10 @@ export async function render({ params } = {}) {
       el('button', { class: 'btn-ghost card-act', title: 'Skip without rating, stays due (S)', onClick: skipCard }, 'Skip ›')));
     stage.append(editSlot);
 
-    const recallInput = el('textarea', { class: 'input', rows: '3', placeholder: 'Try to recall it. Type what you remember…' });
+    const recallInput = el('textarea', { class: 'input', rows: '3', placeholder:
+      isPerson(c) ? 'Their name; typing it out is what makes it stick. Add whatever else comes back…'
+      : isSketch(c) ? 'Optional: list the features you drew (axes, shape, landmarks) and the AI will check them…'
+      : 'Try to recall it. Type what you remember…' });
 
     const confRow = el('div', { class: 'confidence' },
       ...[1, 2, 3].map(n => el('button', { class: 'conf-pill', onClick: (e) => {
@@ -174,7 +188,8 @@ export async function render({ params } = {}) {
     clear(stage);
     stage.append(el('div', { class: 'q-card' },
       el('div', { class: 'src' }, c.title ? `from · ${c.title}` : ''),
-      el('div', { class: 'q' }, c.front)));
+      el('div', { class: 'q' }, c.front),
+      isSketch(c) ? sketchNote() : null));
     const editSlot = el('div', {});
     stage.append(el('div', { class: 'row', style: { justifyContent: 'flex-end', gap: '4px', marginTop: '6px' } },
       el('button', { class: 'btn-ghost card-act', onClick: () => toggleEditPanel(c, editSlot) }, '✎ Edit'),
@@ -218,6 +233,15 @@ export async function render({ params } = {}) {
     stage.append(el('div', { class: 'row', style: { justifyContent: 'center', gap: '14px', marginTop: '12px' } },
       el('span', { class: 'muted', style: { fontSize: '12px' } }, 'Rate honestly: ', el('span', { class: 'kbd' }, '1'), '–', el('span', { class: 'kbd' }, '4')),
       el('button', { class: 'btn-ghost', style: { fontSize: '12px', padding: '4px 8px' }, onClick: doUndo }, '↶ Undo (Z)')));
+
+    // People are never AI-graded: the verdict that matters — did the name come
+    // back — is yours. The reveal doubles as keeping the person current.
+    if (isPerson(c)) {
+      gradeSlot.append(el('div', { class: 'muted center', style: { fontSize: '12.5px', marginTop: '12px' } },
+        'You’re the judge for people. Did the name come back?'));
+      gradeSlot.append(personPanel(c, answerBox));
+      return;
+    }
 
     // AI grade only when the learner actually attempted in writing
     if (llmOk && recallText) {
@@ -274,8 +298,64 @@ export async function render({ params } = {}) {
       }
     } else if (!recallText) {
       gradeSlot.append(el('div', { class: 'muted center', style: { fontSize: '12.5px', marginTop: '12px' } },
-        'Self-grade: how close were you?'));
+        isSketch(c) ? 'Check your sketch against the features above, one by one.'
+                    : 'Self-grade: how close were you?'));
     }
+  }
+
+  // ---------- person reveal: keep the card alive ----------
+  // A person changes; Hall-Petch doesn't. The reveal offers two quiet moves:
+  // append a dated update (review as keeping up, not testing), and rework the
+  // memory hook after a miss (a stronger self-made image is the fix).
+  function personPanel(c, answerBox) {
+    const first = firstName(c);
+    const formSlot = el('div', {});
+    const setShownAnswer = () => {
+      const a = answerBox.querySelector && answerBox.querySelector('.a');
+      if (a) a.textContent = c.answer;
+    };
+    function openForm(kind) {
+      clear(formSlot);
+      const isUpdate = kind === 'update';
+      const input = el('input', { class: 'input', placeholder: isUpdate
+        ? `One line: what’s new with ${first}, or what to pick up next time…`
+        : 'A stronger image: what does the name sound like, tied to something about them?' });
+      const saveBtn = el('button', { class: 'btn', style: { padding: '8px 14px', fontSize: '13px', flex: 'none' } },
+        isUpdate ? 'Add, dated' : 'Replace hook');
+      saveBtn.addEventListener('click', async () => {
+        const text = input.value.trim();
+        if (!text) return;
+        saveBtn.disabled = true;
+        try {
+          if (isUpdate) {
+            await api.personUpdate(c.learning_id, text);
+            const stamp = new Date().toISOString().slice(0, 10);
+            c.answer = c.answer.trimEnd() + '\n' + stamp + ': ' + text;
+            toast(`Noted. ${first}’s card stays current.`);
+          } else {
+            await api.personAssociation(c.learning_id, text);
+            const lines = c.answer.split('\n').filter(ln => !/^(🧷 )?your association:/i.test(ln.trim()));
+            while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+            c.answer = [...lines, 'Your association: ' + text].join('\n');
+            toast('New hook saved. It shows at the next reveal.');
+          }
+          setShownAnswer();
+          clear(formSlot);
+        } catch (e) { toast('Save failed: ' + e.message); saveBtn.disabled = false; }
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); }
+        e.stopPropagation();
+      });
+      formSlot.append(el('div', { class: 'row', style: { gap: '8px', marginTop: '10px' } }, input, saveBtn));
+      input.focus();
+    }
+    return el('div', {},
+      el('div', { class: 'person-acts' },
+        el('button', { class: 'btn-ghost card-act', onClick: () => openForm('update') }, `+ What’s new with ${first}?`),
+        el('button', { class: 'btn-ghost card-act', title: 'Didn’t come back? Invent a stronger association.',
+          onClick: () => openForm('assoc') }, 'Rework the hook')),
+      formSlot);
   }
 
   // Pre-highlight the rating consistent with the AI verdict (the honest default).
@@ -340,7 +420,7 @@ export async function render({ params } = {}) {
       return;
     }
     const cloudReady = !!(state.settings && state.settings.cloud && state.settings.cloud.ready)
-      && (c.subject || '').toLowerCase() !== 'people';   // People topics never leave this machine
+      && !isPerson(c) && !c.private;   // People and private topics never leave this machine
     const qIn = el('textarea', { class: 'input', rows: '2' }); qIn.value = c.front;
     const aIn = el('textarea', { class: 'input', rows: '3' }); aIn.value = c.answer;
     const fbIn = el('input', { class: 'input', placeholder: 'What’s wrong with it? “Too vague”, “ask for the mechanism, not the formula”…' });

@@ -157,6 +157,14 @@ Keep it to one or two sentences, specific to what they actually wrote. Never lec
 never answer for them, never praise emptily. If the material is a plain fact with
 nothing to elaborate, ask for a concrete example or the one-sentence gist instead."""
 
+_SKETCH_CLAUSE = """Some ideas are pictures: a curve, a regime map, a mode shape, a free-body or phase
+diagram. For those, set a sketch task instead of asking for a description. Start the
+question with "Sketch" and name exactly what to draw ("Sketch the S-N curves for steel
+and aluminum on the same axes"). Write the answer as the features a correct sketch must
+show, one per line, each checkable at a glance: the axes and scales, the overall shape,
+the landmarks (knees, peaks, intercepts, asymptotes), and where the picture stops being
+valid. The learner draws on nearby paper, then checks feature by feature."""
+
 _CARDS_SYSTEM = """You turn a short study conversation into spaced-repetition cards that test ACTIVE RECALL.
 
 Produce a focused set (aim for the number requested) mixing two types:
@@ -167,7 +175,9 @@ Produce a focused set (aim for the number requested) mixing two types:
 Rules: test the most important ideas, not trivia. Prefer the learner's own words and
 examples. Answers concise and unambiguous. Vary the cognitive angle (recall,
 application, contrast). NEVER copy the conversation, speaker labels, or multiple lines
-into a cloze source — it must be a single clean sentence. Output only the structured object."""
+into a cloze source — it must be a single clean sentence. Output only the structured object.
+
+""" + _SKETCH_CLAUSE
 
 _CARDS_BASIC_SYSTEM = """You turn a short study conversation into a few open questions that test ACTIVE RECALL.
 
@@ -187,7 +197,9 @@ The quality bar, by example:
 Answers must teach, compactly: the result, the governing relation in $...$ TeX where
 one exists, the physical mechanism in a sentence, and the boundary where it fails.
 Use the learner's framing where it is correct; quietly fix it where it is not.
-Output only the structured object."""
+Output only the structured object.
+
+""" + _SKETCH_CLAUSE
 
 _GRADE_SYSTEM = """You grade a learner's free-recall answer against a reference answer, then nudge them.
 
@@ -195,6 +207,10 @@ Grade ONLY against the reference. Reward correct meaning even if the wording dif
 it's terse. If the core idea is present, mark "correct". If partially right or missing a
 key piece, "partial". If absent/wrong, "wrong". Do NOT invent requirements beyond the
 reference, and do not be harsh about phrasing.
+
+If the question asked for a SKETCH, the learner drew on paper and typed the features
+they drew; grade whether the right features are named (axes, shape, landmarks), never
+the prose or the drawing skill.
 
 Then ALWAYS write ONE short Socratic "poke" (never leave it empty): a single question
 that pushes them toward the gap they missed, or — if they nailed it — one level deeper
@@ -209,7 +225,10 @@ Write 3-8 one-line ideas. Each idea:
   remembering on its own (include the equation in $...$ TeX when there is one),
 - uses the learner's own framing and examples where correct,
 - is concrete enough to check a recall against ("boundaries block dislocation motion",
-  not "understands grain boundaries").
+  not "understands grain boundaries"),
+- if the idea IS a picture (a curve, a diagram), states the checkable visual features:
+  axes, shape, landmarks ("S-N curve: log-log, knee near $10^3$ cycles, steel flattens
+  to an endurance limit, aluminum never does").
 
 Example, for a Hall-Petch conversation:
   1. $\\sigma_y = \\sigma_0 + k/\\sqrt{d}$: finer grains raise yield strength
@@ -225,7 +244,9 @@ For EVERY rubric index, judge whether the learner's recall expressed that idea:
 - "hit": the idea is present in substance (wording may differ wildly; terse is fine)
 - "partial": touched but incomplete or muddled
 - "miss": absent or wrong
-Judge meaning, not phrasing. Do not require ideas beyond the rubric.
+Judge meaning, not phrasing. Do not require ideas beyond the rubric. If the task was a
+SKETCH, they drew on paper and typed the features they drew; judge the features named,
+not the prose.
 
 Then write ONE short Socratic poke (never empty, never revealing): aim it at the most
 important missed idea — or, if everything was hit, one level deeper (a why, an edge
@@ -234,6 +255,8 @@ case, or an application). Output only the structured object."""
 _DRILL_SYSTEM = """You write ONE focused active-recall question drilling a specific key idea the learner
 keeps missing. The question targets exactly that idea (favor why/how/when phrasing),
 is answerable in a sentence or two, and the answer is the idea itself, stated clearly.
+If the missed idea is a picture (a curve, a diagram), set a sketch task instead and
+write the answer as the checkable features: axes, shape, landmarks.
 Output only the structured object."""
 
 _CONTRAST_SYSTEM = """You write ONE contrast card for two concepts a learner studies separately but could
@@ -381,8 +404,29 @@ class LLMService:
 
     # ---------- primitives ----------
 
+    @staticmethod
+    def _http_detail(resp) -> str:
+        """Ollama puts the reason ('model X does not support thinking', OOM…) in
+        the body; surface it instead of a bare status code."""
+        try:
+            return (resp.json() or {}).get("error", "") or f"HTTP {resp.status_code}"
+        except Exception:
+            return f"HTTP {resp.status_code}"
+
     def _chat_stream(self, messages: list[dict], temperature: float = 0.5,
-                     num_predict: int = 0) -> Iterator[str]:
+                     num_predict: int = 0, think: Optional[bool] = None) -> Iterator[str]:
+        try:
+            yield from self._chat_stream_once(messages, temperature, num_predict, think)
+        except OllamaError as e:
+            # Older Ollama / non-reasoning models can reject the think option
+            # outright; nothing has streamed yet, so retry once without it.
+            if think is not None and "think" in str(e).lower():
+                yield from self._chat_stream_once(messages, temperature, num_predict, None)
+            else:
+                raise
+
+    def _chat_stream_once(self, messages: list[dict], temperature: float,
+                          num_predict: int, think: Optional[bool]) -> Iterator[str]:
         model = self.resolve_model()
         if not model:
             raise OllamaError("No local model available.")
@@ -393,11 +437,15 @@ class LLMService:
             "model": model, "messages": messages, "stream": True,
             "keep_alive": OLLAMA_KEEP_ALIVE, "options": options,
         }
+        if think is not None:
+            payload["think"] = think
         filt = _ThinkFilter()
         try:
             with httpx.Client(timeout=httpx.Timeout(OLLAMA_TIMEOUT, connect=OLLAMA_CONNECT_TIMEOUT)) as client:
                 with client.stream("POST", f"{OLLAMA_BASE_URL}/api/chat", json=payload) as resp:
-                    resp.raise_for_status()
+                    if resp.status_code != 200:
+                        resp.read()
+                        raise OllamaError(f"Ollama request failed: {self._http_detail(resp)}")
                     for line in resp.iter_lines():
                         if not line:
                             continue
@@ -420,23 +468,30 @@ class LLMService:
 
     def _complete_json(
         self, messages: list[dict], schema: type[BaseModel], temperature: float = 0.3,
-        num_predict: int = 0, fast: bool = False,
+        num_predict: int = 0, fast: bool = False, think: Optional[bool] = None,
     ) -> BaseModel:
+        """think=False turns reasoning off (grading/classifying: a reasoning model
+        would spend the whole token cap thinking and return nothing). think=None
+        leaves the model's default, with the retries below as the safety net."""
         model = self.resolve_fast_model() if fast else self.resolve_model()
         if not model:
             raise OllamaError("No local model available.")
         try:
-            return self._complete_json_once(model, messages, schema, temperature, num_predict)
+            return self._complete_json_once(model, messages, schema, temperature, num_predict, think)
         except OllamaError as e:
-            # A token cap can truncate the JSON mid-object (verbose models,
-            # long rubrics). Retry once uncapped before giving up.
-            if num_predict and "parse" in str(e).lower():
-                return self._complete_json_once(model, messages, schema, temperature, 0)
+            msg = str(e).lower()
+            # Older Ollama / non-reasoning models can reject the think option.
+            if think is not None and "think" in msg:
+                return self._complete_json_once(model, messages, schema, temperature, num_predict, None)
+            # A token cap can truncate the JSON mid-object, or reasoning can eat
+            # the whole budget and return nothing. Retry once uncapped.
+            if num_predict and ("parse" in msg or "empty" in msg):
+                return self._complete_json_once(model, messages, schema, temperature, 0, think)
             raise
 
     def _complete_json_once(
         self, model: str, messages: list[dict], schema: type[BaseModel],
-        temperature: float, num_predict: int,
+        temperature: float, num_predict: int, think: Optional[bool] = None,
     ) -> BaseModel:
         options = {"temperature": temperature}
         if num_predict:
@@ -447,10 +502,13 @@ class LLMService:
             "keep_alive": OLLAMA_KEEP_ALIVE,
             "options": options,
         }
+        if think is not None:
+            payload["think"] = think
         try:
             with httpx.Client(timeout=httpx.Timeout(OLLAMA_TIMEOUT, connect=OLLAMA_CONNECT_TIMEOUT)) as client:
                 resp = client.post(f"{OLLAMA_BASE_URL}/api/chat", json=payload)
-                resp.raise_for_status()
+                if resp.status_code != 200:
+                    raise OllamaError(f"Ollama request failed: {self._http_detail(resp)}")
                 content = strip_think((resp.json().get("message") or {}).get("content", ""))
         except httpx.HTTPError as e:
             raise OllamaError(f"Ollama request failed: {e}")
@@ -471,7 +529,7 @@ class LLMService:
 
     def capture_followup_stream(self, history: list[dict]) -> Iterator[str]:
         messages = [{"role": "system", "content": _CAPTURE_SYSTEM}, *history]
-        yield from self._chat_stream(messages, temperature=0.6, num_predict=160)
+        yield from self._chat_stream(messages, temperature=0.6, num_predict=160, think=False)
 
     def generate_cards(self, transcript: str, n: int = 4, basic_only: bool = False) -> list[dict]:
         messages = [
@@ -511,7 +569,8 @@ class LLMService:
             {"role": "system", "content": _RUBRIC_GRADE_SYSTEM},
             {"role": "user", "content": prompt},
         ]
-        grade = self._complete_json(messages, RubricGrade, temperature=0.1, num_predict=700, fast=True)
+        grade = self._complete_json(messages, RubricGrade, temperature=0.1, num_predict=700,
+                                    fast=True, think=False)
         results = ["miss"] * len(ideas)
         for item in grade.items:
             if 0 <= item.index < len(ideas):
@@ -538,7 +597,8 @@ class LLMService:
             {"role": "system", "content": _GRADE_SYSTEM},
             {"role": "user", "content": prompt},
         ]
-        grade = self._complete_json(messages, Grade, temperature=0.1, num_predict=400, fast=True)
+        grade = self._complete_json(messages, Grade, temperature=0.1, num_predict=400,
+                                    fast=True, think=False)
         verdict = grade.verdict.strip().lower()
         if verdict not in ("correct", "partial", "wrong"):
             verdict = "partial"
@@ -550,7 +610,8 @@ class LLMService:
             {"role": "system", "content": _SUBJECT_SYSTEM},
             {"role": "user", "content": f"Existing subjects: {ex}\n\nNote:\n{text[:1500]}\n\nReturn the single best subject area."},
         ]
-        return self._complete_json(messages, SubjectGuess, temperature=0.2, num_predict=60, fast=True).subject.strip()
+        return self._complete_json(messages, SubjectGuess, temperature=0.2, num_predict=60,
+                                   fast=True, think=False).subject.strip()
 
     def suggest_subjects(self, items: list[dict], existing: list[str]) -> list[dict]:
         ex = ", ".join(existing) if existing else "(none yet)"
@@ -560,7 +621,8 @@ class LLMService:
             {"role": "user", "content": f"Existing subjects: {ex}\n\nAssign each note a subject area "
                 f"(reuse existing where sensible; use the SAME area for related notes):\n{listing}"},
         ]
-        result = self._complete_json(messages, SubjectAssigns, temperature=0.2, num_predict=900)
+        result = self._complete_json(messages, SubjectAssigns, temperature=0.2, num_predict=900,
+                                     think=False)
         valid = {it["id"] for it in items}
         return [{"id": a.id, "subject": a.subject.strip()}
                 for a in result.items if a.id in valid and a.subject.strip()]
@@ -583,7 +645,7 @@ class LLMService:
         """Stream the confused student's next question during a teach-back."""
         system = _STUDENT_SYSTEM + f"\n\nThe topic being taught to you: {topic}"
         messages = [{"role": "system", "content": system}, *history]
-        yield from self._chat_stream(messages, temperature=0.7, num_predict=120)
+        yield from self._chat_stream(messages, temperature=0.7, num_predict=120, think=False)
 
     def prettify_math(self, text: str) -> str:
         """Echo the learner's paragraph back with informal math typeset as TeX."""
@@ -592,7 +654,7 @@ class LLMService:
             {"role": "user", "content": text[:2000]},
         ]
         result = self._complete_json(messages, PrettyText, temperature=0.1,
-                                     num_predict=900, fast=True)
+                                     num_predict=900, fast=True, think=False)
         out = result.text.strip()
         # Refuse rewrites that drifted from the original (the model must only typeset)
         if not out or abs(len(out) - len(text)) > max(80, len(text)):
@@ -619,7 +681,7 @@ class LLMService:
                 f"The learner says: \"{text.strip()[:400]}\"\n\nWhat should be prioritized?"},
         ]
         plan = self._complete_json(messages, FocusPlan, temperature=0.1,
-                                   num_predict=300, fast=True)
+                                   num_predict=300, fast=True, think=False)
         valid_ids = {t["id"] for t in topics}
         subj_lower = {s.lower(): s for s in subjects}
         return {
@@ -633,13 +695,79 @@ class LLMService:
             {"role": "system", "content": _SPLIT_SYSTEM},
             {"role": "user", "content": f"Text:\n---\n{text[:4000]}\n---\nExtract the study topics."},
         ]
-        result = self._complete_json(messages, TopicList, temperature=0.2, num_predict=900)
+        result = self._complete_json(messages, TopicList, temperature=0.2, num_predict=900,
+                                     think=False)
         out = []
         for t in result.topics:
             title = t.title.strip()
             if title:
                 out.append({"title": title, "note": t.note.strip()})
         return out
+
+
+def prompt_catalog() -> list[dict]:
+    """Every system prompt the app uses, verbatim, with where it runs — the
+    source for the Settings transparency panel. One source of truth: the
+    constants above, so this can never drift from what is actually sent.
+
+    runs: 'main' | 'fast' (which local model). cloud: True if the feature can
+    route to Gemini (per-click or Reflect's per-session switch). styled: True
+    if your Question style from Settings is appended. reasoning 'off' = the
+    app disables model thinking for speed on that call."""
+    return [
+        {"id": "followup", "name": "Reflect follow-ups", "runs": "main", "cloud": True,
+         "styled": True, "reasoning": "off",
+         "what": "Asks the one sharp question after each paragraph you write.",
+         "system": _CAPTURE_SYSTEM},
+        {"id": "ideas", "name": "Key ideas (the rubric)", "runs": "main", "cloud": True,
+         "styled": True, "reasoning": "default",
+         "what": "Distills a reflection into the 3–8 ideas your recall is graded against.",
+         "system": _IDEAS_SYSTEM},
+        {"id": "cards", "name": "Detail questions", "runs": "main", "cloud": True,
+         "styled": True, "reasoning": "default",
+         "what": "Turns the conversation into a few open recall questions.",
+         "system": _CARDS_BASIC_SYSTEM},
+        {"id": "rubric_grade", "name": "Recall grading (rubric)", "runs": "fast", "cloud": False,
+         "styled": False, "reasoning": "off",
+         "what": "Checks your free recall against the topic's key ideas, one by one.",
+         "system": _RUBRIC_GRADE_SYSTEM},
+        {"id": "grade", "name": "Recall grading (single card)", "runs": "fast", "cloud": False,
+         "styled": False, "reasoning": "off",
+         "what": "Grades a card answer against its reference, then pokes at the gap.",
+         "system": _GRADE_SYSTEM},
+        {"id": "drill", "name": "Drill cards", "runs": "main", "cloud": False,
+         "styled": True, "reasoning": "default",
+         "what": "Writes one focused question for an idea you've missed twice running.",
+         "system": _DRILL_SYSTEM},
+        {"id": "contrast", "name": "Contrast cards", "runs": "main", "cloud": False,
+         "styled": True, "reasoning": "default",
+         "what": "One discrimination card for two topics you could confuse.",
+         "system": _CONTRAST_SYSTEM},
+        {"id": "teach", "name": "Teach-back student", "runs": "main", "cloud": False,
+         "styled": False, "reasoning": "off",
+         "what": "Plays the confused first-year you explain solid topics to.",
+         "system": _STUDENT_SYSTEM},
+        {"id": "refine", "name": "Card rewrite", "runs": "main", "cloud": True,
+         "styled": True, "reasoning": "default",
+         "what": "Rewrites a card from your feedback (the per-click Gemini button).",
+         "system": REFINE_SYSTEM},
+        {"id": "pretty", "name": "Math echo", "runs": "fast", "cloud": False,
+         "styled": False, "reasoning": "off",
+         "what": "Returns your paragraph with informal math typeset as TeX.",
+         "system": _PRETTY_SYSTEM},
+        {"id": "subject", "name": "Subject filing", "runs": "fast", "cloud": False,
+         "styled": False, "reasoning": "off",
+         "what": "Suggests a home subject for a capture (batch backlog runs on the main model).",
+         "system": _SUBJECT_SYSTEM},
+        {"id": "split", "name": "Topic split", "runs": "main", "cloud": False,
+         "styled": False, "reasoning": "off",
+         "what": "Pulls a list of study topics out of pasted notes.",
+         "system": _SPLIT_SYSTEM},
+        {"id": "focus", "name": "Focus matching", "runs": "fast", "cloud": False,
+         "styled": False, "reasoning": "off",
+         "what": "Maps 'prioritize my vibrations final' onto your actual subjects and topics.",
+         "system": _FOCUS_SYSTEM},
+    ]
 
 
 def build_refine_prompt(topic: str, content: str, question: str, answer: str,

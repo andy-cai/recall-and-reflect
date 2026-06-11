@@ -17,7 +17,8 @@ router = APIRouter(prefix="/api/review", tags=["review"])
 
 
 def _serialize(q: Question, title: str, retention: float,
-               ideas: Optional[list[dict]] = None, subject: str = "") -> dict:
+               ideas: Optional[list[dict]] = None, subject: str = "",
+               private: bool = False) -> dict:
     if q.card_type == "cloze" and q.cloze_source and q.cloze_index is not None:
         front = render_question(q.cloze_source, q.cloze_index)
         answer = render_answer(q.cloze_source, q.cloze_index)
@@ -42,6 +43,7 @@ def _serialize(q: Question, title: str, retention: float,
         "source": q.cloze_source,
         "title": title,
         "subject": subject,
+        "private": private,
         "is_new": q.state == State.NEW,
         "intervals": intervals,
         # the rubric for topic-recall cards: reveal checklist + idea-based hints
@@ -66,19 +68,21 @@ def queue(tag: Optional[str] = None, learning_id: Optional[int] = None,
 
     titles: dict[int, str] = {}
     subjects: dict[int, str] = {}
+    privates: dict[int, bool] = {}
     ideas: dict[int, list[dict]] = {}
     for q in due:
         if q.learning_id not in titles:
             learning = repo.get_learning(q.learning_id)
             titles[q.learning_id] = learning.title if learning else ""
             subjects[q.learning_id] = (learning.subject or "") if learning else ""
+            privates[q.learning_id] = learning.private if learning else False
         if q.card_type == "recall" and q.learning_id not in ideas:
             ideas[q.learning_id] = repo.get_key_ideas(q.learning_id)
 
     cards = [
         _serialize(q, titles.get(q.learning_id, ""), retention,
                    ideas.get(q.learning_id) if q.card_type == "recall" else None,
-                   subjects.get(q.learning_id, ""))
+                   subjects.get(q.learning_id, ""), privates.get(q.learning_id, False))
         for q in due
     ]
     return {"cards": cards, "llm": get_llm().status()["available"]}

@@ -431,13 +431,16 @@ function agoLabel(ts) {
   return hrs < 24 ? `${hrs} h ago` : `${Math.round(hrs / 24)} d ago`;
 }
 
-// People as topics, photo-free: the cue is the story, the reveal is the name +
-// the association YOU invented (self-generated imagery is what makes it stick).
+// People as topics, photo-free, and graded by you alone. Two directions, two
+// real moments: the story cues the name (the coffee-machine moment), and the
+// name cues where you left off (the walking-into-the-meeting moment). The
+// reveal carries the association YOU invented — self-generated imagery is
+// what makes name recall stick. People never touch any cloud model.
 function buildPersonAdd(root) {
   const nameInput = el('input', { class: 'input', placeholder: 'Name' });
   const whereInput = el('input', { class: 'input', placeholder: 'Where / when, e.g. “MFE battery bay, May”' });
   const factsArea = el('textarea', { class: 'input', rows: '3',
-    placeholder: 'What you know: role, the story you shared, details worth keeping…\nFirst line becomes the cue.' });
+    placeholder: 'First line: the moment you’d recognize them by (what they did or said).\nThen whatever is worth keeping: what they care about, where you left off…' });
   const assocInput = el('input', { class: 'input', placeholder: 'e.g. “Priya = prying open the pack, crowbar at the HV bay”' });
   const saveBtn = el('button', { class: 'btn btn-primary' }, 'Save person');
 
@@ -448,14 +451,24 @@ function buildPersonAdd(root) {
     const hook = facts.split('\n')[0];
     const where = whereInput.value.trim();
     const assoc = assocInput.value.trim();
-    const question = `${where ? where + '. ' : ''}${hook}. Who is this?`;
-    const answer = `${name}\n${facts}${assoc ? `\n🧷 Your association: ${assoc}` : ''}`;
+    const assocLine = assoc ? `\nYour association: ${assoc}` : '';
+    const story = `${where ? where + '\n' : ''}${facts}`;
+    const cards = [
+      // story → name: the direction that fails you at the coffee machine
+      { type: 'basic',
+        question: `${where ? where + '. ' : ''}${hook}. Who?`,
+        answer: `${name}\n${facts}${assocLine}` },
+      // name → person: the rehearsal before you see them again
+      { type: 'basic',
+        question: `${name}. Where did you meet, what do they care about, and where did you leave off?`,
+        answer: `${story}${assocLine}` },
+    ];
     saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
     try {
-      const res = await api.createLearning({
-        title: name, content: `${where ? where + '\n' : ''}${facts}`,
+      await api.createLearning({
+        title: name, content: story,
         subject: 'People', notes: assoc || null, tags: [],
-        recall_card: false, cards: [{ type: 'basic', question, answer }],
+        recall_card: false, private: true, cards,
       });
       toast(`Saved ${name}`);
       refreshBadge();
@@ -467,13 +480,15 @@ function buildPersonAdd(root) {
   root.append(el('div', { class: 'card stack', style: { maxWidth: '560px' } },
     el('div', { class: 'eyebrow' }, 'Remember a person'),
     el('p', { class: 'muted', style: { fontSize: '13px', marginTop: '-4px' } },
-      'The story becomes the cue; at review you recall the name. Twenty seconds, no photos.'),
+      'The story cues the name; the name cues where you left off (one direction per day). ',
+      'You grade yourself; no AI judges people. Twenty seconds, no photos, never leaves this machine.'),
     el('div', { class: 'row', style: { gap: '10px' } },
       el('div', { class: 'field', style: { flex: '1' } }, el('label', { class: 'lbl' }, 'Name'), nameInput),
       el('div', { class: 'field', style: { flex: '1.4' } }, el('label', { class: 'lbl' }, 'Where / when'), whereInput)),
-    el('div', { class: 'field' }, el('label', { class: 'lbl' }, 'What you know'), factsArea),
+    el('div', { class: 'field' }, el('label', { class: 'lbl' }, 'What you know ',
+      infoTip('Lead with the episode, not the job title: moments are unique cues, roles are shared ones. “Found the tin-whisker short” beats “battery engineer”.')), factsArea),
     el('div', { class: 'field' }, el('label', { class: 'lbl' }, 'Vivid association ',
-      infoTip('What does the name sound like? Tie it to something you noticed about them. You invent it; self-generated images are what make name recall stick.')), assocInput),
+      infoTip('What does the name sound like? Tie it to something you noticed about them. You invent it; self-generated images are what make name recall stick. You can rework it at any review.')), assocInput),
     el('div', { class: 'row', style: { justifyContent: 'flex-end' } }, saveBtn)));
 }
 
