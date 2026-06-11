@@ -1,0 +1,289 @@
+{
+  "deck": "Kinematics, Dynamics & Vibrations",
+  "topics": [
+    {
+      "title": "Moving reference frames: velocity & acceleration",
+      "subject": "Dynamics",
+      "tags": ["kinematics"],
+      "content": "Relative motion on a rotating frame: $\\vec{v}_A = \\vec{v}_B + \\vec{\\Omega}\\times\\vec{r}_{A/B} + \\vec{v}_{rel}$. Differentiating any vector seen from a rotating frame: $\\frac{d\\vec{v}}{dt}\\big|_{fixed} = \\frac{d\\vec{v}}{dt}\\big|_{rot} + \\vec{\\Omega}\\times\\vec{v}$. Acceleration picks up four terms: frame acceleration, angular acceleration term $\\dot{\\Omega}\\times r$, centripetal $\\Omega\\times(\\Omega\\times r)$, and Coriolis $2\\Omega\\times v_{rel}$ — Coriolis appears whenever something moves *within* a rotating frame.",
+      "recall_prompt": "Write the relative velocity and acceleration equations for a rotating frame — name all four acceleration terms and state when Coriolis shows up.",
+      "key_ideas": [
+        "$\\vec{v}_A = \\vec{v}_B + \\vec{\\Omega}\\times\\vec{r}_{A/B} + \\vec{v}_{rel}$",
+        "Transport theorem: $\\dot{(\\ )}_{fixed} = \\dot{(\\ )}_{rot} + \\Omega\\times(\\ )$",
+        "Acceleration terms: $a_B$, $\\dot{\\Omega}\\times r$, centripetal $\\Omega\\times(\\Omega\\times r)$, Coriolis $2\\Omega\\times v_{rel}$",
+        "Coriolis exists only when there is velocity relative to the rotating frame",
+        "Choose the frame to make $v_{rel}$ simple (slider on a rotating arm, etc.)"
+      ],
+      "cards": [
+        {
+          "question": "Where does the factor of 2 in the Coriolis term $2\\Omega\\times v_{rel}$ come from?",
+          "answer": "Two distinct effects each contribute once: the relative velocity vector being rotated by the frame ($\\Omega\\times v_{rel}$), and the changing position making the transport velocity $\\Omega\\times r$ change ($\\Omega\\times \\dot{r}_{rel}$). They're equal, hence 2."
+        }
+      ]
+    },
+    {
+      "title": "Mass moment of inertia & the inertia matrix",
+      "subject": "Dynamics",
+      "tags": ["kinematics"],
+      "content": "$I_{xx} = \\int (y^2+z^2)\\,dm$ — resistance to angular acceleration about x; products of inertia $I_{xy} = -\\int xy\\,dm$ couple axes. The 3×3 inertia matrix transforms with frame rotation; principal axes diagonalize it (zero products — spin is stable about major/minor principal axes, unstable about the intermediate one: tennis-racket theorem). Parallel axis: $I = I_{cm} + md^2$.",
+      "recall_prompt": "Define the inertia matrix terms, the parallel-axis theorem, and what principal axes mean physically (including which spin axes are stable).",
+      "key_ideas": [
+        "$I_{xx} = \\int (y^2 + z^2) dm$ — mass far from the axis dominates ($r^2$)",
+        "Products of inertia couple rotations; principal axes zero them",
+        "Parallel axis: $I = I_{cm} + md^2$ (always larger away from CM)",
+        "Spin stable about max and min principal axes, unstable about intermediate",
+        "$H = I\\omega$: angular momentum need not be parallel to $\\omega$ off principal axes — that's dynamic imbalance"
+      ],
+      "cards": [
+        {
+          "question": "A rotor is statically balanced (CM on the axis) but still shakes its bearings at speed. What's wrong, and what does it mean in inertia terms?",
+          "answer": "Dynamic imbalance: nonzero products of inertia — the spin axis isn't a principal axis, so $H = I\\omega$ isn't parallel to $\\omega$ and must precess, requiring a rotating bearing couple. Fix needs corrections in two planes, not one."
+        }
+      ]
+    },
+    {
+      "title": "Impulse, momentum & impacts",
+      "subject": "Dynamics",
+      "tags": ["kinematics"],
+      "content": "Impulse-momentum: $\\int F\\,dt = \\Delta(mv)$ — the tool when forces are huge and brief. Collisions: momentum of the system is conserved; energy is not (except e = 1). Coefficient of restitution $e = -(v_{A}' - v_{B}')/(v_A - v_B)$ along the impact normal relates separation to approach speed: e = 1 elastic, e = 0 perfectly plastic (they move together). Oblique impacts: apply e along the normal, conserve tangential momentum per body (smooth contact).",
+      "recall_prompt": "Set up an impact problem: what's conserved, what e means and how it's applied (normal direction only), and the elastic vs plastic limits.",
+      "key_ideas": [
+        "$\\int F dt = \\Delta(mv)$ — integrate out unknowable contact forces",
+        "System momentum conserved in collisions; kinetic energy only if e = 1",
+        "$e$ = separation speed / approach speed along the impact normal",
+        "e = 0: bodies merge (max energy loss); e = 1: elastic",
+        "Oblique: restitution on the normal, tangential components unchanged (smooth)"
+      ],
+      "cards": [
+        {
+          "question": "In a perfectly plastic collision (e = 0), where does the lost kinetic energy go, and why is momentum still conserved?",
+          "answer": "Energy goes to plastic deformation, heat, and vibration — internal degrees of freedom. Momentum is conserved because the contact forces are internal and equal-opposite (Newton's third law); conservation of momentum needs no statement about energy."
+        }
+      ]
+    },
+    {
+      "title": "Mechanisms: mobility & Grashof",
+      "subject": "Dynamics",
+      "tags": ["mechanisms"],
+      "content": "Kutzbach mobility: $M = 3(n-1) - 2j_1 - j_2$ (n links incl. ground, $j_1$ full joints/lower pairs, $j_2$ half joints/higher pairs) — DOF of the linkage. Grashof (four-bar): if $s + l \\le p + q$, some link can fully rotate → crank-rocker (shortest link as crank), double-crank (shortest is ground), or double-rocker (shortest is coupler). Non-Grashof → triple rocker. Lower pairs share surface contact (pin, slider); higher pairs share line/point (cam, gear tooth).",
+      "recall_prompt": "Compute mobility with Kutzbach and classify a four-bar with Grashof: which inversions give crank-rocker, double-crank, double-rocker?",
+      "key_ideas": [
+        "$M = 3(n-1) - 2j_1 - j_2$ — planar DOF count",
+        "Grashof: $s+l \\le p+q$ → at least one link can fully rotate",
+        "Shortest link adjacent to ground → crank-rocker; shortest = ground → double crank; shortest = coupler → double rocker",
+        "Lower pairs (pin, slider) = surface contact; higher pairs (cam, gear) = line/point",
+        "M = 1 means one input drives the mechanism deterministically"
+      ],
+      "cards": [
+        {
+          "question": "Kutzbach says your linkage has M = 0 but the physical prototype clearly moves. What's going on?",
+          "answer": "Special geometry Kutzbach can't see — redundant constraints (e.g., parallel links of equal length) create an overconstrained mechanism that still moves. The formula counts topology, not dimensions; exceptions like this are why mobility is checked, not trusted blindly."
+        }
+      ]
+    },
+    {
+      "title": "Velocity & acceleration analysis: IC's and polygons",
+      "subject": "Dynamics",
+      "tags": ["mechanisms"],
+      "content": "Instantaneous centers: every rigid body in plane motion momentarily rotates about some point; Arnold-Kennedy: any three bodies' relative ICs are collinear — locate ICs graphically, then $v = \\omega r$ from the IC. Velocity image: each link's velocity diagram is a scaled, rotated copy of the link. Acceleration polygons add normal ($\\omega^2 r$, toward center) and tangential ($\\alpha r$) components; sliding joints on rotating links add Coriolis $2\\Omega v_{rel}$, direction = $v_{rel}$ rotated 90° in the sense of Ω.",
+      "recall_prompt": "Explain how to find velocities via instantaneous centers (Arnold-Kennedy), then build an acceleration polygon — including when the Coriolis component appears and its direction rule.",
+      "key_ideas": [
+        "IC: point of zero velocity; v = ωr radially around it",
+        "Arnold-Kennedy: ICs of any three links are collinear → locates hidden ICs",
+        "Velocity image: diagram of a link is a scaled/rotated copy of the link itself",
+        "Acceleration components: normal $\\omega^2 r$ (to center) + tangential $\\alpha r$",
+        "Coriolis $2\\Omega v_{rel}$ whenever a slider moves along a rotating link"
+      ],
+      "cards": [
+        {
+          "question": "In a quick-return mechanism, when is the Coriolis acceleration component largest, and why do these mechanisms demand it in analysis?",
+          "answer": "When the slider's speed along the rotating arm and the arm's ω are both large (mid-stroke at speed) — quick-returns are precisely 'slider on rotating link' mechanisms, so omitting $2\\Omega v_{rel}$ gives badly wrong accelerations and inertia forces."
+        }
+      ]
+    },
+    {
+      "title": "D'Alembert's principle & inertia forces",
+      "subject": "Dynamics",
+      "tags": ["mechanisms"],
+      "content": "Rewrite $F = ma$ as $F - ma = 0$: treat $-ma$ (and $-I\\alpha$) as fictitious inertia forces, then use statics — sum of forces and moments equals zero on the 'augmented' free body. Powerful for linkage force analysis (add inertia force at each link's CM, inertia torque about it) and for deriving equations of motion of vibratory systems. It's bookkeeping, not new physics — equivalent to Newton but lets statics intuition and virtual work apply to dynamics.",
+      "recall_prompt": "State D'Alembert's principle, how inertia forces/torques are applied to a linkage free body, and why the trick is useful.",
+      "key_ideas": [
+        "$F - ma = 0$: inertia force $-ma$ at the CM, inertia torque $-I\\alpha$",
+        "Converts dynamics into an equivalent statics problem (ΣF = 0, ΣM = 0)",
+        "Standard route to linkage bearing forces and shaking forces",
+        "Also a clean way to write vibration EoMs (balance spring, damper, inertia 'forces')",
+        "Equivalent to Newton — a reformulation enabling virtual-work methods"
+      ],
+      "cards": []
+    },
+    {
+      "title": "Deriving equations of motion (Newton, energy, Rayleigh)",
+      "subject": "Vibrations",
+      "tags": ["vibrations"],
+      "content": "Three routes to $m\\ddot{x} + c\\dot{x} + kx = F(t)$: Newton/D'Alembert free body (general, handles damping/forcing naturally), energy method ($\\frac{d}{dt}(T+U) = 0$ for conservative systems), Rayleigh's quotient ($\\omega_n^2 = U_{max}/T^*_{max}$ — equate max potential and kinetic energy, great for quick $\\omega_n$ and for distributed systems via assumed mode shapes). Reduce real systems to equivalent m, k, c at one coordinate: springs in series/parallel, equivalent mass via kinetic energy matching (e.g., beam tip mass + 33/140 of beam mass).",
+      "recall_prompt": "Derive an EoM three ways (Newton, energy, Rayleigh) and explain how to lump a real system into equivalent m and k at a chosen coordinate.",
+      "key_ideas": [
+        "Newton/D'Alembert: free body with spring, damper, inertia forces — the general tool",
+        "Energy: $\\frac{d}{dt}(T+U)=0$ — fast for conservative single-DOF",
+        "Rayleigh: $\\omega_n^2 = U_{max}/T_{max}^*$ with an assumed shape — upper bound on $\\omega_1$",
+        "Equivalent k: series $1/k_{eq} = \\Sigma 1/k_i$, parallel $k_{eq} = \\Sigma k_i$",
+        "Equivalent m: match kinetic energy at the chosen coordinate",
+        "Dunkerley: $1/\\omega_1^2 \\approx \\Sigma 1/\\omega_i^2$ — lower-bound estimate combining subsystem frequencies"
+      ],
+      "cards": [
+        {
+          "question": "Rayleigh's quotient with a guessed mode shape always errs in which direction for the first natural frequency, and why?",
+          "answer": "It overestimates $\\omega_1$: any shape other than the true mode adds constraint, stiffening the assumed system. (Dunkerley errs low — so the two bracket the true value.)"
+        }
+      ]
+    },
+    {
+      "title": "Free vibration & viscous damping regimes",
+      "subject": "Vibrations",
+      "tags": ["vibrations"],
+      "content": "$m\\ddot{x} + c\\dot{x} + kx = 0$: $\\omega_n = \\sqrt{k/m}$, damping ratio $\\zeta = c/(2\\sqrt{km})$. Underdamped ζ<1: oscillatory decay at $\\omega_d = \\omega_n\\sqrt{1-\\zeta^2}$, envelope $e^{-\\zeta\\omega_n t}$. Critically damped ζ=1: fastest non-oscillatory return. Overdamped ζ>1: sluggish. Measure damping by log decrement: $\\delta = \\ln(x_n/x_{n+1}) = 2\\pi\\zeta/\\sqrt{1-\\zeta^2}$. Coulomb (dry friction) damping decays *linearly* (constant amplitude loss $4F_f/k$ per cycle) and stops dead in the dead-band.",
+      "recall_prompt": "Solve free vibration in all three damping regimes, define ωd and log decrement, and contrast viscous vs Coulomb decay envelopes.",
+      "key_ideas": [
+        "$\\omega_n = \\sqrt{k/m}$, $\\zeta = c/(2\\sqrt{km})$, $\\omega_d = \\omega_n\\sqrt{1-\\zeta^2}$",
+        "ζ<1 oscillatory exponential decay; ζ=1 fastest return without overshoot; ζ>1 sluggish",
+        "Log decrement $\\delta = \\ln(x_n/x_{n+1}) = 2\\pi\\zeta/\\sqrt{1-\\zeta^2}$ — measure ζ from a ring-down",
+        "Coulomb damping: linear amplitude decay ($4F_f/k$ per cycle), motion stops in the friction dead-band",
+        "Viscous decay is exponential (never quite zero); Coulomb terminates in finite time"
+      ],
+      "cards": [
+        {
+          "question": "From a ring-down trace, amplitude drops from 12 mm to 6 mm over 5 cycles. Find ζ.",
+          "answer": "$\\delta = \\frac{1}{5}\\ln(12/6) = 0.139$; $\\zeta \\approx \\delta/2\\pi = 0.022$ (≈2.2%, small-damping approximation valid)."
+        },
+        {
+          "question": "How do you tell viscous from Coulomb damping just by looking at a decay trace?",
+          "answer": "Viscous: exponential envelope (equal *ratios* per cycle, asymptotic to zero). Coulomb: straight-line envelope (equal *decrements* per cycle) and the motion stops abruptly at nonzero displacement inside the friction dead-band."
+        }
+      ]
+    },
+    {
+      "title": "Harmonic excitation & resonance",
+      "subject": "Vibrations",
+      "tags": ["vibrations"],
+      "content": "Steady state of $m\\ddot{x}+c\\dot{x}+kx = F_0\\sin\\omega t$: amplitude $X = \\frac{F_0/k}{\\sqrt{(1-r^2)^2 + (2\\zeta r)^2}}$, $r = \\omega/\\omega_n$; phase $\\tan\\phi = \\frac{2\\zeta r}{1-r^2}$ — 0° well below resonance (stiffness-controlled), 90° at r = 1 (damping-controlled, this is the resonance fingerprint), → 180° above (mass-controlled). Peak near $r = \\sqrt{1-2\\zeta^2}$; quality factor $Q \\approx 1/2\\zeta$. Complex/phasor representation ($F_0 e^{i\\omega t}$, $H(i\\omega)$) makes the algebra mechanical. Energy dissipated per cycle by viscous damper: $\\Delta E = \\pi c \\omega X^2$.",
+      "recall_prompt": "Write the forced-response magnitude and phase vs r and ζ, sketch both curves, and explain the three frequency regimes plus what Q means.",
+      "key_ideas": [
+        "$X = (F_0/k)/\\sqrt{(1-r^2)^2+(2\\zeta r)^2}$; static deflection × dynamic amplification",
+        "Phase: 0°→90° (exactly, at r=1) →180°; the 90° crossing identifies resonance",
+        "Regimes: stiffness-controlled (r≪1), damping-controlled (r≈1), mass-controlled (r≫1)",
+        "$Q \\approx 1/2\\zeta$; bandwidth between half-power points = $\\omega_n \\cdot 2\\zeta$",
+        "Energy per cycle: $\\Delta E = \\pi c\\omega X^2$ — sets steady-state amplitude balance",
+        "Phasors: $H(i\\omega) = 1/(k - m\\omega^2 + ic\\omega)$ does all the algebra"
+      ],
+      "cards": [
+        {
+          "question": "At resonance (r = 1), what limits the vibration amplitude, and what is it numerically?",
+          "answer": "Only damping: stiffness and inertia forces cancel, so $X = F_0/(c\\omega_n) = (F_0/k)/(2\\zeta) = Q \\times$ static deflection. With ζ = 0.01 that's 50× — why undamped resonance is catastrophic."
+        },
+        {
+          "question": "Why is the 90° phase lag a more reliable resonance indicator than the amplitude peak?",
+          "answer": "The phase crosses 90° exactly at $r = 1$ regardless of damping, while the amplitude peak shifts below resonance ($r = \\sqrt{1-2\\zeta^2}$) and flattens as ζ grows — at high damping there may be no visible peak at all."
+        }
+      ]
+    },
+    {
+      "title": "Arbitrary excitation: impulse & convolution",
+      "subject": "Vibrations",
+      "tags": ["vibrations"],
+      "content": "The impulse response $h(t) = \\frac{1}{m\\omega_d}e^{-\\zeta\\omega_n t}\\sin\\omega_d t$ is the system's fingerprint; any input is a train of impulses, so the response is the convolution (Duhamel) integral $x(t) = \\int_0^t F(\\tau)h(t-\\tau)d\\tau$. Periodic non-harmonic forcing: Fourier-decompose and superpose steady-state responses term by term (each harmonic sees its own r and phase) — valid because the system is linear.",
+      "recall_prompt": "Explain the impulse response and the convolution integral, and how Fourier decomposition handles periodic non-sinusoidal forcing.",
+      "key_ideas": [
+        "Impulse gives initial velocity $v_0 = \\hat{F}/m$; response $h(t) = \\frac{e^{-\\zeta\\omega_n t}}{m\\omega_d}\\sin\\omega_d t$",
+        "Duhamel/convolution: $x(t) = \\int_0^t F(\\tau)h(t-\\tau)d\\tau$ — any input from one fingerprint",
+        "Linearity is the license: superposition of shifted, scaled impulse responses",
+        "Periodic forcing: Fourier series → each harmonic through the frequency response → sum",
+        "A harmonic of the forcing landing on $\\omega_n$ resonates even if the fundamental doesn't"
+      ],
+      "cards": [
+        {
+          "question": "A motor runs at 600 RPM but a structure with f_n = 30 Hz resonates anyway. How?",
+          "answer": "600 RPM = 10 Hz fundamental, but non-sinusoidal forcing (imbalance + bearing/cogging harmonics) contains the 3rd harmonic at 30 Hz — Fourier superposition means any harmonic can excite resonance, not just the fundamental."
+        }
+      ]
+    },
+    {
+      "title": "Vibration isolation & transmissibility",
+      "subject": "Vibrations",
+      "tags": ["vibrations"],
+      "content": "Transmissibility $TR = \\frac{\\sqrt{1+(2\\zeta r)^2}}{\\sqrt{(1-r^2)^2+(2\\zeta r)^2}}$ applies to both force transmitted to the base and base motion transmitted to the mass. All curves cross TR = 1 at $r = \\sqrt{2}$: isolation only for $r > \\sqrt{2}$ — mounts must be soft so $\\omega_n$ sits well below the disturbance. Beyond $\\sqrt{2}$, damping *hurts* steady-state isolation (the $2\\zeta r$ term transmits) but is needed to survive passing through resonance at startup. Seismic pickups read relative motion Z: accelerometers work at $r \\ll 1$, vibrometers at $r \\gg 1$.",
+      "recall_prompt": "Derive/state transmissibility, the √2 crossover, the damping trade-off above it, and how accelerometers vs vibrometers exploit the two ends of the curve.",
+      "key_ideas": [
+        "$TR = \\sqrt{1+(2\\zeta r)^2}/\\sqrt{(1-r^2)^2+(2\\zeta r)^2}$ — force out or base motion in",
+        "Isolation only above $r = \\sqrt{2}$ (all ζ curves cross TR = 1 there)",
+        "Above √2 more damping = worse isolation; but you need damping to cross resonance at run-up",
+        "Soft mounts: push $\\omega_n$ down so operating r is large",
+        "Seismic instrument reads relative Z: accelerometer r≪1 ($Z \\propto$ accel), vibrometer r≫1 ($Z \\approx$ base motion)"
+      ],
+      "cards": [
+        {
+          "question": "Why does adding damping to engine mounts make steady-state isolation worse at cruise but still get specified?",
+          "answer": "At cruise $r > \\sqrt{2}$ and the damper is a stiff transmission path at high frequency (the $2\\zeta r$ term). But every startup/shutdown sweeps through r = 1, where undamped mounts would let amplitude blow up — damping is bought for the transient, paid for at cruise."
+        },
+        {
+          "question": "Why must an accelerometer's natural frequency be far ABOVE the measured band, while a vibrometer's must be far below?",
+          "answer": "The seismic mass reads relative motion Z. For r≪1, $Z \\approx \\ddot{y}/\\omega_n^2$ — proportional to acceleration (stiff, high-$\\omega_n$ sensor). For r≫1 the mass stands still in space and $Z \\approx$ base displacement (soft, low-$\\omega_n$ sensor)."
+        }
+      ]
+    },
+    {
+      "title": "Rotating imbalance",
+      "subject": "Vibrations",
+      "tags": ["vibrations"],
+      "content": "Eccentric mass m at radius e on a machine of total mass M: forcing $me\\omega^2\\sin\\omega t$ — amplitude grows with speed squared. Response $\\frac{MX}{me} = \\frac{r^2}{\\sqrt{(1-r^2)^2+(2\\zeta r)^2}}$: zero at low speed, peaks near resonance, and asymptotes to $X = me/M$ at high speed (mass-controlled — the machine orbits its combined CM). Force to the base follows transmissibility × $me\\omega^2$ — which keeps growing with speed unless isolated.",
+      "recall_prompt": "Derive the imbalance response MX/me vs r: the ω² forcing, the resonance peak, and the high-speed asymptote — and what it means for balancing vs isolating.",
+      "key_ideas": [
+        "Forcing amplitude $= me\\omega^2$ — grows with speed squared",
+        "$MX/(me) = r^2/\\sqrt{(1-r^2)^2+(2\\zeta r)^2}$: 0 at rest → peak ≈ resonance → 1",
+        "High speed: $X \\to me/M$ — system spins about the combined center of mass",
+        "Transmitted force still scales with $\\omega^2$ at high speed — isolation or balancing required",
+        "Balance quality grades set allowable $me$ per speed"
+      ],
+      "cards": []
+    },
+    {
+      "title": "Multi-DOF systems: modes & orthogonality",
+      "subject": "Vibrations",
+      "tags": ["vibrations"],
+      "content": "Matrix EoM $[M]\\ddot{x} + [K]x = 0$; assuming $x = \\phi e^{i\\omega t}$ gives the eigenproblem $([K]-\\omega^2[M])\\phi = 0$ — n natural frequencies, each with a mode shape. Modes are orthogonal through the mass and stiffness matrices ($\\phi_i^T M \\phi_j = 0$, i≠j), so the modal matrix [P] decouples the system into n independent SDOF equations in principal coordinates — solve each, superpose. Mechanical impedance $Z(i\\omega)$ generalizes the frequency-response toolkit to MDOF.",
+      "recall_prompt": "Set up the MDOF eigenproblem, state orthogonality, and explain how principal coordinates decouple the system into independent SDOF problems.",
+      "key_ideas": [
+        "$([K] - \\omega^2[M])\\phi = 0$: eigenvalues = $\\omega_n^2$, eigenvectors = mode shapes",
+        "Orthogonality: $\\phi_i^T M \\phi_j = \\phi_i^T K \\phi_j = 0$ for $i \\ne j$",
+        "Modal transform $x = [P]q$ → n decoupled SDOF equations (principal coordinates)",
+        "Response = superposition of modal responses; forcing projects onto each mode",
+        "n DOF ⇒ n frequencies/modes; nodes of a mode never move in that mode"
+      ],
+      "cards": [
+        {
+          "question": "Why can a force applied at a certain point fail to excite one of the modes entirely?",
+          "answer": "The modal force is the projection $\\phi_i^T F$: if the force acts at a node of mode i (or distributes orthogonally to it), the projection is zero and that mode receives no energy — the basis of choosing shaker and mount locations."
+        }
+      ]
+    },
+    {
+      "title": "Continuous systems: strings, bars, beams",
+      "subject": "Vibrations",
+      "tags": ["vibrations"],
+      "content": "Distributed mass/stiffness → wave PDEs with infinitely many modes. String transverse and bar axial/torsional all obey the wave equation ($c = \\sqrt{T/\\rho A}$, $\\sqrt{E/\\rho}$, $\\sqrt{G/\\rho}$) with $\\omega_n$ proportional to n (harmonic overtones). Beams bend by the Euler-Bernoulli equation ($EI\\,\\partial^4w/\\partial x^4 = -\\rho A\\,\\ddot{w}$) — dispersive, frequencies grow like $(\\beta_n L)^2$ so overtones are NOT harmonic. Boundary conditions (fixed/free/pinned) pick the mode shapes and the $\\beta_n L$ constants.",
+      "recall_prompt": "Contrast wave-equation systems (string, axial/torsional bar) with the Euler-Bernoulli beam: governing equations, frequency spacing, and the role of boundary conditions.",
+      "key_ideas": [
+        "String/bar: wave equation, $\\omega_n \\propto n$ — integer harmonic spectrum",
+        "Wave speeds: string $\\sqrt{T/\\rho A}$, axial $\\sqrt{E/\\rho}$, torsional $\\sqrt{G/\\rho}$",
+        "Beam: 4th-order $EI w'''' = -\\rho A \\ddot{w}$ — dispersive, $\\omega_n \\propto (\\beta_n L)^2$, inharmonic",
+        "Boundary conditions determine mode shapes and $\\beta_n L$ values",
+        "Rayleigh's method with an assumed shape approximates the fundamental well"
+      ],
+      "cards": [
+        {
+          "question": "A guitar string sounds 'musical' but a struck cantilever sounds 'clangy'. Explain with mode spacing.",
+          "answer": "String overtones are integer multiples of the fundamental (wave equation) — a harmonic series the ear hears as one pitch. Beam bending modes go as $(\\beta_n L)^2 \\approx$ ratios 1 : 6.27 : 17.5 — inharmonic partials, heard as metallic clang."
+        }
+      ]
+    }
+  ]
+}

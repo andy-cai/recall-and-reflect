@@ -293,6 +293,69 @@ textarea.input { min-height: 92px; line-height: 1.5; }
 .rate-btn .name.again { color: var(--again); } .rate-btn .name.hard { color: var(--hard); }
 .rate-btn .name.good { color: var(--good); } .rate-btn .name.easy { color: var(--easy); }
 
+/* AI-suggested rating (Enter takes it; 1–4 always work) */
+.rate-btn { position: relative; }
+.rate-btn.suggested.again { border-color: var(--again); box-shadow: 0 0 0 3px color-mix(in srgb, var(--again) 24%, transparent); }
+.rate-btn.suggested.hard  { border-color: var(--hard);  box-shadow: 0 0 0 3px color-mix(in srgb, var(--hard) 24%, transparent); }
+.rate-btn.suggested.good  { border-color: var(--good);  box-shadow: 0 0 0 3px color-mix(in srgb, var(--good) 24%, transparent); }
+.rate-btn .sug { position: absolute; top: -9px; left: 50%; transform: translateX(-50%); white-space: nowrap;
+  font-size: 9.5px; font-weight: 800; letter-spacing: .08em; border-radius: 999px; padding: 2px 8px; }
+.rate-btn.again .sug { background: var(--again); color: #2b0f06; }
+.rate-btn.hard .sug  { background: var(--hard);  color: #241a06; }
+.rate-btn.good .sug  { background: var(--good);  color: #10210d; }
+
+/* Hypercorrection banner — a confident miss gets a follow-up today */
+.hyper { display: flex; gap: 10px; align-items: center; border-radius: 11px; padding: 11px 14px; margin-top: 14px;
+  background: var(--again-weak); border: 1px solid color-mix(in srgb, var(--again) 45%, transparent);
+  font-size: 13.5px; color: var(--text-soft); text-align: left; }
+.hyper b { color: var(--again); }
+
+/* Key-idea rubric rows (topic recall reveal) */
+.idea { display: flex; gap: 11px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; text-align: left; }
+.idea + .idea { margin-top: 6px; }
+.idea .mark { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 12px; font-weight: 800; margin-top: 1px; }
+.idea.neutral { background: var(--surface-2); } .idea.neutral .mark { background: var(--border-strong); color: var(--text); }
+.idea.hit   { background: var(--good-weak); }  .idea.hit .mark   { background: var(--good); color: #10210d; }
+.idea.part  { background: var(--hard-weak); }  .idea.part .mark  { background: var(--hard); color: #241a06; }
+.idea.miss  { background: var(--again-weak); } .idea.miss .mark  { background: var(--again); color: #2b0f06; }
+.idea .t { font-size: 14.5px; }
+
+/* Math: TeX source fallback when KaTeX isn't vendored (tools/get_katex.py) */
+.math-src { font-family: "Cambria Math", "STIX Two Math", Georgia, serif; font-style: italic; }
+
+/* Per-card quiet actions during review (edit / skip) */
+.card-act { font-size: 12px; padding: 3px 8px; color: var(--muted); }
+.card-act:hover { color: var(--accent); }
+
+/* Connection chips (capture) — tappable links to topics you already know */
+.chip.link { border-style: dashed; border-color: var(--easy); color: var(--easy); }
+.chip.link:hover { background: var(--easy-weak); }
+
+/* Calibration bars (Stats) */
+.cal-bar { height: 10px; border-radius: 5px; background: var(--border-strong); overflow: hidden; }
+.cal-bar i { display: block; height: 100%; }
+
+/* Collapsible subject sections (Library Explore) */
+.subj-head { cursor: pointer; border-radius: 10px; padding: 4px 6px; transition: background .12s; }
+.subj-head:hover { background: var(--surface-2); }
+
+/* Focus star (Library rows) + focused-state buttons */
+.star { border: none; background: none; cursor: pointer; font-size: 17px; padding: 2px 4px;
+  color: var(--border-strong); flex: none; transition: color .12s, transform .08s; }
+.star:hover { color: var(--accent); transform: scale(1.15); }
+.star.on { color: var(--accent); }
+.btn.on-accent { border-color: var(--accent); color: var(--accent); background: var(--accent-weak); }
+
+/* Today: about-to-slip list */
+.risk-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px;
+  background: var(--surface-2); font-size: 13.5px; }
+.risk-item + .risk-item { margin-top: 7px; }
+.risk-item .pct { margin-left: auto; color: var(--muted); font-size: 12.5px; }
+.gauge { flex: none; width: 54px; height: 6px; border-radius: 3px; background: var(--border-strong); overflow: hidden; }
+.gauge i { display: block; height: 100%; background: var(--again); }
+.gauge i.warm { background: var(--hard); }
+
 .kbd { font-size: 11px; font-family: ui-monospace, monospace; background: var(--surface-2);
   border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; color: var(--text-soft); }
 
@@ -351,4 +414,73 @@ textarea.input { min-height: 92px; line-height: 1.5; }
   .reflect-grid { grid-template-columns: 1fr; }
   .grid.cols-2, .grid.cols-3 { grid-template-columns: 1fr; }
   .hero { flex-direction: column; text-align: center; }
+}
+
+/* ================= Living backgrounds (ambient layer) ================= */
+#ambient { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+#ambient canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.app-shell { position: relative; z-index: 1; }
+.main { background: transparent; }
+
+/* halo — the brand loop as atmosphere */
+.amb-halo .amb-ring { position: absolute; width: 130vmin; height: 130vmin; top: -55vmin; right: -40vmin;
+  border-radius: 50%; filter: blur(28px); opacity: var(--halo-o, .3);
+  background: conic-gradient(from 210deg, transparent 0 38deg, rgba(213,154,82,.55) 105deg,
+    rgba(213,154,82,.4) 230deg, rgba(111,169,160,.18) 300deg, transparent 322deg 360deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 62%, #000 66%, #000 78%, transparent 82%);
+  mask: radial-gradient(closest-side, transparent 62%, #000 66%, #000 78%, transparent 82%);
+  animation: amb-spin 240s linear infinite, amb-breathe 16s ease-in-out infinite alternate; }
+.amb-halo .amb-spark { position: absolute; top: 16%; right: 20%; width: 9px; height: 9px; border-radius: 50%;
+  background: #ece3d1; box-shadow: 0 0 16px 5px rgba(236,227,209,.3);
+  animation: amb-breathe 16s ease-in-out infinite alternate; }
+@keyframes amb-spin { to { transform: rotate(360deg); } }
+@keyframes amb-breathe { from { opacity: .65; scale: 1; } to { opacity: 1; scale: 1.04; } }
+
+/* aurora — Today, warmed with amber */
+.amb-aurora .amb-blob { position: absolute; width: 75vmax; height: 75vmax; border-radius: 50%;
+  filter: blur(90px); mix-blend-mode: screen; opacity: .45; }
+.amb-aurora .amb-b1 { background: radial-gradient(closest-side, rgba(40,80,55,.8), transparent 70%);
+  top: -30%; left: -20%; animation: amb-d1 95s ease-in-out infinite alternate; }
+.amb-aurora .amb-b2 { background: radial-gradient(closest-side, rgba(111,169,160,.25), transparent 70%);
+  top: -10%; right: -30%; animation: amb-d2 120s ease-in-out infinite alternate; }
+.amb-aurora .amb-b3 { background: radial-gradient(closest-side, rgba(224,160,82,.22), transparent 66%);
+  bottom: -40%; left: 8%; width: 65vmax; height: 65vmax; animation: amb-d3 140s ease-in-out infinite alternate; }
+@keyframes amb-d1 { to { transform: translate(13%, 9%) scale(1.12); } }
+@keyframes amb-d2 { to { transform: translate(-10%, 12%) scale(1.08); } }
+@keyframes amb-d3 { to { transform: translate(12%, -10%) scale(.94); } }
+
+/* light theme: one soft warm veil */
+.amb-veil { background:
+  radial-gradient(60% 50% at 85% -10%, rgba(213,154,82,.10), transparent 70%),
+  radial-gradient(50% 45% at -5% 100%, rgba(111,169,160,.08), transparent 70%); }
+
+@media (prefers-reduced-motion: reduce) {
+  #ambient * { animation: none !important; }
+}
+
+/* ================= Marginalia (Reflect manuscript) ================= */
+.ms-frame { padding: 26px 28px; }
+.ms { display: grid; grid-template-columns: 1fr 175px; gap: 22px; align-items: start; }
+.ms-doc { font-family: "Charter", "Georgia", "Cambria", serif; font-size: 16.5px; line-height: 1.75;
+  min-width: 0; color: var(--text); }
+.ms-doc p { margin: 0 0 16px; }
+.ms-cue { font-style: italic; color: var(--muted); margin-bottom: 16px; }
+.ms-ref { color: var(--accent); font-weight: 700; font-size: 11px;
+  font-family: var(--font); margin-left: 2px; }
+.ms-margin { border-left: 1px solid var(--border); padding-left: 14px;
+  font-size: 12.5px; line-height: 1.55; font-family: var(--font); }
+.ms-note { margin-bottom: 18px; animation: rise .3s ease; }
+.ms-note .n { color: var(--accent); font-weight: 800; font-size: 11px; margin-right: 2px; }
+.ms-note.open .q { font-style: italic; color: var(--accent); }
+.ms-note.done { opacity: .45; }
+.ms-note.done .q { font-style: italic; color: var(--text-soft); }
+.ms-note .tick { color: var(--good); font-size: 11px; }
+.ms-write { border-top: 1px dashed var(--border-strong); padding-top: 12px; margin-top: 4px; }
+.ms-compose { width: 100%; background: none; border: none; outline: none; resize: none;
+  color: var(--text); font-family: "Charter", "Georgia", "Cambria", serif;
+  font-size: 16px; line-height: 1.6; padding: 0; }
+.ms-compose::placeholder { color: var(--muted); font-style: italic; }
+@media (max-width: 900px) {
+  .ms { grid-template-columns: 1fr; }
+  .ms-margin { border-left: none; padding-left: 0; border-top: 1px dashed var(--border); padding-top: 12px; }
 }

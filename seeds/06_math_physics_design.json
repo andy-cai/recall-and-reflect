@@ -1,0 +1,251 @@
+{
+  "deck": "Applied Math, Physics & Design Tools",
+  "topics": [
+    {
+      "title": "Probability distributions & hypothesis testing",
+      "subject": "Applied Math",
+      "tags": ["statistics"],
+      "content": "Binomial: k successes in n trials, $P = \\binom{n}{k}p^k(1-p)^{n-k}$ — defect counts in samples. Geometric: trials until first success — time to first failure. Poisson: events in an interval at rate λ, $P = \\lambda^k e^{-\\lambda}/k!$ — arrivals, rare defects. Hypothesis testing: H0/H1, choose α (Type I rate), compute the test statistic, compare to z-table (σ known/large n) or t-table (σ estimated, small n); p < α → reject. Type II (β) trades against α via sample size. Thompson-tau: iterative outlier rejection keyed to sample size.",
+      "recall_prompt": "Match binomial, geometric, and Poisson to their physical situations with formulas, then walk a hypothesis test end-to-end (α, z vs t, p-value) and the Type I/II trade.",
+      "key_ideas": [
+        "Binomial = k of n; geometric = until first; Poisson = count at rate λ",
+        "$\\binom{n}{k} = \\frac{n!}{k!(n-k)!}$ — the choose bookkeeping",
+        "Test: H0, α, statistic, table, decide; p-value = evidence against H0",
+        "t-table when σ is estimated from small samples (fat tails); z otherwise",
+        "α vs β: false alarm vs missed detection — only sample size buys both",
+        "Thompson-tau rejects outliers consistently with sample size (never just delete points)"
+      ],
+      "cards": [
+        {
+          "question": "Why use the t-distribution instead of z for a 5-sample tensile test, and what does it cost you?",
+          "answer": "With σ estimated from 5 points, the estimate itself is noisy — t's fatter tails (4 DOF) account for that extra uncertainty. Cost: wider confidence intervals / larger critical values, i.e., you need a bigger effect to claim significance."
+        }
+      ]
+    },
+    {
+      "title": "Linear algebra: transforms & solving systems",
+      "subject": "Applied Math",
+      "tags": ["linear algebra"],
+      "content": "Geometric matrices: rotation, reflection, projection, translation (homogeneous coordinates); change of basis $A' = P^{-1}AP$. Solving Ax = b: Gaussian elimination (direct, $O(n^3)$, LU factorization reuses the work for many b's); iterative Jacobi/Gauss-Seidel for large sparse systems (converge for diagonally dominant; G-S uses fresh values, ~2× faster). Overdetermined systems: least squares via normal equations $A^TA\\hat{x} = A^Tb$ (or QR for conditioning) — the workhorse of curve fitting.",
+      "recall_prompt": "Cover the transform zoo and change of basis, direct (GE/LU) vs iterative (Jacobi/Gauss-Seidel) solving and when each wins, and derive least squares.",
+      "key_ideas": [
+        "Homogeneous coordinates let translation join rotation/scale as one matrix",
+        "Change of basis: $A' = P^{-1}AP$ — same operator, new coordinates",
+        "GE/LU: exact, $O(n^3)$; LU amortizes across multiple right-hand sides",
+        "Jacobi/G-S: iterate on sparse systems; diagonal dominance guarantees convergence",
+        "Least squares: minimize $\\|Ax-b\\|^2$ → $A^TA\\hat{x} = A^Tb$; QR/SVD when ill-conditioned"
+      ],
+      "cards": []
+    },
+    {
+      "title": "Eigenvalues, eigenvectors & factorizations",
+      "subject": "Applied Math",
+      "tags": ["linear algebra"],
+      "content": "$Av = \\lambda v$: directions the operator only stretches. Applications everywhere: vibration modes ($K\\phi = \\omega^2 M\\phi$), principal stresses (symmetric → real λ, orthogonal v), stability/phase portraits (eigenvalues of the Jacobian: signs of real parts → node/spiral/saddle), PCA. Numerics: power method finds the dominant λ (repeated multiplication aligns with it); inverse/shifted power targets specific eigenvalues. Factorizations: LU (solving), QR (least squares, eigenvalue iteration), Schur (triangularization), SVD (any matrix: rank, conditioning, pseudo-inverse — the most robust).",
+      "recall_prompt": "Define the eigenproblem and connect it to modes, principal stresses, and phase portraits; then explain the power method family and when to reach for LU vs QR vs SVD.",
+      "key_ideas": [
+        "$Av = \\lambda v$ — invariant directions; symmetric matrices: real λ, orthogonal vectors",
+        "Phase portraits: Re(λ) < 0 stable; complex → spiral; opposite signs → saddle",
+        "Power method → dominant eigenpair; shift-invert targets interior eigenvalues",
+        "LU = solve; QR = least squares + QR-algorithm; SVD = rank/conditioning/pseudo-inverse",
+        "Same eigenproblem underlies vibration modes, principal stress, PCA, stability"
+      ],
+      "cards": [
+        {
+          "question": "Why does repeatedly multiplying a random vector by A converge to the dominant eigenvector?",
+          "answer": "Expand the vector in the eigenbasis: each multiplication scales component i by $\\lambda_i$. After k steps, ratios go as $(\\lambda_i/\\lambda_1)^k \\to 0$ — the dominant term swamps the rest. Convergence rate is set by $|\\lambda_2/\\lambda_1|$, hence shifts to accelerate."
+        }
+      ]
+    },
+    {
+      "title": "Approximation: Taylor, Fourier, Laplace, Lagrangian",
+      "subject": "Applied Math",
+      "tags": ["calculus"],
+      "content": "Taylor/Maclaurin: local polynomial from derivatives at a point — linearization ($\\sin\\theta \\approx \\theta$) is the basis of small-signal models and error estimates. Fourier: periodic functions as sums of sinusoids — global, frequency-domain decomposition; coefficients via orthogonality. Laplace transform: ODEs → algebra in s, initial conditions included, the transfer-function machine. Lagrangian mechanics: $L = T - U$, Euler-Lagrange $\\frac{d}{dt}\\frac{\\partial L}{\\partial \\dot{q}} - \\frac{\\partial L}{\\partial q} = 0$ — equations of motion from energy in generalized coordinates, no constraint forces needed.",
+      "recall_prompt": "Contrast the four tools: Taylor (local), Fourier (periodic/global), Laplace (ODEs+ICs), Lagrangian (EoM from energy) — what each assumes and when it's the right grab.",
+      "key_ideas": [
+        "Taylor: local fit, $f(x+h) \\approx f + f'h + \\frac{1}{2}f''h^2$ — linearization + truncation error",
+        "Fourier: orthogonal sinusoid basis for periodic signals — spectrum view",
+        "Laplace: differential equations → algebra; poles/zeros; ICs built in",
+        "Lagrangian: pick generalized coordinates, write T − U, crank E-L — constraints vanish",
+        "Linearize about equilibrium (Taylor) before frequency analysis (Fourier/Laplace)"
+      ],
+      "cards": [
+        {
+          "question": "When does the Lagrangian approach beat Newton for deriving equations of motion?",
+          "answer": "Systems with constraints and awkward geometry — pendulums on carts, linkages, rolling: pick generalized coordinates that respect constraints, and constraint forces (which do no work) never appear. Newton requires drawing and eliminating them by hand."
+        }
+      ]
+    },
+    {
+      "title": "Vector calculus: the big theorems",
+      "subject": "Applied Math",
+      "tags": ["calculus"],
+      "content": "Gradient (steepest ascent of a scalar field), divergence (source density of a vector field), curl (local rotation). Conservative field ⟺ curl = 0 ⟺ work path-independent ⟺ F = ∇φ — then line integrals shortcut to endpoint potential differences. Green's theorem (2-D circulation ↔ area integral), Stokes (circulation around a loop = flux of curl through it), Gauss/divergence (flux through closed surface = volume integral of divergence). These convert conservation laws between integral and differential forms — continuity, heat, Maxwell.",
+      "recall_prompt": "Define grad/div/curl physically, the conservative-field equivalences, and state Green's, Stokes', and the divergence theorem with what each converts between.",
+      "key_ideas": [
+        "∇φ steepest ascent; ∇·F net outflow per volume; ∇×F local spin",
+        "Conservative: curl-free ⟺ path-independent ⟺ potential exists",
+        "Stokes: $\\oint F\\cdot dl = \\iint (\\nabla\\times F)\\cdot dA$",
+        "Divergence: $\\oiint F\\cdot dA = \\iiint \\nabla\\cdot F\\, dV$",
+        "Conservation laws: integral ↔ differential form via these theorems (continuity: $\\partial\\rho/\\partial t + \\nabla\\cdot(\\rho V) = 0$)"
+      ],
+      "cards": []
+    },
+    {
+      "title": "Solving ODEs & classic PDEs",
+      "subject": "Applied Math",
+      "tags": ["calculus"],
+      "content": "First order: separation; linear → integrating factor $e^{\\int P dx}$. Linear constant-coefficient: characteristic roots → exponential general solution + undetermined-coefficients particular (GERF); Laplace handles ICs and discontinuous forcing best. Cauchy-Euler ($x^2y'' + ...$): try $y = x^m$. Nonlinear/systems: phase-plane analysis around equilibria (linearize, classify by eigenvalues); singular points need series methods. PDEs by separation of variables: heat equation ($u_t = \\alpha u_{xx}$, diffusive decay of modes $e^{-\\alpha k^2 t}$), wave equation ($u_{tt} = c^2 u_{xx}$, traveling/standing modes), Laplace (steady state); boundary conditions select the eigenfunctions.",
+      "recall_prompt": "Build the ODE decision tree (separable, integrating factor, characteristic equation, Laplace, Cauchy-Euler, phase plane), then separate variables on the heat and wave equations and contrast their mode behavior.",
+      "key_ideas": [
+        "Separable → integrate; linear 1st order → integrating factor $e^{\\int P}$",
+        "Constant-coefficient: characteristic roots (real/complex/repeated) → solution shape",
+        "Laplace for ICs, steps, impulses; Cauchy-Euler: $y = x^m$",
+        "Phase plane: linearize at equilibria; eigenvalues classify node/spiral/saddle/center",
+        "Separation of variables: PDE → ODEs + eigenvalue problem set by BCs",
+        "Heat: modes decay as $e^{-\\alpha k^2 t}$ (high frequency dies fast); wave: modes oscillate, energy persists"
+      ],
+      "cards": [
+        {
+          "question": "Why does the heat equation smooth a jagged initial temperature profile almost instantly, while the wave equation preserves a jagged pulse?",
+          "answer": "Separated heat modes decay like $e^{-\\alpha k^2 t}$ — quadratically faster for higher spatial frequency, so sharp features (high k) vanish first. Wave modes only oscillate ($e^{\\pm ikct}$), all frequencies persisting and propagating — the equation is time-reversible, diffusion isn't."
+        }
+      ]
+    },
+    {
+      "title": "Atomic structure, bonding & periodic trends",
+      "subject": "Physics & Chemistry",
+      "tags": ["chemistry"],
+      "content": "Trends from effective nuclear charge and shell count: across a period, Z_eff rises → smaller radius, higher ionization energy, electron affinity, electronegativity; down a group, shells add → all reverse. Bond type from electronegativity difference: covalent (shared, directional) → polar covalent → ionic (transferred); metallic = delocalized electron sea (conductivity, ductility). Molecular shapes from VSEPR (electron-pair repulsion: linear, trigonal, tetrahedral, bent...). Molecular orbital theory: atomic orbitals combine into bonding/antibonding MOs — bond order, paramagnetism (O2); scaled to crystals it becomes band theory: filled valence/empty conduction bands and the gap → metal, semiconductor, insulator.",
+      "recall_prompt": "Explain the periodic trends from Z_eff, classify bonds by electronegativity difference, get shapes from VSEPR, and bridge MO theory to band theory (why metals conduct, silicon semi-conducts).",
+      "key_ideas": [
+        "Across: Z_eff up → radius down, IE/EA/electronegativity up; down a group: reversed",
+        "ΔEN: ~0 covalent → 0.5-1.7 polar → >1.7 ionic; metallic = electron sea",
+        "VSEPR: electron domains (incl. lone pairs) repel → geometry",
+        "MO: bonding/antibonding combinations; bond order = (b − ab)/2",
+        "Band theory: MO limit of ~10²³ atoms; gap size sorts metal/semiconductor/insulator",
+        "Wave-particle duality: photons & electrons show both (photoelectric effect quantizes light)"
+      ],
+      "cards": [
+        {
+          "question": "Why does silicon conduct better when heated while copper conducts worse?",
+          "answer": "Silicon: carriers must be thermally excited across the ~1.1 eV band gap — more temperature, exponentially more carriers (dominates). Copper: the band is already half-full of carriers; heating just increases phonon scattering, lowering mobility. Gap vs no gap flips the temperature coefficient."
+        }
+      ]
+    },
+    {
+      "title": "Organic chemistry & reaction kinetics essentials",
+      "subject": "Physics & Chemistry",
+      "tags": ["chemistry"],
+      "content": "Functional groups set behavior: alkanes (inert backbone), alkenes (C=C, addition chemistry), alcohols (-OH, H-bonding), amines (-N, basic), esters/ethers (linkages — polyesters, epoxies), aromatics (resonance-stabilized rings). Stereochemistry: Newman projections (conformers), stereoisomers (same bonds, different 3-D). Reaction types: addition (across double bonds — polymerization), substitution, elimination, rearrangement. Kinetics vs equilibrium: rate law $r = k[A]^m[B]^n$ (orders are empirical); Arrhenius $k = Ae^{-E_a/RT}$ — the universal '10°C doubles the rate' intuition and the basis of accelerated aging; equilibrium constant K from ΔG; Nernst extends to electrochemical potentials ($E = E_0 - \\frac{RT}{nF}\\ln Q$); acid-base (proton transfer) vs redox (electron transfer).",
+      "recall_prompt": "Tour the functional groups and the four reaction types, then the kinetics core: rate laws, Arrhenius (and accelerated testing), equilibrium vs rate, Nernst.",
+      "key_ideas": [
+        "Functional groups predict reactivity; aromatics resonance-stabilized",
+        "Addition across C=C is how addition polymers grow (PE, PP, PVC)",
+        "Arrhenius $k = Ae^{-E_a/RT}$ → accelerated life testing and shelf-life math",
+        "Rate (kinetics) ≠ extent (thermodynamics/K) — catalysts change only the first",
+        "Nernst: $E = E_0 - \\frac{RT}{nF}\\ln Q$ — concentration shifts cell voltage (batteries, corrosion)",
+        "Acid-base = proton transfer; redox = electron transfer (track oxidation states)"
+      ],
+      "cards": [
+        {
+          "question": "Your accelerated battery test runs at 60°C instead of 25°C. Using Arrhenius logic with Ea ≈ 0.5 eV, roughly what acceleration factor are you claiming — and what's the catch?",
+          "answer": "Each ~10°C roughly doubles the rate → ~2^3.5 ≈ 10× faster aging. Catch: Arrhenius extrapolation assumes the SAME mechanism dominates at both temperatures — high-T tests can activate failure modes (e.g., separator/SEI changes) that never occur in service, or miss low-T ones like lithium plating."
+        }
+      ]
+    },
+    {
+      "title": "Magnetism in materials",
+      "subject": "Physics & Chemistry",
+      "tags": ["physics"],
+      "content": "Magnetism comes from electron spin and orbital moments. Diamagnetic: all electrons paired — weak repulsion (everything, water, copper). Paramagnetic: unpaired spins align with field, thermally randomized — weak attraction (Al, O2). Ferromagnetic: exchange interaction locks neighboring spins parallel into domains (Fe, Ni, Co) — strong, hysteretic (remanence/coercivity → permanent magnets vs soft cores), lost above the Curie temperature. Hard vs soft magnetic materials trade coercivity (memory, magnets) against low hysteresis loss (transformer laminations).",
+      "recall_prompt": "Explain dia-, para-, and ferromagnetism from electron spin, what domains and the Curie temperature are, and the hard vs soft material trade.",
+      "key_ideas": [
+        "Spin + orbital moments are the source; paired electrons cancel (diamagnetic)",
+        "Paramagnetic: unpaired spins, field-aligned vs kT — weak, temporary",
+        "Ferromagnetic: exchange coupling → domains, hysteresis loop, remanence",
+        "Curie temperature: thermal energy beats exchange → ferro becomes para",
+        "Hard (high coercivity) = magnets; soft (narrow loop) = cores, low AC loss"
+      ],
+      "cards": []
+    },
+    {
+      "title": "GD&T & dimensional inspection",
+      "subject": "Design Tools",
+      "tags": ["design"],
+      "content": "GD&T separates size from geometry: features of size (pins, holes) carry dimensions + tolerances; geometric characteristics control form (flatness, cylindricity), orientation (perpendicularity, angularity), location (position, concentricity), profile, and runout — each in a feature control frame with datums and optional material condition modifiers (MMC gives bonus tolerance and functional gauging). Datum order (primary/secondary/tertiary) defines how the part is constrained for measurement — it should mirror how the part mounts. Surface roughness (Ra) called out separately. Inspection ladder: caliper (~0.02 mm), micrometer (~0.002 mm), dial indicator (comparative/runout), CMM (full 3-D GD&T verification), optical/laser mic (non-contact, soft or moving parts), protractor/sine bar for angles.",
+      "recall_prompt": "Explain why GD&T exists beyond ± dimensions: the characteristic categories, datum hierarchy, MMC bonus tolerance — and match inspection tools to the tolerances they can actually verify.",
+      "key_ideas": [
+        "± tolerances can't control form/orientation/location relationships — GD&T can",
+        "Categories: form, orientation, location, profile, runout — feature control frames + datums",
+        "Datum order = how the part actually mounts; primary contacts first (3 points)",
+        "MMC modifier: departure from max material = bonus tolerance; enables go/no-go functional gauges",
+        "Tool to tolerance: caliper 10× looser than what it checks; micrometer ~2 μm; CMM for true position; indicator for runout"
+      ],
+      "cards": [
+        {
+          "question": "A hole's position tolerance is 0.1 @ MMC. The hole comes in 0.05 larger than its smallest allowed size. What position tolerance does it actually get, and why is that legitimate?",
+          "answer": "0.15 — bonus tolerance equal to the departure from MMC. Legitimate because function (a pin must fit through) depends on the combination of size and position: a bigger hole tolerates more location error while still assembling. It's the virtual-condition boundary that's actually being protected."
+        }
+      ]
+    },
+    {
+      "title": "FEA in practice: connections, mesh, nonlinearity",
+      "subject": "Design Tools",
+      "tags": ["FEA", "simulation"],
+      "content": "Garbage in, gospel out — the modeling choices ARE the analysis. Connections: bonded (welded — overstiff if misused), frictional/rough (contact nonlinearity), bolt pretension, RBEs/remote points (rigid or distributed load spreading — rigids artificially stiffen), bearing connections (radial-only). Mesh quality: aspect ratio, Jacobian, skewness; refine where gradients live, verify by convergence study (stress, not displacement). Singularities: re-entrant corners and point loads never converge — stress there is meaningless; use fillets or evaluate at distance. Nonlinear switches: large displacement (membrane stiffening, buckling), plasticity, contact — turn on when deflection ~ thickness or stresses pass yield. Tools: ANSYS Mechanical (full control), SimSolid (meshless, fast triage), SKF SimPro/QuickSim for bearing systems.",
+      "recall_prompt": "List the connection types and what each falsifies if misused, the mesh-quality checklist + convergence discipline, the singularity trap, and when large-displacement must be on.",
+      "key_ideas": [
+        "Bonded everywhere = secretly welded assembly — check load paths against reality",
+        "RBE/remote rigid spreads load but adds fake stiffness; deformable distributes",
+        "Converge on the stress you care about; refine gradients, not everything",
+        "Singularities (sharp corners, point loads) diverge forever — model the fillet or stand off",
+        "Large displacement when deflection ~ thickness (stress stiffening, buckling paths)",
+        "SimSolid/meshless for triage; ANSYS for the final answer; SimPro for bearing systems"
+      ],
+      "cards": [
+        {
+          "question": "Your mesh-refinement study shows stress at a corner climbing 15% per refinement without leveling off. What's happening and what are the two honest responses?",
+          "answer": "It's a singularity — sharp re-entrant corner has theoretically infinite elastic stress, so refinement chases infinity. Either model the real fillet radius and converge on its true peak, or acknowledge the local field is fictitious and assess by stress at a characteristic distance / nominal + concentration factor."
+        }
+      ]
+    },
+    {
+      "title": "Design methodology toolkit",
+      "subject": "Design Tools",
+      "tags": ["design"],
+      "content": "Divergence then convergence. Concept generation: morphological chart (decompose into functions × solutions per function, combine), brainstorming disciplines (Six Thinking Hats assigns modes — facts, feelings, risks, optimism, creativity, process). Concept selection: Pugh matrix (score vs a datum concept on weighted criteria — fast, exposes assumptions). Requirements: House of Quality/QFD maps customer needs → engineering characteristics with correlation roof. Strategy/context: SWOT (internal strengths/weaknesses, external opportunities/threats), PESTLE (macro environment), Porter's five forces (industry competition). Use them as conversation structure, not as oracles.",
+      "recall_prompt": "Place each tool in the design funnel: morphological chart and 7 Hats (diverge), Pugh and QFD (converge/translate), SWOT/PESTLE/Porter (context) — and what each actually outputs.",
+      "key_ideas": [
+        "Morphological chart: functions × candidate solutions → combinatorial concepts",
+        "Pugh: weighted criteria vs a datum — relative selection + assumption surfacing",
+        "QFD/House of Quality: customer voice → measurable engineering targets, with trade-off roof",
+        "Six Hats: separates thinking modes so critique doesn't kill ideation",
+        "SWOT/PESTLE/Porter: situational scans — inputs to strategy, not decisions",
+        "All are structured conversations; the value is shared, explicit reasoning"
+      ],
+      "cards": []
+    },
+    {
+      "title": "Tolerance stacks: RSS & Monte Carlo",
+      "subject": "Design Tools",
+      "tags": ["design", "tolerancing"],
+      "content": "Worst-case: sum all tolerances — guarantees fit but brutally tight (and expensive) for long chains. RSS: independent, roughly normal contributors → stack σ combines as $\\sigma_{stack} = \\sqrt{\\Sigma\\sigma_i^2}$ (tolerances as $\\sqrt{\\Sigma t_i^2}$ at consistent sigma level) — realistic for ≥4 contributors, accepts a small predicted reject rate. Monte Carlo: sample each dimension from its actual distribution (including non-normal, mean shifts, sorting effects), compute the assembly result thousands of times — handles nonlinear geometry (angles, trig) where linear stacks lie. Always state the assumption: worst case = certainty, RSS = statistical bet, MC = simulated reality.",
+      "recall_prompt": "Run the same gap three ways — worst case, RSS, Monte Carlo — and explain when each is honest, including why RSS needs independence and MC handles what RSS can't.",
+      "key_ideas": [
+        "Worst case: Σt — certain fit, tightest per-part tolerances",
+        "RSS: $\\sqrt{\\Sigma t_i^2}$ — assumes independent, centered, ~normal; big savings on long chains",
+        "RSS lies when processes are mean-shifted or correlated (same fixture, same lot)",
+        "Monte Carlo: arbitrary distributions + nonlinear stack functions → predicted reject ppm",
+        "Quote results with sigma level and assumption set; tolerance is money"
+      ],
+      "cards": [
+        {
+          "question": "A 6-part stack fits fine per RSS but assemblies fail at 8× the predicted rate. The parts measure in-tolerance. What assumptions probably broke?",
+          "answer": "Independence and centering: parts from the same mold/lot are correlated, and processes run mean-shifted toward one limit (tool wear, deliberate aim) — RSS's cancellation premise collapses. Monte Carlo with measured distributions (or worst-case on the critical few) gives the honest answer."
+        }
+      ]
+    }
+  ]
+}

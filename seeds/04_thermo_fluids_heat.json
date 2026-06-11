@@ -1,0 +1,218 @@
+{
+  "deck": "Fluids, Thermodynamics & Heat Transfer",
+  "topics": [
+    {
+      "title": "The four laws of thermodynamics",
+      "subject": "Thermodynamics",
+      "tags": ["thermo"],
+      "content": "0th: thermal equilibrium is transitive → temperature exists. 1st: energy conservation, $dE/dt = \\dot{E}_{in} - \\dot{E}_{out}$ (closed: $\\Delta U = Q - W$). 2nd: entropy of an isolated system can't decrease; $dQ_{rev} = T\\,dS$; defines the arrow of time and caps efficiency (Carnot). Statistical view: $s = k\\ln W$. Ideal-gas entropy change: $\\Delta s = c_p\\ln(T_2/T_1) - R\\ln(P_2/P_1)$. 3rd: S → 0 for a perfect crystal at 0 K — absolute zero unattainable.",
+      "recall_prompt": "State all four laws with their key equations, and explain what the 2nd law adds that the 1st cannot (with s = k ln W as the why).",
+      "key_ideas": [
+        "0th: transitivity of equilibrium → temperature is well-defined",
+        "1st: $\\Delta U = Q - W$ — bookkeeping; forbids nothing directional",
+        "2nd: $dS_{isolated} \\ge 0$, $dQ_{rev} = TdS$ — direction, irreversibility, efficiency limits",
+        "$s = k\\ln W$: entropy counts microstates — probability, not mysticism",
+        "Ideal gas: $\\Delta s = c_p\\ln(T_2/T_1) - R\\ln(P_2/P_1)$",
+        "3rd: perfect crystal at 0 K has S = 0; 0 K unreachable in finite steps"
+      ],
+      "cards": [
+        {
+          "question": "The 1st law permits a ship engine that extracts heat from the ocean and propels the ship. What exactly does the 2nd law say is wrong with it?",
+          "answer": "It's a perpetual motion machine of the second kind: converting heat from a single reservoir entirely to work decreases total entropy (no cold sink receives the compensating entropy $Q/T_c$). Kelvin-Planck statement: no cycle can produce net work exchanging heat with one reservoir only."
+        }
+      ]
+    },
+    {
+      "title": "Real gases & property relations",
+      "subject": "Thermodynamics",
+      "tags": ["thermo"],
+      "content": "Ideal gas $Pv = RT$ works far from the critical point. Van der Waals adds molecular volume (b) and attraction (a/v²): $\\left(P + \\frac{a}{v^2}\\right)(v - b) = RT$ — qualitative real-gas behavior. Quantitative: compressibility factor Z = Pv/RT with corresponding states; Lee-Kesler residuals correct ideal-gas enthalpy/entropy. Maxwell relations (from the symmetry of mixed second derivatives of U, H, A, G) convert unmeasurable derivatives into measurable P-v-T ones. Joule-Thomson coefficient $\\mu_{JT} = (\\partial T/\\partial P)_h$: throttling cools below the inversion temperature — basis of liquefaction.",
+      "recall_prompt": "Explain when ideal gas fails, what Van der Waals' a and b model, how Z/Lee-Kesler and Maxwell relations get real properties, and what the Joule-Thomson coefficient means physically.",
+      "key_ideas": [
+        "Ideal gas fails near saturation/critical point (high P, low T)",
+        "VdW: b = finite molecular volume, a = intermolecular attraction",
+        "Z = Pv/RT + corresponding states; Lee-Kesler residuals correct h, s",
+        "Maxwell relations: swap unmeasurable (∂s/∂P) for measurable (∂v/∂T) etc.",
+        "$\\mu_{JT} > 0$ below inversion T → throttling cools (gas liquefaction); ideal gas: $\\mu_{JT} = 0$"
+      ],
+      "cards": [
+        {
+          "question": "Why does throttling cool nitrogen at room temperature but heat helium?",
+          "answer": "Room temperature is below nitrogen's Joule-Thomson inversion temperature (μJT > 0: expansion does work against intermolecular attraction → cools) but above helium's very low inversion point (~45 K), where repulsive/kinetic effects dominate and μJT < 0 → heats. Helium must be pre-cooled before JT liquefaction."
+        }
+      ]
+    },
+    {
+      "title": "Gas power cycles: Carnot, Otto, Diesel, Brayton & friends",
+      "subject": "Thermodynamics",
+      "tags": ["thermo", "cycles"],
+      "content": "Carnot bounds everything: $\\eta = 1 - T_c/T_h$ — set by reservoir temperatures alone. Otto (spark ignition): constant-volume heat addition, $\\eta = 1 - r^{1-\\gamma}$ (compression ratio limited by knock). Diesel: constant-pressure addition, higher r allowed → better real efficiency. Brayton (gas turbine): compressor-combustor-turbine, $\\eta = 1 - (P_2/P_1)^{(1-\\gamma)/\\gamma}$; back-work ratio is large. Stirling/Ericsson with ideal regeneration hit Carnot efficiency. Polytropic relations $T_2 = T_1(P_2/P_1)^{(n-1)/n}$ connect states along compressions/expansions.",
+      "recall_prompt": "For Carnot, Otto, Diesel, and Brayton: the four processes, the efficiency formula, what limits each in practice, and why Stirling/Ericsson can theoretically match Carnot.",
+      "key_ideas": [
+        "$\\eta_{Carnot} = 1 - T_c/T_h$ — the universal ceiling, temperatures only",
+        "Otto: $\\eta = 1 - r^{1-\\gamma}$; knock limits r in SI engines",
+        "Diesel: const-P heat addition; compression-ignition permits higher r → wins in practice",
+        "Brayton: $\\eta$ from pressure ratio; turbine inlet temp and back-work are the real limits",
+        "Regeneration (Stirling/Ericsson) recycles heat internally → Carnot-equivalent ideally",
+        "$T_2 = T_1(P_2/P_1)^{(n-1)/n}$ — polytropic process relations"
+      ],
+      "cards": [
+        {
+          "question": "Diesel cycles have lower ideal efficiency than Otto at the same compression ratio — so why are real diesels more efficient than real gasoline engines?",
+          "answer": "Otto's r is capped (~10-12) by knock since fuel-air is compressed together; diesel compresses only air, ignites by injection, so r ~ 18-22. The higher achievable r more than buys back the constant-pressure penalty — plus diesels run unthrottled (no pumping loss) and lean."
+        }
+      ]
+    },
+    {
+      "title": "Rankine cycle, phase change & refrigeration",
+      "subject": "Thermodynamics",
+      "tags": ["thermo", "cycles"],
+      "content": "Rankine (steam plants): pump liquid (tiny work — that's the point), boil, expand through turbine, condense; improvements: superheat (also protects blades from moisture), reheat, regenerative feedwater heating. Quality x = vapor mass fraction in the dome; properties interpolate via x. Clausius-Clapeyron ties saturation P-T slope to $h_{fg}$. Reverse the cycle → vapor-compression refrigeration: evaporate at Tc (absorb), compress, condense at Th (reject), throttle; $COP_{HP} = 1/(1 - T_c/T_h)$ Carnot limit — COPs exceed 1 because heat is moved, not made.",
+      "recall_prompt": "Draw Rankine on T-s: the four legs, why pumping liquid matters, the three efficiency upgrades, then reverse it into the refrigeration cycle and explain why COP > 1 is normal.",
+      "key_ideas": [
+        "Rankine: pump-boil-expand-condense; pumping liquid costs ~nothing vs compressing gas",
+        "Superheat/reheat raise mean heat-addition T and keep turbine exit quality high (blade erosion)",
+        "Quality x interpolates properties inside the saturation dome",
+        "Clausius-Clapeyron: $dP/dT_{sat} = h_{fg}/(T v_{fg})$",
+        "Refrigeration: evaporate-compress-condense-throttle; COP = benefit/work, Carnot limit $1/(1-T_c/T_h)$ for HP",
+        "Psychrometrics: humidity ratio, RH, wet-bulb — air-water mixtures for HVAC"
+      ],
+      "cards": [
+        {
+          "question": "Why does a heat pump with COP 4 not violate energy conservation delivering 4 kW of heat per 1 kW of electricity?",
+          "answer": "It moves heat, not creates it: 3 kW is pumped from the cold outdoors, 1 kW is compressor work, 4 kW total rejected indoors. The 2nd law (not the 1st) caps COP at $1/(1-T_c/T_h)$ — which is why COP collapses as outdoor temperature drops."
+        },
+        {
+          "question": "Why is low steam quality at the turbine exit a problem, and which two cycle modifications fix it?",
+          "answer": "Liquid droplets at blade speeds erode the last-stage blades and degrade stage efficiency (target x > ~0.88). Superheating and reheat both shift the expansion line right on the T-s diagram, raising exit quality."
+        }
+      ]
+    },
+    {
+      "title": "Compressible flow: Mach relations & choking",
+      "subject": "Fluids",
+      "tags": ["compressible flow"],
+      "content": "Speed of sound $a = \\sqrt{\\gamma R T}$; M = V/a. Quasi-1D area-velocity: $\\frac{dA}{A} = (M^2 - 1)\\frac{dV}{V}$ — subsonic flow accelerates in a converging duct, supersonic in a diverging one; M = 1 only at a throat. Mass flux maxes at M = 1: choking — downstream pressure can't raise flow further. CD (de Laval) nozzle: converge to sonic throat, diverge to supersonic; P-x and M-x behavior depends on back pressure (subsonic venturi → shock in diverging section → overexpanded/underexpanded jet). Thrust $F = \\dot{m}V_e + (P_e - P_a)A_e$; specific impulse $I_{sp} = F/(\\dot{m}g)$.",
+      "recall_prompt": "Explain why area changes act oppositely on subsonic vs supersonic flow, what choking means, and walk the CD-nozzle regimes as back pressure drops.",
+      "key_ideas": [
+        "$a = \\sqrt{\\gamma RT}$; the M²−1 factor flips the area rule at M = 1",
+        "Converging: subsonic accelerates, M = 1 max at the throat — then choked",
+        "Choked: $\\dot{m}$ fixed by throat area + upstream conditions; back pressure deaf",
+        "CD nozzle regimes vs back pressure: venturi → normal shock in diffuser → over/under-expanded",
+        "Thrust = $\\dot{m}V_e + (P_e - P_a)A_e$; $I_{sp} = F/\\dot{m}g$",
+        "Kantrowitz limit: self-starting supersonic inlets constrain contraction ratio"
+      ],
+      "cards": [
+        {
+          "question": "Why does flow accelerate in a DIVERGING duct when supersonic — the opposite of a garden hose?",
+          "answer": "From continuity + momentum, $dA/A = (M^2-1)\\,dV/V$. Supersonic, density drops faster than velocity rises ($d\\rho/\\rho = -M^2 dV/V$), so passing more area is needed to keep mass flow constant while accelerating. Subsonic intuition (hose) is the M < 1 branch."
+        },
+        {
+          "question": "A rocket's chamber pressure doubles. What happens to mass flow through the (choked) throat, and why doesn't the ambient pressure matter?",
+          "answer": "Mass flow doubles — choked flow scales with upstream stagnation pressure ($\\dot{m} \\propto P_0 A^*/\\sqrt{T_0}$). Information travels at sound speed, which can't propagate upstream through the sonic throat, so downstream/ambient conditions can't influence it."
+        }
+      ]
+    },
+    {
+      "title": "Shocks & expansion fans",
+      "subject": "Fluids",
+      "tags": ["compressible flow"],
+      "content": "Normal shock: supersonic → subsonic discontinuously; static P, T, ρ jump up; stagnation pressure drops (entropy generated); stronger incoming M → stronger shock. Oblique shocks turn flow into themselves (compression corners); θ-β-M relation has weak (usual) and strong solutions; too much turn angle → detached bow shock. Prandtl-Meyer expansion fans turn flow away — isentropic, accelerating, the anti-shock. Shocks reflect off walls; unsteady/moving shocks analyzed in shock-fixed frames. Fanno (friction) and Rayleigh (heat addition) flows both push toward M = 1 — thermal choking.",
+      "recall_prompt": "Contrast normal shocks, oblique shocks (weak vs strong, attached vs detached), and Prandtl-Meyer fans: what jumps, what's conserved, what generates entropy.",
+      "key_ideas": [
+        "Normal shock: M > 1 → M < 1, static properties jump, stagnation P lost (irreversible)",
+        "Oblique: flow turns INTO the shock; θ-β-M; weak solution typical; detachment beyond θmax",
+        "Prandtl-Meyer fan: isentropic turning AWAY, accelerates supersonic flow",
+        "Fanno (friction) & Rayleigh (heating) both drive M toward 1 → choking",
+        "Moving shocks: transform to the shock frame, apply steady relations"
+      ],
+      "cards": [
+        {
+          "question": "Compression through a shock is 'free' — no nozzle needed. What's the catch, and why do supersonic inlets use several weak oblique shocks instead of one normal shock?",
+          "answer": "Shocks generate entropy: stagnation pressure (usable work potential) is destroyed, scaling steeply with shock strength. A series of weak oblique shocks accomplishes the same static compression at far lower total entropy than one strong normal shock — higher inlet pressure recovery."
+        }
+      ]
+    },
+    {
+      "title": "Conduction",
+      "subject": "Heat Transfer",
+      "tags": ["heat transfer"],
+      "content": "Fourier's law: $q = -kA\\,dT/dx$ — heat flows down the gradient through material. Thermal resistance makes circuits: plane wall $R = L/kA$; cylinder $R = \\ln(r_2/r_1)/2\\pi kL$; series/parallel combine like resistors with contact resistance at joints. The general heat equation $\\rho c \\frac{\\partial T}{\\partial t} = \\nabla\\cdot(k\\nabla T) + \\dot{q}$ specializes by coordinate system; steady 1-D gives linear (wall) or logarithmic (cylinder) profiles.",
+      "recall_prompt": "State Fourier's law, build the resistance network for a composite wall and a pipe, and write the heat equation with what each term represents.",
+      "key_ideas": [
+        "$q = -kA\\,dT/dx$ — diffusion of energy down the gradient",
+        "Plane wall $R = L/kA$; cylindrical $R = \\ln(r_2/r_1)/(2\\pi k L)$",
+        "Resistances in series add; parallel paths combine reciprocally; contact resistance is real",
+        "Heat equation: storage = conduction in/out + generation",
+        "Cylindrical insulation has a critical radius ($r = k/h$) below which adding insulation increases heat loss"
+      ],
+      "cards": [
+        {
+          "question": "Adding insulation to a thin wire can INCREASE its heat loss. Explain.",
+          "answer": "Insulation adds conduction resistance but also adds outer surface area, cutting convective resistance $1/hA$. Below the critical radius $r_c = k/h$, the area effect wins and total resistance falls. Matters for wires/tubes (mm scale), never for walls."
+        }
+      ]
+    },
+    {
+      "title": "Convection & the dimensionless groups",
+      "subject": "Heat Transfer",
+      "tags": ["heat transfer"],
+      "content": "Newton's cooling: $q = hA\\Delta T$, $R = 1/hA$ — all physics hides in h. Correlations deliver h via Nusselt number $Nu = hL/k$ = dimensionless surface gradient, as functions of: Reynolds $Re = \\rho VL/\\mu$ (forced flow regime), Prandtl $Pr = \\nu/\\alpha$ (momentum vs thermal diffusivity — boundary layer thickness ratio), Rayleigh $Ra = Gr\\cdot Pr$ (natural convection driver), Fourier $Fo = \\alpha t/L^2$ (dimensionless time). h varies hugely: free air ~5-25, forced air ~25-250, water 100-20,000, boiling/condensation up to 100k W/m²K — geometry, orientation and flow regime all enter through the correlations.",
+      "recall_prompt": "Define h, Nu, Re, Pr, Ra, Fo — what each ratio physically compares — and give order-of-magnitude h values from free air to boiling.",
+      "key_ideas": [
+        "$q = hA\\Delta T$; h is empirical, packaged as $Nu = hL/k$",
+        "$Re = \\rho VL/\\mu$: inertia/viscous → laminar vs turbulent",
+        "$Pr = \\nu/\\alpha$: momentum vs heat diffusion → relative boundary-layer thickness",
+        "$Ra$ drives natural convection (buoyancy vs diffusion); $Fo = \\alpha t/L^2$ = dimensionless time",
+        "h ranges: free air ~10, forced air ~10², water ~10³–10⁴, boiling ~10⁴–10⁵ W/m²K",
+        "Orientation/geometry matter: hot plate facing up convects far better than facing down"
+      ],
+      "cards": [
+        {
+          "question": "Liquid metals have Pr ≪ 1 and oils Pr ≫ 1. What does that say about their thermal vs velocity boundary layers, and why does it matter?",
+          "answer": "Pr = ν/α compares the two diffusivities: liquid metals (Pr ~ 0.01) diffuse heat far beyond the velocity layer — heat transfer barely needs the flow; oils (Pr ~ 1000) trap heat in a thin layer inside a thick velocity layer — sluggish transfer. Correlations split by Pr regime for exactly this reason."
+        }
+      ]
+    },
+    {
+      "title": "Radiation",
+      "subject": "Heat Transfer",
+      "tags": ["heat transfer"],
+      "content": "Stefan-Boltzmann: $q = \\sigma\\varepsilon A T^4$ (T absolute!). Net exchange between surface and large surroundings: $q = \\sigma\\varepsilon A(T_s^4 - T_{sur}^4)$; linearized radiation 'resistance' uses $h_r = \\sigma\\varepsilon(T_s^2+T_{sur}^2)(T_s+T_{sur})$, letting radiation join convection in resistance networks. Emissivity ε (0-1, surface property; polished metals low, paints/oxides high ~0.9 regardless of color); view factors apportion exchange between finite surfaces. Radiation competes with natural convection near room temperature and dominates at high T (T⁴).",
+      "recall_prompt": "Write the Stefan-Boltzmann exchange law, explain ε and the linearized h_r trick, and when radiation can and can't be neglected.",
+      "key_ideas": [
+        "$q = \\sigma\\varepsilon A(T_s^4 - T_{sur}^4)$ — absolute temperatures, 4th power",
+        "$h_r = \\sigma\\varepsilon(T_s^2+T_{sur}^2)(T_s+T_{sur})$ folds radiation into resistance networks",
+        "ε is a surface property: polished metal ~0.05, anodized/painted ~0.9 (visual color ≠ IR emissivity)",
+        "View factors split exchange among finite surfaces",
+        "Comparable to natural convection at room T; dominant at furnace/space conditions (and the only mode in vacuum)"
+      ],
+      "cards": [
+        {
+          "question": "Why does a polished aluminum heatsink perform noticeably worse than the same heatsink anodized black — and roughly how much of a passive heatsink's dissipation is radiation?",
+          "answer": "Anodizing raises ε from ~0.05 to ~0.85; in natural convection near room temperature, radiation carries roughly a third to half of total heat — so the polished version forfeits most of that channel. (IR emissivity, not visible color, is what matters: white paint works almost as well as black.)"
+        }
+      ]
+    },
+    {
+      "title": "Transient conduction & the Biot number",
+      "subject": "Heat Transfer",
+      "tags": ["heat transfer"],
+      "content": "Biot number $Bi = hL_c/k$ compares convection at the surface to conduction inside ($L_c = V/A$). Bi < 0.1: body is internally isothermal → lumped capacitance: $\\frac{T(t)-T_\\infty}{T_i-T_\\infty} = e^{-bt}$ with $b = hA/\\rho Vc$ — first-order RC behavior with time constant $\\tau = \\rho Vc/hA$. Bi ≫ 0.1: internal gradients matter — one-term Fourier-series solutions (Heisler) keyed to Bi and Fo. Conceptually: Bi small = the bottleneck is getting heat to/from the surface; Bi large = the bottleneck is inside.",
+      "recall_prompt": "Define Bi and what it compares, derive the lumped-capacitance exponential with its time constant, and state when you must abandon lumping.",
+      "key_ideas": [
+        "$Bi = hL_c/k$ = internal conduction resistance / external convection resistance",
+        "Bi < 0.1 → lumped: $\\theta/\\theta_i = e^{-t/\\tau}$, $\\tau = \\rho V c/(hA)$",
+        "Thermal RC analogy: capacitance ρVc charging through resistance 1/hA",
+        "Bi ≫ 0.1: gradients inside — Heisler/one-term series in Bi and Fo",
+        "Same ΔT quench: thick ceramic cracks (high Bi) where thin metal doesn't"
+      ],
+      "cards": [
+        {
+          "question": "Quenching a small steel ball in oil vs water: which assumptions change, and how does Bi tell you?",
+          "answer": "Water's h is ~10× oil's, raising Bi proportionally. The ball may be lumped (Bi < 0.1) in oil but not in water — where surface martensite forms while the core is still austenite, the gradient that drives quench cracking. Check Bi before reusing the lumped exponential."
+        }
+      ]
+    }
+  ]
+}

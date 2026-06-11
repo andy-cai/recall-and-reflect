@@ -1,0 +1,217 @@
+{
+  "deck": "Manufacturing Methods & Theory",
+  "topics": [
+    {
+      "title": "Injection molding: flow path & defects",
+      "subject": "Manufacturing",
+      "tags": ["plastics"],
+      "content": "Melt path: barrel → nozzle → sprue → runners → gates → cavity; pack/hold pressure compensates shrinkage during cooling (cooling dominates cycle time, scales with thickness²). Defects map to causes: short shot (insufficient pressure/flow, frozen front), flash (clamp force too low or worn parting line), weld lines (flow fronts meet — weak and visible, move gates), sink marks/voids (thick sections, poor packing), warpage (differential shrinkage from uneven cooling or fiber orientation). Side actions for undercuts; overmolding/insert molding bond a second material or embed hardware.",
+      "recall_prompt": "Trace the melt path through an injection mold, then diagnose: short shot, flash, weld lines, sink, warpage — cause and fix for each.",
+      "key_ideas": [
+        "Path: sprue → runner → gate → cavity; pack/hold offsets shrinkage; cooling ~ thickness² dominates cycle",
+        "Short shot = melt freezes early (pressure/flow/venting); flash = clamp or parting line",
+        "Weld line = fronts meeting (weak, cosmetic) — relocate gates or vents",
+        "Sink/voids = thick sections poorly packed → core out, uniform walls",
+        "Warpage = differential shrinkage (cooling imbalance, fiber orientation, semi-crystalline)",
+        "Undercuts need side actions; overmolding/insert molding integrate hardware/soft-touch"
+      ],
+      "cards": [
+        {
+          "question": "Why is 'uniform wall thickness' the first commandment of injection-molded part design?",
+          "answer": "Thick regions cool and shrink later than thin ones → sinks, voids and warpage; they also set cycle time (cooling ~ t²). Coring thick sections to uniform walls fixes packing, distortion and cost at once."
+        },
+        {
+          "question": "Where do weld lines form, why are they weak, and what are two ways to deal with them?",
+          "answer": "Where separated flow fronts rejoin (behind holes, multi-gate fill). The fronts arrive cool with poorly entangled chains and trapped volatiles → weak, visible seam. Fixes: move gates to relocate the line to a low-stress area, raise melt/mold temperature or venting to improve knitting."
+        }
+      ]
+    },
+    {
+      "title": "Thermoforming, blow molding & film extrusion",
+      "subject": "Manufacturing",
+      "tags": ["plastics"],
+      "content": "Thermoforming: heat a sheet, drape/vacuum/pressure-form over a one-sided tool — cheap tooling, big parts (trays, panels), thickness thins where stretched most. Blow molding: inflate an extruded parison (extrusion BM, bottles with handles) or an injection-molded preform (injection/stretch BM, PET bottles — biaxial stretch crystallizes for strength/clarity) inside a closed mold for hollow parts. Blown film: extrude a tube, inflate to a bubble; blow-up ratio sets biaxial orientation and film properties.",
+      "recall_prompt": "Compare thermoforming, extrusion vs stretch blow molding, and blown film: process, what parts each makes, and how stretching controls properties.",
+      "key_ideas": [
+        "Thermoforming: sheet + one-sided tool, vacuum/pressure — cheap tooling, thinning at deep draws",
+        "Extrusion blow molding: inflate a parison — hollow parts, handles, visible pinch line",
+        "Injection-stretch blow (PET): biaxial stretch strain-crystallizes → strong, clear bottles",
+        "Blown film: bubble inflation, blow-up ratio sets biaxial orientation",
+        "All exploit polymer melt strength — amorphous window or controlled crystallization"
+      ],
+      "cards": []
+    },
+    {
+      "title": "Machining mechanics: merchant circle & milling",
+      "subject": "Manufacturing",
+      "tags": ["metals"],
+      "content": "Chip forms by shear along a plane at angle φ; rake angle α (tool tilt — positive cuts free, negative is robust), relief angle prevents rubbing. Merchant's circle relates cutting/thrust forces to shear and friction: $\\phi = 45° + \\alpha/2 - \\beta/2$ — more rake or less friction → higher shear angle → thinner chip, lower force. Unit power (specific cutting energy) estimates power from MRR. Climb milling (cutter moves with feed): chip starts thick, better finish/tool life, needs backlash-free machines; conventional (against): chip thin→thick, rubbing, work hardening — for old machines and scaly stock.",
+      "recall_prompt": "Explain chip formation: rake/shear/relief angles, what Merchant's circle predicts, unit power, and the climb vs conventional milling trade.",
+      "key_ideas": [
+        "Shear-plane chip formation; rake α (aggressiveness) vs relief (clearance) vs shear angle φ",
+        "Merchant: $\\phi = 45° + \\alpha/2 - \\beta/2$ — friction down or rake up → forces down",
+        "Power ≈ unit power × MRR — first-pass sizing of spindle and heat",
+        "Climb milling: thick→thin chip, better finish/life, requires no backlash",
+        "Conventional milling: thin→thick, rubbing/work-hardening, tolerant of backlash and scale"
+      ],
+      "cards": [
+        {
+          "question": "Why does climb milling give better tool life and finish, and when must you avoid it?",
+          "answer": "The tooth enters at full chip thickness and exits thin — no rubbing/burnishing at entry, less work hardening, heat leaves in the chip. Avoid it on machines with backlash (the cutter can yank the table into itself) or when breaking through hard scale (entry impact)."
+        }
+      ]
+    },
+    {
+      "title": "Abrasive & gear-cutting processes",
+      "subject": "Manufacturing",
+      "tags": ["metals"],
+      "content": "Grinding: self-sharpening abrasive wheel — micro-cutting at high speed for hardened materials and fine tolerance/finish; watch burn (tempering) from heat. Broaching: one stroke of a multi-tooth tool, each tooth deeper — internal keyways/splines at production rates. Skiving: shaving-like continuous cut (also gear skiving). Hobbing: generating gear teeth with a worm-shaped cutter rolling with the blank — fast, accurate external gears; shaping uses a reciprocating pinion cutter (works near shoulders, internal gears).",
+      "recall_prompt": "Match the processes — grinding, broaching, skiving, hobbing, shaping — to what each is uniquely good at and its key limitation.",
+      "key_ideas": [
+        "Grinding: hardened parts, μm tolerances, finish; risk = thermal burn/recast",
+        "Broaching: keyways/splines in one stroke; expensive tool, needs through access",
+        "Hobbing: generates external gear teeth continuously — the production gear process",
+        "Shaping: reciprocating cutter — internal gears and teeth near shoulders",
+        "Generation processes average out cutter errors → accurate involutes"
+      ],
+      "cards": []
+    },
+    {
+      "title": "Casting processes & solidification defects",
+      "subject": "Manufacturing",
+      "tags": ["metals"],
+      "content": "Sand casting: expendable mold, any size/alloy, rough finish; risers feed shrinkage — Chvorinov: $t_{solidify} = C(V/A)^n$, so risers must have higher V/A than the casting (solidify last, directional solidification toward them). Die casting: metal molds + pressure (plunger/shot sleeve), thin walls, high rates, Al/Zn/Mg only; ejector pins, microporosity from trapped gas (limits heat treat/welds). Investment: wax pattern + ceramic shell — finest detail, any alloy, turbine blades. Defects: cold shut (fronts fail to fuse), cold shot (splattered globules), shrinkage cavity (starved feeding), hot tears (constrained contraction while mushy), misrun (mold doesn't fill).",
+      "recall_prompt": "Compare sand, die, and investment casting, state Chvorinov's rule and what risers do, then diagnose the classic defects (cold shut, hot tear, shrinkage cavity, misrun, microporosity).",
+      "key_ideas": [
+        "Chvorinov: $t = C(V/A)^n$ — design risers to freeze last and feed the casting",
+        "Sand: cheap, any alloy/size, rough; Die: pressure + steel mold, fast, thin, light alloys",
+        "Investment: wax + ceramic shell — precision and superalloys (blades)",
+        "Cold shut/cold shot = fronts too cold; misrun = didn't fill (fluidity/venting)",
+        "Shrinkage cavity = inadequate feeding; hot tear = constrained shrinkage while semi-solid",
+        "Die-cast microporosity (trapped gas) limits welding and heat treatment"
+      ],
+      "cards": [
+        {
+          "question": "Use Chvorinov's rule to explain why a riser works and how you'd shape it.",
+          "answer": "Solidification time scales with $(V/A)^n$ — make the riser's V/A (modulus) larger than the casting section it feeds (compact shapes: cylinders/spheres) so it stays liquid longest and keeps feeding shrinkage; gate so solidification runs directionally toward it."
+        },
+        {
+          "question": "Hot tears vs shrinkage cavities — both come from solidification shrinkage. What distinguishes them?",
+          "answer": "Hot tear: the *mold or geometry constrains* contraction while the alloy is mushy and weak → cracks at hot spots/re-entrant corners (fix constraints, radii). Shrinkage cavity: nothing constrains it, the last-freezing region simply runs out of liquid feed → internal void (fix feeding/risers)."
+        }
+      ]
+    },
+    {
+      "title": "Bulk forming: rolling, forging, extrusion, drawing",
+      "subject": "Manufacturing",
+      "tags": ["metals"],
+      "content": "All deform plastically, conserving volume. Hot working (> recrystallization T): low forces, big strains, no work hardening, scale and loose tolerance; cold working: strength via strain hardening, good finish/tolerance, limited ductility. Rolling: thickness reduction between rolls (friction pulls stock in). Forging: compressive shaping (open/closed die) — grain flow follows the part → superior fatigue. Extrusion: push billet through a die — complex constant cross-sections. Wire/bar drawing: pull through a die, area reduction limited per pass (~35%) by the tensile strength of the drawn wire itself.",
+      "recall_prompt": "Survey bulk forming: hot vs cold working trade-offs, and what distinguishes rolling, forging, extrusion, and drawing (including why forging wins fatigue and what limits a drawing pass).",
+      "key_ideas": [
+        "Hot: low force, no hardening, poor finish; Cold: strain-hardened strength, tight tolerance, limited strain",
+        "Forging aligns grain flow with the part → best fatigue (crank/conrod)",
+        "Extrusion: any constant cross-section; pressure highest at start (sticking friction)",
+        "Drawing limited per pass: the pulled wire must carry the draw force (~35% area max)",
+        "Volume conserved; strain hardening accumulates across cold passes (anneal between)"
+      ],
+      "cards": [
+        {
+          "question": "Why does a forged connecting rod outlast an identical machined-from-billet one in fatigue?",
+          "answer": "Forging makes the grain flow (and elongated inclusions) follow the part's contour, so defects lie parallel to the load path rather than cut through it; machining billet exposes transverse grain ends at the surface — exactly where fatigue starts."
+        }
+      ]
+    },
+    {
+      "title": "Sheet metal: cutting, bending, drawing",
+      "subject": "Manufacturing",
+      "tags": ["metals"],
+      "content": "Cutting: blanking (the slug is the part) vs punching (the hole is the part); clearance ~5-10% of thickness sets the shear/fracture balance; progressive dies chain operations strip-by-strip. Bending: outer fiber stretches, inner compresses; bend allowance from the neutral axis (k-factor ~0.33-0.5); springback — elastic core recovers, so overbend or coin; minimum bend radius vs ductility, bend across grain. Deep/cup drawing: punch pulls a blank into a cup; blank holder prevents flange wrinkling; limiting draw ratio ~2 per stage; too much thinning → tearing at the punch radius.",
+      "recall_prompt": "Walk the three sheet-metal families: blanking vs punching and clearance, bending with springback and bend allowance, and deep drawing with its wrinkling/tearing limits.",
+      "key_ideas": [
+        "Blanking = keep the slug; punching = keep the hole; clearance ≈ 5–10% t",
+        "Progressive die: strip advances through stations → finished part per stroke",
+        "Bending: neutral-axis k-factor sets flat pattern; springback corrected by overbend/coining",
+        "Springback grows with $\\sigma_y/E$ and bend radius (HSS and Al spring more)",
+        "Drawing: blank holder vs wrinkles; LDR ≈ 2 per stage; tearing at punch radius"
+      ],
+      "cards": [
+        {
+          "question": "Why does a high-strength steel bracket spring back more than the mild-steel version bent on the same tooling?",
+          "answer": "Springback is the elastic recovery: strain recovered ≈ $\\sigma_y/E$. Higher yield with the same modulus stores more elastic strain through the thickness → more angle loss. Compensate with overbend or coining the bend line."
+        }
+      ]
+    },
+    {
+      "title": "Composites manufacturing",
+      "subject": "Manufacturing",
+      "tags": ["composites"],
+      "content": "Wet layup: fabric + manually applied resin — cheap, room-temp tooling, low/inconsistent fiber fraction (~30-40%), voids. Vacuum infusion (VARTM): dry fiber stack, vacuum pulls resin through — better consolidation (~50%+), one-sided tooling, resin flow must be engineered. Prepreg: factory-impregnated, B-staged resin — best fiber fraction (~60%) and control, needs freezer storage and oven/autoclave cure under vacuum/pressure. Quality = fiber fraction + void content + fiber alignment; debulking and bagging discipline matter as much as material.",
+      "recall_prompt": "Compare wet layup, infusion, and prepreg: fiber volume fraction, equipment, control, and when each is the right call.",
+      "key_ideas": [
+        "Wet layup: cheapest, Vf ~30-40%, operator-dependent, voids",
+        "Infusion: vacuum-driven resin through dry fiber — Vf ~50%, repeatable, flow design needed",
+        "Prepreg: Vf ~60%, best control; freezer life, autoclave/oven + bagging",
+        "Properties scale with fiber fraction and alignment; voids kill compression/fatigue",
+        "Cure cycle (temp/pressure/vacuum) is part of the design, not an afterthought"
+      ],
+      "cards": []
+    },
+    {
+      "title": "Additive manufacturing: the seven families",
+      "subject": "Manufacturing",
+      "tags": ["additive"],
+      "content": "Vat photopolymerization (SLA/DLP): UV-cured resin — finest detail, brittle-ish photopolymers. Material extrusion (FDM): cheap, anisotropic (weak Z, layer adhesion). Powder bed fusion: polymer (SLS — no supports, nylon) and metal (LPBF/DMLS — supports for heat/stress, residual stress management). Material jetting: multi-material, full color. Binder jetting: fast, green part + sinter (shrinkage). Sheet lamination. Directed energy deposition: repair and large metal, near-net. Across all: layering → anisotropy, support strategy, surface finish vs orientation, and post-processing define real cost.",
+      "recall_prompt": "Name the seven AM families with one defining strength and one defining weakness each — and the cross-cutting issues (anisotropy, supports, post-processing).",
+      "key_ideas": [
+        "SLA: detail/finish; photopolymer brittleness, supports + post-cure",
+        "FDM: cheapest; Z-weak anisotropy from layer bonding",
+        "SLS (polymer PBF): no supports, functional nylon; powder management",
+        "Metal PBF: complex metal parts; supports, residual stress, HIP/heat treat",
+        "Binder jet: fast + cheap; sinter shrinkage and porosity. Jetting: multimaterial. DED: repair/large",
+        "Universal: orientation sets strength/finish; post-processing is the hidden cost"
+      ],
+      "cards": [
+        {
+          "question": "Why does an FDM part fail at maybe 30-50% of its tensile strength when loaded across layers (Z), and what do you do about it?",
+          "answer": "Z strength relies on diffusion bonding between already-cooled roads — incomplete chain entanglement plus inter-road voids act as crack starters. Orient the load in-plane, or move to a powder/resin process where layers fuse more completely."
+        }
+      ]
+    },
+    {
+      "title": "Semiconductor & ceramic processing",
+      "subject": "Manufacturing",
+      "tags": ["micro", "ceramics"],
+      "content": "Semiconductors: grow single-crystal silicon (Czochralski), slice wafers, then loop photolithography (resist, expose, develop) → etch/implant/deposit (oxidation, CVD/PVD) hundreds of times; feature size and yield rule everything; cleanroom because one particle kills a die. Ceramics: can't melt-process — powder + binder, compact (press/slip-cast/extrude), then sinter: diffusion densifies the green part (~15-20% shrinkage); pores left behind are the strength-limiting flaws; green machining is easy, fired machining means diamond grinding.",
+      "recall_prompt": "Sketch the wafer fab loop (litho-etch-deposit) and the powder-compact-sinter route for ceramics — and why each must be done that way.",
+      "key_ideas": [
+        "Si: single crystal (CZ) → wafers → repeated litho/etch/implant/deposit cycles",
+        "Photolithography defines features; yield ∝ defect density × die area",
+        "Ceramics can't be melted/machined conventionally → powder, binder, compaction",
+        "Sintering: solid-state diffusion densification, big predictable shrinkage",
+        "Residual porosity = the critical flaw population (Weibull strength)"
+      ],
+      "cards": []
+    },
+    {
+      "title": "Micro & macro economics for engineers",
+      "subject": "Economics",
+      "tags": ["economics"],
+      "content": "Supply/demand: elasticity = %ΔQ/%ΔP (elastic >1 — revenue falls when price rises; inelastic <1); cross-elasticity sign identifies substitutes (+) vs complements (−). Price floors (min wage) create surplus; ceilings (rent control) create shortage — both deadweight loss. Utility: marginal utility diminishes; consumers substitute toward cheaper equivalents. Monopoly prices where MR = MC > competitive price → deadweight loss; cartels unstable (incentive to defect); price discrimination (1st/2nd/3rd degree: personal, menu/quantity, segment) captures surplus. Market failures — externalities, public goods, information asymmetry, natural monopoly — justify intervention (taxes/subsidies, regulation, provision).",
+      "recall_prompt": "Run the micro toolkit: elasticity and what it does to revenue, price floors vs ceilings, monopoly vs competition (MR=MC), the three degrees of price discrimination, and the four classic market failures.",
+      "key_ideas": [
+        "Elasticity = %ΔQ/%ΔP; elastic demand → price hikes cut revenue",
+        "Cross-elasticity: + substitutes, − complements",
+        "Floor → surplus; ceiling → shortage; both create deadweight loss",
+        "Monopoly: MR = MC, P above competitive → DWL; cartels defect-unstable",
+        "Price discrimination 1°/2°/3°: individual, self-selecting menus, segments",
+        "Failures: externalities, public goods, information asymmetry, natural monopoly"
+      ],
+      "cards": [
+        {
+          "question": "Why are cartels (like OPEC) chronically unstable without enforcement?",
+          "answer": "Each member's dominant strategy is to cheat: with price held above marginal cost, secretly producing extra units is highly profitable — but when everyone defects, price collapses to competitive levels (a prisoner's dilemma). Stability needs monitoring and punishment mechanisms."
+        }
+      ]
+    }
+  ]
+}

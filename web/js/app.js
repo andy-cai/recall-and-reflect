@@ -1,6 +1,7 @@
 // App shell + hash router.
 import { state, el, clear, applyTheme } from './store.js';
 import { api } from './api.js';
+import { setAmbient } from './ambient.js';
 
 import * as today from './views/today.js';
 import * as reflect from './views/reflect.js';
@@ -27,6 +28,9 @@ const ROUTES = {
   settings: { mod: settings, label: 'Settings', icon: 'settings' },
 };
 const NAV = ['today', 'reflect', 'recall', 'library', 'stats'];
+
+// living background per view: full effect while writing, quieter elsewhere
+const AMBIENT = { reflect: 'reflect', today: 'today', recall: 'recall', library: 'library', stats: 'library', settings: '' };
 
 function svg(paths) {
   return el('span', { class: 'ico', html:
@@ -57,6 +61,7 @@ async function route() {
   const entry = ROUTES[name] || ROUTES.today;
 
   for (const [k, b] of Object.entries(navButtons)) b.classList.toggle('active', k === name);
+  setAmbient(AMBIENT[name] ?? '');
 
   if (currentCleanup) { try { currentCleanup(); } catch {} currentCleanup = null; }
   clear(mainEl);
@@ -73,7 +78,7 @@ async function route() {
     if (seq !== routeSeq) return;
     clear(mainEl);
     mainEl.append(el('div', { class: 'view empty' },
-      el('div', { class: 'icon' }, '⚠️'),
+      el('div', { class: 'icon' }, '!'),
       el('h2', {}, 'Something went wrong'),
       el('p', { class: 'muted' }, String(e.message || e))));
   }
@@ -101,7 +106,9 @@ function buildShell() {
   clear(app);
 
   const nav = el('nav', { class: 'sidebar' });
+  const MARK_SVG = `<svg viewBox="0 0 64 64" width="28" height="28"><rect width="64" height="64" rx="14" fill="#131d16"/><circle cx="32" cy="32" r="18.5" fill="none" stroke="#d59a52" stroke-width="8" stroke-linecap="round" stroke-dasharray="91.7 116.3" transform="rotate(-7 32 32)"/><circle cx="45.1" cy="18.9" r="5.4" fill="#ece3d1"/></svg>`;
   nav.append(el('div', { class: 'brand' },
+    el('span', { class: 'mark', html: MARK_SVG }),
     el('div', {}, el('b', {}, 'Recall'), ' ', el('span', {}, '& Reflect'))));
 
   for (const key of NAV) {

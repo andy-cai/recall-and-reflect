@@ -3,8 +3,8 @@
 from datetime import datetime, timedelta
 from typing import Optional
 
-from app.config import DEFAULT_DAILY_TARGET, DEFAULT_DESIRED_RETENTION
-from app.core.fsrs import CardState, Rating, ScheduleResult, State, schedule
+from app.config import DEFAULT_DAILY_TARGET, DEFAULT_DESIRED_RETENTION, DEFAULT_NEW_PER_DAY
+from app.core.fsrs import CardState, Rating, ScheduleResult, State, retrievability, schedule
 from app.db.database import Database, from_iso, get_database, to_iso
 from app.db.models import Learning, Question
 
@@ -44,6 +44,7 @@ class Repository:
             subject=row["subject"],
             conversation=row["conversation"],
             notes=row["notes"],
+            priority=row["priority"] if "priority" in row.keys() else 0,
             created_at=from_iso(row["created_at"]),
             is_active=bool(row["is_active"]),
             tags=self.get_tags_for_learning(row["id"]),
@@ -66,9 +67,12 @@ class Repository:
             self.set_learning_tags(lid, tags)
         return lid
 
-    def create_recall_card(self, learning_id: int, title: str, content: str) -> int:
-        """The default 'free recall' prompt for a topic — recall it in your own words."""
-        question = f"Recall everything you can about: {title}"
+    def create_recall_card(self, learning_id: int, title: str, content: str,
+                           prompt: Optional[str] = None) -> int:
+        """The default 'free recall' prompt for a topic. A custom prompt turns it
+        into a task ('Derive…', 'Compare…', 'Walk through…') — stronger retrieval
+        than 'recall everything about X'."""
+        question = (prompt or "").strip() or f"Recall everything you can about: {title}"
         return self.create_question(
             learning_id=learning_id, question=question,
             answer=(content or "").strip(), card_type="recall",
@@ -183,6 +187,101 @@ class Repository:
         )
         return [{"id": r["id"], "title": r["title"], "content": r["content"]} for r in rows]
 
+    # ---------- focus (priority topics: reviewed first, introduced first) ----------
+
+    def set_priority(self, learning_id: int, priority: int) -> None:
+        self.db.execute("UPDATE learnings SET priority = ? WHERE id = ?",
+                        (1 if priority else 0, learning_id))
+
+    def set_subject_priority(self, subject: str, priority: int) -> None:
+        self.db.execute(
+            "UPDATE learnings SET priority = ? WHERE subject = ? COLLATE NOCASE AND is_active = 1",
+            (1 if priority else 0, subject))
+
+    def clear_focus(self) -> int:
+        with self.db.get_connection() as conn:
+            cur = conn.execute("UPDATE learnings SET priority = 0 WHERE priority != 0")
+            conn.commit()
+            return cur.rowcount
+
+    def focus_summary(self) -> dict:
+        row = self.db.fetch_one(
+            """
+            SELECT COUNT(DISTINCT l.id) AS topics,
+                   SUM(CASE WHEN q.suspended = 0
+                         AND (q.next_review_at IS NULL OR q.next_review_at <= ?)
+                       THEN 1 ELSE 0 END) AS due
+            FROM learnings l LEFT JOIN questions q ON q.learning_id = l.id
+            WHERE l.is_active = 1 AND l.priority = 1
+            """,
+            (to_iso(datetime.now()),),
+        )
+        return {"topics": row["topics"] or 0, "due": row["due"] or 0}
+
+    def match_focus_text(self, text: str) -> dict:
+        """LLM-free fallback: substring-match the request against subjects and titles."""
+        tokens = [t.strip().lower() for t in text.replace(",", " ").split() if len(t.strip()) >= 3]
+        subjects = [s for s in self.subject_names()
+                    if any(t in s.lower() for t in tokens)]
+        rows = self.db.fetch_all(
+            "SELECT id, title FROM learnings WHERE is_active = 1 ORDER BY created_at DESC LIMIT 500")
+        learnings = [{"id": r["id"], "title": r["title"]} for r in rows
+                     if any(t in r["title"].lower() for t in tokens)]
+        return {"subjects": subjects, "learnings": learnings[:25]}
+
+    # ---------- key ideas (the rubric a topic's free recall is graded against) ----------
+
+    def set_key_ideas(self, learning_id: int, ideas: list[str]) -> None:
+        """Replace the rubric. Stats reset only for ideas whose text changed."""
+        now = to_iso(datetime.now())
+        with self.db.get_connection() as conn:
+            existing = {r["idea"]: r for r in conn.execute(
+                "SELECT * FROM key_ideas WHERE learning_id = ?", (learning_id,))}
+            conn.execute("DELETE FROM key_ideas WHERE learning_id = ?", (learning_id,))
+            for pos, text in enumerate(t.strip() for t in ideas if t.strip()):
+                old = existing.get(text)
+                conn.execute(
+                    "INSERT INTO key_ideas (learning_id, idea, position, hits, misses, "
+                    "miss_streak, drilled, created_at) VALUES (?,?,?,?,?,?,?,?)",
+                    (learning_id, text, pos,
+                     old["hits"] if old else 0, old["misses"] if old else 0,
+                     old["miss_streak"] if old else 0, old["drilled"] if old else 0,
+                     old["created_at"] if old else now),
+                )
+            conn.commit()
+
+    def get_key_ideas(self, learning_id: int) -> list[dict]:
+        rows = self.db.fetch_all(
+            "SELECT * FROM key_ideas WHERE learning_id = ? ORDER BY position, id",
+            (learning_id,),
+        )
+        return [dict(r) for r in rows]
+
+    def record_idea_results(self, results: list[dict]) -> list[dict]:
+        """Update per-idea tallies from a graded recall. Returns ideas that just
+        reached a 2-miss streak and haven't been drilled yet (drill-card candidates)."""
+        needs_drill = []
+        with self.db.get_connection() as conn:
+            for r in results:
+                if r.get("result") == "hit":
+                    conn.execute(
+                        "UPDATE key_ideas SET hits = hits + 1, miss_streak = 0 WHERE id = ?",
+                        (r["id"],))
+                else:
+                    conn.execute(
+                        "UPDATE key_ideas SET misses = misses + 1, miss_streak = miss_streak + 1 "
+                        "WHERE id = ?", (r["id"],))
+            for r in results:
+                row = conn.execute("SELECT * FROM key_ideas WHERE id = ?", (r["id"],)).fetchone()
+                if row and row["miss_streak"] >= 2 and not row["drilled"]:
+                    needs_drill.append(dict(row))
+            conn.commit()
+        return needs_drill
+
+    def mark_idea_drilled(self, idea_id: int) -> None:
+        self.db.execute("UPDATE key_ideas SET drilled = 1, miss_streak = 0 WHERE id = ?",
+                        (idea_id,))
+
     # ---------- tags ----------
 
     def set_learning_tags(self, learning_id: int, tags: list[str]) -> None:
@@ -258,13 +357,29 @@ class Repository:
     def get_due_questions(
         self, limit: int = 200, tag: Optional[str] = None,
         learning_id: Optional[int] = None, subject: Optional[str] = None,
+        focus: bool = False,
     ) -> list[Question]:
+        """Build the review queue.
+
+        Beyond filtering to due cards, the queue is *shaped*:
+        - focused topics first, then most-at-risk (lowest retrievability), new last;
+        - at most one card per learning per fetch, so sessions interleave topics
+          instead of running siblings back-to-back (the first sibling's answer
+          would prime the rest);
+        - new-card introductions are throttled by the new-per-day setting,
+          focused topics claiming the budget first.
+        Topic-scoped practice (learning_id) skips the shaping — you asked for
+        exactly these cards.
+        """
+        now = datetime.now()
         clauses = [
             "q.suspended = 0",
             "l.is_active = 1",
             "(q.next_review_at IS NULL OR q.next_review_at <= ?)",
         ]
-        params: list = [to_iso(datetime.now())]
+        params: list = [to_iso(now)]
+        if focus:
+            clauses.append("l.priority = 1")
         if subject is not None:
             if subject == "":
                 clauses.append("(l.subject IS NULL OR TRIM(l.subject) = '')")
@@ -283,14 +398,149 @@ class Repository:
         where = " AND ".join(clauses)
         rows = self.db.fetch_all(
             f"""
-            SELECT q.* FROM questions q JOIN learnings l ON l.id = q.learning_id
+            SELECT q.*, l.priority AS l_priority
+            FROM questions q JOIN learnings l ON l.id = q.learning_id
             WHERE {where}
             ORDER BY q.next_review_at IS NULL, q.next_review_at ASC, q.id
+            LIMIT 1000
+            """,
+            tuple(params),
+        )
+        focused = {r["id"] for r in rows if r["l_priority"]}
+        pool = [self._question(r) for r in rows]
+        if learning_id:
+            return pool[:limit]
+
+        def risk(q: Question) -> tuple:
+            is_focus = 0 if q.id in focused else 1
+            if q.state == int(State.NEW) or q.stability <= 0:
+                return (is_focus, 1, 0.0)
+            elapsed = 0.0
+            if q.last_reviewed_at is not None:
+                elapsed = (now - q.last_reviewed_at).total_seconds() / 86400
+            return (is_focus, 0, retrievability(q.stability, elapsed))
+
+        new_budget = max(0, self.get_new_per_day() - self.new_cards_today())
+        seen_learnings: set[int] = set()
+        out: list[Question] = []
+        for q in sorted(pool, key=risk):
+            if q.learning_id in seen_learnings:
+                continue
+            if q.state == int(State.NEW):
+                if new_budget <= 0:
+                    continue
+                new_budget -= 1
+            seen_learnings.add(q.learning_id)
+            out.append(q)
+            if len(out) >= limit:
+                break
+        return out
+
+    def new_cards_today(self) -> int:
+        row = self.db.fetch_one(
+            "SELECT COUNT(*) AS n FROM reviews WHERE state_before = 0 "
+            "AND date(reviewed_at) = date('now','localtime')"
+        )
+        return row["n"] if row else 0
+
+    def at_risk_cards(self, n: int = 3) -> list[dict]:
+        """The due cards closest to being forgotten (lowest retrievability),
+        for the Today screen's 'about to slip' list."""
+        now = datetime.now()
+        rows = self.db.fetch_all(
+            """
+            SELECT q.id, q.question, q.card_type, q.stability, q.last_reviewed_at,
+                   l.title, l.id AS lid
+            FROM questions q JOIN learnings l ON l.id = q.learning_id
+            WHERE q.suspended = 0 AND l.is_active = 1 AND q.state >= 1
+              AND q.stability > 0 AND q.next_review_at IS NOT NULL
+              AND q.next_review_at <= ?
+            """,
+            (to_iso(now),),
+        )
+        scored = []
+        for r in rows:
+            last = from_iso(r["last_reviewed_at"])
+            elapsed = (now - last).total_seconds() / 86400 if last else 0.0
+            scored.append({
+                "question_id": r["id"],
+                "learning_id": r["lid"],
+                "label": r["title"] if r["card_type"] == "recall" else r["question"],
+                "retrievability": round(retrievability(r["stability"], elapsed), 2),
+            })
+        scored.sort(key=lambda x: x["retrievability"])
+        return scored[:n]
+
+    def ramp_backlog(self, days: int) -> dict:
+        """Welcome-back mode: keep today's most-at-risk allotment (the daily target),
+        spread the rest of the due pile evenly over the next `days` days."""
+        days = max(1, min(30, days))
+        keep = self.get_daily_target()
+        due = self.get_due_questions(limit=1000)          # shaped: most-at-risk first
+        # the shaped queue dedupes by learning; ramp must move *every* due card
+        now = datetime.now()
+        rows = self.db.fetch_all(
+            "SELECT q.id FROM questions q JOIN learnings l ON l.id = q.learning_id "
+            "WHERE q.suspended = 0 AND l.is_active = 1 "
+            "AND (q.next_review_at IS NULL OR q.next_review_at <= ?)",
+            (to_iso(now),),
+        )
+        keep_ids = {q.id for q in due[:keep]}
+        rest = [r["id"] for r in rows if r["id"] not in keep_ids]
+        if not rest:
+            return {"moved": 0, "days": days}
+        per_day = max(1, -(-len(rest) // days))           # ceil
+        for i, qid in enumerate(rest):
+            offset = min(days, 1 + i // per_day)
+            target = (now + timedelta(days=offset)).replace(hour=4, minute=0, second=0, microsecond=0)
+            self.set_card_due(qid, target)
+        return {"moved": len(rest), "days": days}
+
+    def evening_queue(self, limit: int = 7) -> list[Question]:
+        """The wind-down session: re-practice today's misses, then today's new
+        captures — material that benefits most from a pass before sleep."""
+        rows = self.db.fetch_all(
+            """
+            SELECT q.*, MIN(r.rating) AS worst FROM questions q
+            JOIN reviews r ON r.question_id = q.id
+            JOIN learnings l ON l.id = q.learning_id
+            WHERE date(r.reviewed_at) = date('now','localtime')
+              AND q.suspended = 0 AND l.is_active = 1
+            GROUP BY q.id
+            HAVING worst <= 2
+            ORDER BY worst, q.id
             LIMIT ?
             """,
-            (*params, limit),
+            (limit,),
         )
-        return [self._question(r) for r in rows]
+        out = [self._question(r) for r in rows]
+        if len(out) < limit:
+            seen = {q.id for q in out}
+            fresh = self.db.fetch_all(
+                """
+                SELECT q.* FROM questions q JOIN learnings l ON l.id = q.learning_id
+                WHERE date(l.created_at) = date('now','localtime')
+                  AND q.card_type = 'recall' AND q.suspended = 0 AND l.is_active = 1
+                  AND q.id NOT IN (SELECT question_id FROM reviews
+                                   WHERE date(reviewed_at) = date('now','localtime'))
+                ORDER BY q.id LIMIT ?
+                """,
+                (limit - len(out),),
+            )
+            out += [self._question(r) for r in fresh if r["id"] not in seen]
+        return out
+
+    def days_since_last_activity(self) -> int:
+        """Full days since the most recent review or capture (0 = active today)."""
+        row = self.db.fetch_one(
+            "SELECT MAX(d) AS last FROM ("
+            "  SELECT MAX(date(reviewed_at)) AS d FROM reviews"
+            "  UNION ALL SELECT MAX(date(created_at)) FROM learnings)"
+        )
+        if not row or not row["last"]:
+            return 0
+        last = from_iso(row["last"] + "T00:00:00")
+        return max(0, (datetime.now().date() - last.date()).days)
 
     def get_due_count(self) -> int:
         row = self.db.fetch_one(
@@ -306,14 +556,20 @@ class Repository:
     def apply_review(
         self, q: Question, rating: int, recall_text: Optional[str] = None,
         confidence: Optional[int] = None, ai_verdict: Optional[str] = None,
-        elapsed_ms: Optional[int] = None,
+        elapsed_ms: Optional[int] = None, bury_siblings: bool = True,
+        idea_results: Optional[str] = None,
     ) -> ScheduleResult:
         now = datetime.now()
         card = CardState(
             state=State(q.state), stability=q.stability, difficulty=q.difficulty,
             lapses=q.lapses, last_reviewed_at=q.last_reviewed_at,
         )
-        result = schedule(card, Rating(rating), now, self.get_desired_retention())
+        retention = self.get_desired_retention()
+        # Hypercorrection follow-up: a confident miss is highly correctable, but the
+        # correction itself decays — bring this card back a bit sooner than usual.
+        if confidence == 3 and ai_verdict == "wrong":
+            retention = min(0.97, retention + 0.04)
+        result = schedule(card, Rating(rating), now, retention)
 
         with self.db.get_connection() as conn:
             conn.execute(
@@ -329,8 +585,8 @@ class Repository:
                     stability_before, difficulty_before, state_before, next_review_before,
                     lapses_before, last_reviewed_before,
                     stability_after, difficulty_after, state_after, next_review_after,
-                    lapses_after, interval_after, elapsed_ms
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    lapses_after, interval_after, elapsed_ms, idea_results
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """,
                 (
                     q.id, rating, to_iso(now), recall_text, confidence, ai_verdict,
@@ -338,11 +594,23 @@ class Repository:
                     q.lapses, to_iso(q.last_reviewed_at),
                     result.stability, result.difficulty, int(result.state),
                     to_iso(result.next_review_at), result.lapses, result.interval_days,
-                    elapsed_ms,
+                    elapsed_ms, idea_results,
                 ),
             )
             conn.commit()
+        if bury_siblings:
+            self._bury_siblings(q, now)
         return result
+
+    def _bury_siblings(self, q: Question, now: datetime) -> None:
+        """Push the learning's other due cards to tomorrow morning so siblings
+        never run in the same session (the first answer primes the rest)."""
+        tomorrow = (now + timedelta(days=1)).replace(hour=4, minute=0, second=0, microsecond=0)
+        self.db.execute(
+            "UPDATE questions SET next_review_at = ? WHERE learning_id = ? AND id != ? "
+            "AND suspended = 0 AND (next_review_at IS NULL OR next_review_at <= ?)",
+            (to_iso(tomorrow), q.learning_id, q.id, to_iso(now)),
+        )
 
     def undo_last_review(self) -> Optional[int]:
         row = self.db.fetch_one("SELECT * FROM reviews ORDER BY id DESC LIMIT 1")
@@ -384,6 +652,20 @@ class Repository:
         )
         return {r["d"]: r["n"] for r in rows}
 
+    def activity_by_day(self, days: int = 365) -> dict[str, int]:
+        """Reviews + captures per day. The habit is 'engage with memory' —
+        a day spent reflecting counts as showing up, not as a dead day."""
+        out = dict(self.reviews_by_day(days))
+        start = (datetime.now() - timedelta(days=days)).isoformat()
+        rows = self.db.fetch_all(
+            "SELECT date(created_at) AS d, COUNT(*) AS n FROM learnings "
+            "WHERE created_at >= ? GROUP BY d ORDER BY d",
+            (start,),
+        )
+        for r in rows:
+            out[r["d"]] = out.get(r["d"], 0) + r["n"]
+        return out
+
     def retention_rate(self, days: int = 30) -> Optional[float]:
         """Fraction of mature-ish reviews (card was already in REVIEW state) passed."""
         start = (datetime.now() - timedelta(days=days)).isoformat()
@@ -421,6 +703,58 @@ class Repository:
         )
         return [{"date": r["d"], "count": r["n"]} for r in rows]
 
+    def get_recall_card(self, learning_id: int) -> Optional[Question]:
+        row = self.db.fetch_one(
+            "SELECT * FROM questions WHERE learning_id = ? AND card_type = 'recall' "
+            "ORDER BY id LIMIT 1", (learning_id,))
+        return self._question(row) if row else None
+
+    def append_reflection(self, learning_id: int, text: str) -> None:
+        self.db.execute(
+            "UPDATE learnings SET reflection = COALESCE(reflection || char(10) || char(10), '') || ? "
+            "WHERE id = ?", (text, learning_id))
+
+    def calibration(self, days: int = 90) -> dict:
+        """Confidence × AI-verdict accuracy, plus the subject where mid/high
+        confidence is least reliable (the overconfidence hot spot)."""
+        start = (datetime.now() - timedelta(days=days)).isoformat()
+        rows = self.db.fetch_all(
+            """
+            SELECT r.confidence, r.ai_verdict, l.subject
+            FROM reviews r
+            JOIN questions q ON q.id = r.question_id
+            JOIN learnings l ON l.id = q.learning_id
+            WHERE r.reviewed_at >= ? AND r.confidence IS NOT NULL AND r.ai_verdict IS NOT NULL
+            """,
+            (start,),
+        )
+        levels = {1: {"n": 0, "right": 0}, 2: {"n": 0, "right": 0}, 3: {"n": 0, "right": 0}}
+        by_subject: dict[str, dict] = {}
+        for r in rows:
+            c = r["confidence"]
+            if c not in levels:
+                continue
+            right = 1 if r["ai_verdict"] == "correct" else 0
+            levels[c]["n"] += 1
+            levels[c]["right"] += right
+            if c >= 2:
+                subj = (r["subject"] or "Uncategorized").strip() or "Uncategorized"
+                s = by_subject.setdefault(subj, {"n": 0, "right": 0})
+                s["n"] += 1
+                s["right"] += right
+        out = {
+            str(c): {"n": v["n"],
+                     "accuracy": round(v["right"] / v["n"], 3) if v["n"] else None}
+            for c, v in levels.items()
+        }
+        hot = None
+        for subj, s in by_subject.items():
+            if s["n"] >= 8:
+                acc = s["right"] / s["n"]
+                if hot is None or acc < hot["accuracy"]:
+                    hot = {"subject": subj, "n": s["n"], "accuracy": round(acc, 3)}
+        return {"levels": out, "overconfident_subject": hot}
+
     # ---------- settings ----------
 
     def get_setting(self, key: str, default=None):
@@ -445,3 +779,9 @@ class Repository:
             return float(self.get_setting("desired_retention", DEFAULT_DESIRED_RETENTION))
         except (TypeError, ValueError):
             return DEFAULT_DESIRED_RETENTION
+
+    def get_new_per_day(self) -> int:
+        try:
+            return int(self.get_setting("new_per_day", DEFAULT_NEW_PER_DAY))
+        except (TypeError, ValueError):
+            return DEFAULT_NEW_PER_DAY

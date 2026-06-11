@@ -1,0 +1,279 @@
+{
+  "deck": "Battery Engineering & Internship Emphasis",
+  "topics": [
+    {
+      "title": "Cell capacity testing: CC-CV protocols",
+      "subject": "Battery Engineering",
+      "tags": ["testing"],
+      "content": "Capacity = integrated current between voltage limits at a defined rate and temperature. Charge CC until the voltage ceiling (e.g., 4.2 V), then CV holding the ceiling while current tapers to a cutoff (C/20 typical) — the CV phase equalizes concentration gradients; skipping it understates capacity. Discharge CC to the floor voltage. Capacity depends on rate (higher C-rate → more IR drop and polarization → hits the floor early), temperature, and rest periods. Report Ah with the full protocol or the number is meaningless; cycle the test for capacity fade.",
+      "recall_prompt": "Specify a defensible capacity test: why CC-CV (not just CC) on charge, the taper cutoff, and the rate/temperature dependencies that must be reported with the number.",
+      "key_ideas": [
+        "Capacity = ∫I dt between voltage limits, at stated C-rate and temperature",
+        "CC to ceiling, then CV while current tapers (cutoff ~C/20) — completes the charge",
+        "Higher discharge rate → IR + polarization → earlier voltage-floor hit → lower apparent Ah",
+        "Temperature shifts kinetics and capacity; cold reads low",
+        "A capacity number without protocol (rate, T, limits, cutoff) is not a number"
+      ],
+      "cards": [
+        {
+          "question": "Why does a cell discharged at 3C deliver noticeably fewer Ah than at C/5, and why does some of it 'come back' after a rest?",
+          "answer": "At 3C, I·R drop and concentration polarization depress terminal voltage, hitting the cutoff while lithium remains; resting lets gradients relax, voltage recovers, and a follow-up discharge extracts the remainder. It's accessibility, not destruction, of capacity."
+        }
+      ]
+    },
+    {
+      "title": "Cell dynamics: pulse testing & HPPC",
+      "subject": "Battery Engineering",
+      "tags": ["testing"],
+      "content": "HPPC (Hybrid Pulse Power Characterization): at each SOC step, apply a discharge pulse and a regen (charge) pulse with rests, sweeping across SOC. Extracts: instantaneous resistance R0 (the immediate ΔV/I jump — ohmic), polarization resistance and time constants (the voltage relaxation tail → RC pairs), and power capability vs SOC. The result parameterizes equivalent-circuit models (OCV + R0 + n RC branches) used by the BMS for state estimation and power limits. Pulse data also separates ohmic from diffusion effects by timescale.",
+      "recall_prompt": "Describe the HPPC sequence and what each feature of the voltage response gives you: the instant jump, the relaxation tail, and how it parameterizes an ECM across SOC.",
+      "key_ideas": [
+        "Pulse + rest at stepped SOCs, both discharge and regen directions",
+        "Instant ΔV/I = ohmic R0; the slow tail = RC polarization branches",
+        "Yields power capability vs SOC and the OCV-R0-RC equivalent circuit",
+        "Timescales separate physics: μs-ms ohmic, s-min charge transfer/diffusion",
+        "Feeds the BMS: SOC estimation, available power, thermal prediction"
+      ],
+      "cards": [
+        {
+          "question": "In a pulse test, why attribute the instantaneous voltage step to ohmic resistance and the slow tail to diffusion?",
+          "answer": "Ohmic paths (electrolyte, contacts, foils) respond at electromagnetic speed — V = IR instantly. Charge transfer and lithium diffusion build concentration gradients which grow/relax over seconds to minutes — RC-like tails. Time separates the mechanisms cleanly enough to fit them as distinct elements."
+        }
+      ]
+    },
+    {
+      "title": "ACIR vs DCIR",
+      "subject": "Battery Engineering",
+      "tags": ["testing"],
+      "content": "ACIR: small AC excitation (1 kHz standard) — measures essentially the pure ohmic resistance (electrolyte + contacts + foils); fast, nondestructive, the production line/incoming-inspection metric; at 1 kHz, charge-transfer and diffusion are bypassed (too slow to follow). DCIR: ΔV/ΔI from a current step over a stated duration — includes ohmic + charge transfer + (with longer pulses) diffusion, so DCIR > ACIR always, and DCIR depends on pulse length, SOC, and temperature. Use ACIR to screen cells and detect manufacturing variation; DCIR to predict real load behavior. EIS sweeps frequency to resolve every element in between.",
+      "recall_prompt": "Contrast ACIR (1 kHz) and DCIR: what physics each includes, why DCIR is always larger and duration-dependent, and which job each is for.",
+      "key_ideas": [
+        "ACIR @1 kHz ≈ pure ohmic — too fast for charge transfer/diffusion to participate",
+        "DCIR = ΔV/ΔI over a stated pulse → ohmic + kinetics (+ diffusion if long)",
+        "Always DCIR > ACIR; gap grows with pulse duration",
+        "ACIR: screening/matching cells in production; DCIR: real-world power prediction",
+        "EIS = the full frequency sweep that resolves each contribution"
+      ],
+      "cards": []
+    },
+    {
+      "title": "Pack design flow: LapSim to cell count",
+      "subject": "Battery Engineering",
+      "tags": ["design"],
+      "content": "Requirements flow down from the vehicle: lap simulation produces the power-time trace over a lap/race → energy per stint, peak and continuous power, regen profile. From that: pack energy (with reserve and usable-SOC window), voltage architecture (motor/inverter limits, rules ceiling), then series count (V) × parallel count (Ah, current sharing) from the chosen cell. Cell selection trades specific energy vs power capability vs thermal behavior; the thermal model closes the loop (continuous power limited by heat rejection, not nameplate). Iterate: mass affects lap time affects energy. Validate against rules (FSAE: voltage ceiling, energy meter, fusing).",
+      "recall_prompt": "Walk the design chain: LapSim outputs → energy/power requirements → S-P architecture and cell selection → thermal closure — and why it must iterate on mass.",
+      "key_ideas": [
+        "LapSim gives the duty cycle: energy/stint, peak & continuous power, regen",
+        "Series count sets voltage (inverter + rules); parallel sets capacity & current split",
+        "Cell choice = energy density vs power vs thermal vs packaging trade",
+        "Continuous power is a thermal number, not a datasheet number",
+        "Mass ↔ lap time ↔ energy: the loop converges, not solves",
+        "Usable window < 100% SOC: reserve, voltage sag margin, longevity"
+      ],
+      "cards": []
+    },
+    {
+      "title": "HV bay packaging: DFA & DFR",
+      "subject": "Battery Engineering",
+      "tags": ["design"],
+      "content": "Tight HV packaging fights assembly and repair. DFA: minimize part count and fastener variety, top-down Z-axis assembly, self-locating/poka-yoke features (connectors that only fit one way matter doubly at 400 V), tool access cones, mass-balanced subassemblies. DFR: the failure-prone items (fuses, contactors, BMS boards, sense leads) must be reachable without de-stacking the pack; service loops in harnesses; inspection windows; lifting features. HV-specific: finger-safe terminals (IP2X), interlock loop continuity through every removable cover, creepage/clearance preserved after every service cycle, torque-marked busbar joints.",
+      "recall_prompt": "Apply DFA and DFR to an HV battery bay: the assembly-friendly rules, what must stay serviceable, and the HV-specific safety constraints that override packaging density.",
+      "key_ideas": [
+        "DFA: fewer parts, one assembly direction, self-locating, common fasteners, tool access",
+        "Poka-yoke connectors and asymmetric mounts — wrong assembly must be impossible",
+        "DFR: wear/failure items accessible without pack teardown; service loops; windows",
+        "HV overrides: IP2X finger safety, interlock through covers, creepage after re-assembly",
+        "Busbar joints: controlled torque + witness marks — resistance drift = heat"
+      ],
+      "cards": []
+    },
+    {
+      "title": "Battery test apparatus: loads & bidirectional supplies",
+      "subject": "Battery Engineering",
+      "tags": ["testing"],
+      "content": "DC electronic load (e.g., ITECH IT8500/8900): sinks power — discharge testing in CC/CV/CR/CP modes; check power envelope (the V×I rectangle is clipped by the power hyperbola), low-voltage current capability (can it pull rated current at 2.5 V?), and sense leads for accuracy. Bidirectional supply (ITECH IT6000B/Regatron): source AND sink with energy recovery to the grid — full charge/discharge cycling, drive-cycle replay, regen emulation; one instrument replaces supply + load. Selection: voltage/current/power margins, slew rate for pulse tests (HPPC needs fast edges), measurement accuracy/resolution, safety interlocks, remote sense, and scripting (SCPI) for protocol automation.",
+      "recall_prompt": "Choose test equipment for a cell lab: what a DC load vs a bidirectional supply each does, and the selection checklist (power envelope, low-V capability, slew, sense, scripting).",
+      "key_ideas": [
+        "DC load: sink only — discharge curves, CC/CP modes; bidirectional: full cycling + grid energy recovery",
+        "Power envelope: rated V × rated I clipped by max P — check the actual operating corner",
+        "Low-voltage current limit matters: pulling big current at cell cutoff voltage",
+        "Slew rate for clean HPPC edges; remote sense kills lead-drop error",
+        "SCPI scripting + safety limits (OVP/OCP/OTP) for unattended protocols"
+      ],
+      "cards": []
+    },
+    {
+      "title": "Composite enclosures & bonded joint testing",
+      "subject": "Battery Engineering",
+      "tags": ["structures"],
+      "content": "Composite battery containers earn their mass through stiffness-driven design, but the joints are the design. Bonded joints: load adhesive in shear, never peel — taper/scarf ends to soften shear-stress peaks at the joint edges (the ends, not the middle, carry the load); surface prep (abrade, clean, sometimes plasma/primer) decides everything. Test pyramid: coupon-level lap shear (ASTM D1002-style) and peel for the adhesive system, then element tests of the actual joint geometry, then assembly proof tests. Knockdowns for temperature, humidity aging, and manufacturing variability; witness coupons with each bond batch. Inserts/hard points for bolted interfaces — potted or co-cured.",
+      "recall_prompt": "Design and qualify a bonded composite joint: shear vs peel loading, why the edges fail first, the surface-prep discipline, and the coupon→element→assembly test ladder.",
+      "key_ideas": [
+        "Adhesive in shear; peel and cleavage are the killers — geometry prevents them",
+        "Shear stress peaks at bond ends (shear-lag): taper, fillet, scarf to spread it",
+        "Surface prep (abrasion, cleanliness, primers) dominates strength scatter",
+        "Test ladder: lap-shear/peel coupons → real-geometry elements → assembly proof",
+        "Environmental knockdowns + witness coupons per batch; potted inserts for bolts"
+      ],
+      "cards": [
+        {
+          "question": "Why does a longer overlap stop adding strength to a bonded lap joint beyond a certain length?",
+          "answer": "Shear-lag: the adhesive shear stress concentrates at the two ends of the overlap while the middle goes nearly unloaded — extra length just adds unloaded middle. Strength scales with width, not length, once past the load-transfer length; tapering the adherend ends does more than lengthening."
+        }
+      ]
+    },
+    {
+      "title": "Cell electrochemistry & chemistries",
+      "subject": "Battery Engineering",
+      "tags": ["electrochem"],
+      "content": "Li-ion is a rocking chair: Li+ shuttles through electrolyte between intercalation hosts; electrons take the external circuit; the separator passes ions, blocks electrons. Discharge: Li+ leaves the graphite anode, inserts into the cathode oxide. Voltage = difference of electrode potentials (Nernst); capacity = host sites. Chemistries trade: NMC/NCA (high energy, moderate stability), LFP (lower voltage/energy, flat OCV curve, thermally robust, cycle life), LTO anode (fast charge, ultra-long life, heavy). Formats: cylindrical (cheap, strong can, good T uniformity per cell), prismatic (packaging efficiency), pouch (light, needs compression fixture, swelling). The SEI layer on the anode is both essential (passivation) and the main aging site.",
+      "recall_prompt": "Explain how a Li-ion cell works (both electrodes, separator, SEI), then trade NMC vs LFP vs LTO and cylindrical vs prismatic vs pouch.",
+      "key_ideas": [
+        "Rocking chair: Li+ intercalates between hosts; electrons forced through the load",
+        "Separator: ionic conductor, electronic insulator — its failure = internal short",
+        "SEI: necessary passivation film, but its growth consumes lithium = calendar aging",
+        "NMC: energy; LFP: safety/life/flat OCV (harder SOC estimation); LTO: rate + cycle life, low energy",
+        "Cylindrical robust can; prismatic packs dense; pouch light but swells — needs preload"
+      ],
+      "cards": [
+        {
+          "question": "Why does LFP's flat open-circuit-voltage curve, a feature for power delivery, become a problem for the BMS?",
+          "answer": "SOC estimation leans on the OCV-SOC map: LFP's voltage barely changes from ~20-90% SOC, so a few mV of measurement error becomes tens of percent SOC error. The BMS must rely on coulomb counting with periodic full-charge resets instead of voltage lookup."
+        }
+      ]
+    },
+    {
+      "title": "Plating, galvanic corrosion & intermetallics",
+      "subject": "Battery Engineering",
+      "tags": ["materials"],
+      "content": "Contact platings: tin (cheap, solderable — but tin whiskers: spontaneous conductive filaments from compressive stress, shorting risk at fine pitch; mitigate with matte tin, annealing, nickel underlayer), nickel (hard, barrier layer, moderate contact resistance), silver (best conductor, tarnishes — sulfides), gold (noble, low/stable contact resistance — thin over nickel, fretting-resistant; cost). Galvanic corrosion: dissimilar metals + electrolyte → the anodic (less noble) metal dissolves; rate scales with potential difference and cathode/anode area ratio (small anode + big cathode = fast attack); fix by isolation, similar metals, or sacrificial anodes. Intermetallics: Cu-Sn IMC growth at joints (Arrhenius with temperature, accelerated by current crowding/Joule heating and electromigration at high current density) embrittles and raises resistance — a self-heating runaway path for busbar joints.",
+      "recall_prompt": "Choose contact platings (Sn/Ni/Ag/Au) with their failure modes — especially tin whiskers — then explain galvanic corrosion's area-ratio rule and why intermetallic growth at busbar joints is a self-accelerating failure.",
+      "key_ideas": [
+        "Sn: cheap/solderable but whiskers (stress-driven filaments) — Ni underlayer + matte Sn mitigate",
+        "Au over Ni: stable low contact R, fretting-proof; Ag: best σ but tarnish; Ni: hard barrier",
+        "Galvanic: less noble metal corrodes; small anode + large cathode = worst case",
+        "Fixes: isolate, match nobility, control electrolyte, sacrificial anode",
+        "Cu-Sn IMC grows with T (Arrhenius) → resistance ↑ → Joule heat ↑ → faster growth: runaway",
+        "Electromigration: current density sweeps atoms — voids at high-I joints"
+      ],
+      "cards": [
+        {
+          "question": "Why is a steel fastener in an aluminum HV busbar joint a corrosion problem, but an aluminum rivet in a steel panel even worse?",
+          "answer": "The less noble aluminum is the anode in both. With a steel bolt in big aluminum, the anode (Al) is large vs the cathode — slow distributed attack. An aluminum rivet in big steel reverses the area ratio: all the galvanic current concentrates on a tiny anode, dissolving the rivet fast. Anode area must be large relative to cathode."
+        }
+      ]
+    },
+    {
+      "title": "Cell heat generation mechanisms",
+      "subject": "Battery Engineering",
+      "tags": ["thermal"],
+      "content": "Total heat = irreversible + reversible + parasitic. Irreversible: Joule/ohmic ($I^2R_0$, always heating, dominates at high current), charge-transfer (reaction) overpotential at the electrode interfaces, and concentration overpotential (gradients at high rate/low SOC). Reversible: entropic heat $T\\Delta S$ from the intercalation reactions — sign flips with SOC and direction (can momentarily cool). Parasitic: side reactions — SEI growth, electrolyte decomposition — small in normal use, dominant precursors in abuse/thermal runaway; plus phase-change effects in some cathodes. Design consequence: heat ∝ I² means continuous-power rating is thermal; entropic term matters for precision calorimetry and low-rate prediction.",
+      "recall_prompt": "Break down cell heat: Joule, reaction overpotential, concentration overpotential, entropic (sign-flipping), and side reactions — which dominates when, and what that means for thermal design.",
+      "key_ideas": [
+        "Irreversible: $I^2R$ ohmic + charge-transfer + concentration overpotentials — scale with rate",
+        "Reversible entropic $T\\Delta S$: SOC-dependent, flips sign charge vs discharge",
+        "Side reactions (SEI growth, electrolyte decomposition): the abuse-regime heat source",
+        "High C-rate: ohmic dominates → continuous power is set by cooling, I² is the law",
+        "Calorimetry must separate reversible from irreversible to extrapolate to other duty cycles"
+      ],
+      "cards": [
+        {
+          "question": "A cell measurably cools during part of a low-rate charge. Which heat term explains this and why doesn't it help at high rate?",
+          "answer": "The reversible entropic term $T\\Delta S$ — for some SOC windows the intercalation entropy change absorbs heat. It scales with I (first power) while Joule heating scales with I², so at high rate the irreversible terms bury it."
+        }
+      ]
+    },
+    {
+      "title": "Fusing & overcurrent protection",
+      "subject": "Battery Engineering",
+      "tags": ["safety"],
+      "content": "A fuse is a thermal device: it opens when its element's $\\int i^2 dt$ (I²t) exceeds the melt energy. Time-current curves: log-log plots of opening time vs current — fast at huge overloads, minutes near rating. Coordination: the fuse must carry continuous + transient load (motor inrush, capacitor charge) without nuisance trips, yet open before upstream wiring/cells reach their damage I²t — plot both curves, keep the fuse below the damage curve and above the load curve. DC is harder than AC (no zero crossings to quench the arc): check DC voltage rating and interrupt rating ≥ available short-circuit current from the pack. Derate for ambient temperature and altitude.",
+      "recall_prompt": "Explain I²t and time-current curves, the coordination problem (load curve below, damage curve above), and why DC ratings and interrupt capacity are the gotchas in battery systems.",
+      "key_ideas": [
+        "Fuse = I²t energy integrator; melts on accumulated $\\int i^2 dt$",
+        "Time-current curve: seconds at 2×, ms at 10× — coordinate on log-log",
+        "Must pass inrush/regen transients but open before wire/cell damage I²t",
+        "DC arcs don't self-extinguish: DC voltage + interrupt rating ≥ pack short-circuit current",
+        "Derate for ambient T; series resistance of the fuse is real heat in the pack"
+      ],
+      "cards": [
+        {
+          "question": "A fuse rated 58 V AC held fine in a 400 V DC pack short — until it didn't. What rating was ignored?",
+          "answer": "DC voltage/interrupt rating. AC arcs quench at current zero-crossings 100/120 times a second; DC has none, so the arc across the melted element keeps conducting and burns through the body. A pack fuse needs a DC rating above pack voltage and interrupt capacity above the pack's prospective short-circuit current."
+        }
+      ]
+    },
+    {
+      "title": "PCB design: the Altium workflow",
+      "subject": "Battery Engineering",
+      "tags": ["electronics"],
+      "content": "Schematic: hierarchical sheets by function, every part bound to a library component with verified footprint + 3D model; ERC catches unconnected nets and conflicting drivers. Layout: define stackup and design rules first (clearances by voltage class — creepage for HV sense boards), place by signal flow (analog away from switching, Kelvin sense at shunts), route critical nets first (diff pairs, current paths sized by IPC-2152), pour planes, stitch grounds; DRC continuously. Manufacturing outputs: Gerbers/ODB++, NC drill, pick-and-place, BOM with manufacturer part numbers, assembly drawings — plus DFM review (annular rings, soldermask slivers, panelization).",
+      "recall_prompt": "Walk the schematic → layout → manufacturing-output flow with the discipline at each step: library hygiene, ERC, rules-first layout, placement by signal flow, and what ships to the fab.",
+      "key_ideas": [
+        "Library hygiene first: verified symbol-footprint-3D links prevent the classic respin",
+        "ERC on schematic; design rules (voltage-class clearances, creepage) before layout",
+        "Place by signal flow; Kelvin connections at current shunts; keep switching away from analog",
+        "Trace current capacity per IPC-2152; thermal relief vs solid for power pads",
+        "Outputs: Gerber/ODB++, drill, BOM (MPNs), pick-and-place, assembly drawings + DFM pass"
+      ],
+      "cards": []
+    },
+    {
+      "title": "Seal design & leak testing",
+      "subject": "Seals & Testing",
+      "tags": ["seals"],
+      "content": "Seal families: compression seals (O-rings/gaskets — design to % squeeze, fill ratio, surface finish; static or slow-motion), blade/wiper seals (lips that exclude contaminants and retain lubricant on sliding shafts), face seals (axially loaded sealing planes — flatness and pressure distribution rule), dispensed/form-in-place (robot-applied beads — tolerant of complex grooves, cure and adhesion-dependent). Testing: pressure decay (sensitive but slow, temperature-confounded), tracer gas (helium — most sensitive), and 'magic holes' — calibrated leak orifices used as references/acceptance standards. Leak rate through an orifice follows compressible-flow rules: choked when pressure ratio < ~0.53, so the rate becomes upstream-pressure-proportional and orifice-area-linear — converting hole size specs to leak-rate specs.",
+      "recall_prompt": "Classify the four seal families with their design variables, then explain leak testing: pressure decay vs tracer gas, calibrated reference orifices, and how choked-orifice math links hole size to leak rate.",
+      "key_ideas": [
+        "Compression (O-ring): % squeeze, groove fill <~85%, finish; static use",
+        "Blade/wiper: sliding shafts — exclude dirt, retain lube; face seals: flatness + contact pressure",
+        "Dispensed FIP: complex paths, automation; adhesion and cure are the controls",
+        "Pressure decay: cheap, slow, temperature-sensitive; helium tracer: highest sensitivity",
+        "Calibrated leak orifices ('magic holes') anchor the test to a physical standard",
+        "Choked orifice (P-ratio < 0.53): leak ∝ area × upstream P — hole-size ↔ leak-rate conversion"
+      ],
+      "cards": [
+        {
+          "question": "Why does a pressure-decay leak test give false failures in the morning and false passes in the afternoon, and what's the fix?",
+          "answer": "Ideal gas: the trapped air's pressure tracks its temperature (~0.3%/°C) — a part cooling during the test mimics a leak; warming masks one. Fix: temperature-compensate, let parts soak to ambient, use a reference volume in differential mode, or switch to tracer gas."
+        }
+      ]
+    },
+    {
+      "title": "Battery abuse testing & HV insulation",
+      "subject": "Seals & Testing",
+      "tags": ["safety"],
+      "content": "Abuse testing probes the thermal-runaway boundary: overcharge, nail/crush (internal short), external short, thermal ramp. PPR (passive propagation resistance): trigger one cell into runaway and require no propagation to neighbors — pass/fail on propagation, ejecta, and external flame per protocol. Deflagration: vent gases (H2, CO, electrolyte vapor) are flammable — enclosure must vent them without allowing internal ignition overpressure (vent area sizing, flame arrestors). Cell failure modes: side-wall rupture (FSR), crimp/header failures, bottom ejection — the failure location drives barrier placement. HV insulation: creepage (along surfaces — degraded by pollution degree, material CTI) vs clearance (through air — altitude-dependent); corona onset at high field concentrations erodes insulation over time; verify with hipot/insulation-resistance testing.",
+      "recall_prompt": "Lay out the abuse-test landscape: PPR pass/fail logic, deflagration venting, the cell failure modes that set barrier design, and creepage vs clearance (with pollution degree and corona).",
+      "key_ideas": [
+        "PPR: one triggered cell must not propagate — barriers, heat paths, vent routing",
+        "Vent gas is fuel: size vents for deflagration, keep ignition sources out of the gas path",
+        "Failure modes — sidewall rupture, crimp leak, bottom ejection — dictate where shields go",
+        "Creepage = along surface (pollution degree, CTI of material); clearance = through air (altitude)",
+        "Corona: partial discharge at field concentrations chews insulation — radii and spacing at HV",
+        "Verify: hipot + insulation resistance, after environmental conditioning"
+      ],
+      "cards": [
+        {
+          "question": "Why can a pack that meets clearance requirements still fail insulation in service due to creepage, and what two design levers fix it?",
+          "answer": "Clearance is through-air; creepage is along surfaces, where dust + humidity (pollution degree) form conductive tracks at much longer required distances. Levers: increase the surface path (ribs, slots, boots raise effective creepage) and choose higher-CTI materials that resist tracking."
+        }
+      ]
+    },
+    {
+      "title": "Structure-scale vibration testing & simulation",
+      "subject": "Seals & Testing",
+      "tags": ["testing", "vibrations"],
+      "content": "Big-structure vibration work couples test and model. Test side: modal survey (instrumented hammer or shakers, accelerometer arrays) extracts natural frequencies, damping, mode shapes; random-vibration endurance runs to a PSD spec (g²/Hz over a band; grms is the area's square root); sine sweep finds resonances and tracks them across time/temperature. Simulation: FE modal analysis correlates to test (MAC — modal assurance criterion); model updating tunes stiffness/joints until frequencies and shapes match; then random-response analysis predicts stress PSD → fatigue life via Miner's rule on cycles per stress level. Watch: fixture resonances corrupt the input, boundary conditions dominate low modes, and joint damping is the big unknown — measure, don't assume.",
+      "recall_prompt": "Connect vibration test to simulation: modal survey + PSD endurance on the test side, FE modal + MAC correlation + random-response fatigue on the model side, and the classic traps (fixtures, BCs, joint damping).",
+      "key_ideas": [
+        "Modal survey: hammer/shaker + accel array → frequencies, shapes, damping",
+        "Random spec = PSD (g²/Hz); grms = √area; endurance to a profile, sine sweep to find modes",
+        "Correlate FE to test with MAC; update joints/stiffness until modes match",
+        "Random response → stress PSD → Miner's-rule fatigue prediction",
+        "Traps: fixture modes in band, unrealistic boundary conditions, guessed joint damping"
+      ],
+      "cards": []
+    }
+  ]
+}

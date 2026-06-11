@@ -1,0 +1,213 @@
+{
+  "deck": "Controls & Applied Electronics",
+  "topics": [
+    {
+      "title": "Transfer functions & block diagrams",
+      "subject": "Controls",
+      "tags": ["controls"],
+      "content": "Transfer function G(s) = output/input in the Laplace domain, zero initial conditions — valid for LTI systems only. Poles (denominator roots) set stability and response character: left-half-plane = stable, real part = decay rate, imaginary = oscillation; zeros shape transients. Block algebra: series multiply, parallel add, negative feedback $\\frac{G}{1+GH}$ — the closed-loop denominator $1 + GH = 0$ is the characteristic equation. Standard forms: 1st order $\\frac{K}{\\tau s+1}$ (time constant τ, 63% rule); 2nd order $\\frac{\\omega_n^2}{s^2 + 2\\zeta\\omega_n s + \\omega_n^2}$ (ζ sets overshoot, $\\omega_n$ speed).",
+      "recall_prompt": "Define the transfer function and its validity conditions, reduce a feedback loop to G/(1+GH), and map pole locations to time-domain behavior for 1st and 2nd order forms.",
+      "key_ideas": [
+        "G(s) = Y(s)/U(s), LTI + zero ICs; differential equations become algebra",
+        "Poles in LHP = stable; σ = decay rate, jω = ringing frequency; zeros shape transients",
+        "Series ×, parallel +, feedback $G/(1+GH)$; characteristic eq: $1+GH = 0$",
+        "1st order: τ = time to 63%; 2nd order: ζ → overshoot ($e^{-\\pi\\zeta/\\sqrt{1-\\zeta^2}}$), ωn → speed",
+        "Feedback trades gain for bandwidth, disturbance rejection, robustness"
+      ],
+      "cards": [
+        {
+          "question": "Closing a feedback loop moved a system's poles. Why is that the whole point of feedback control?",
+          "answer": "Open-loop poles are fixed by the plant's physics; the closed-loop characteristic equation 1 + GH = 0 makes pole locations a function of controller gain — so you can place them (faster, better damped, stable) within actuator limits. Feedback also rejects disturbances and parameter drift that open-loop can't."
+        }
+      ]
+    },
+    {
+      "title": "Sampling, aliasing & frequency analysis",
+      "subject": "Applied Electronics",
+      "tags": ["signals"],
+      "content": "Nyquist: sample at $f_s > 2f_{max}$ or frequencies above $f_s/2$ fold back as aliases at $|f - nf_s|$ — indistinguishable after the fact, so anti-alias filter *before* the ADC (analog, mandatory). Frequency domain (FFT/Bode) exposes resonances, harmonics, and noise sources that time traces hide; time domain shows transients, clipping, glitches. Practical: spectral leakage and windowing; resolution = $f_s/N$.",
+      "recall_prompt": "State the Nyquist criterion, compute where an undersampled tone aliases to, and explain why the anti-alias filter must be analog and before the ADC.",
+      "key_ideas": [
+        "$f_s > 2 f_{max}$; content above $f_s/2$ folds to $|f - n f_s|$",
+        "Aliasing is irreversible — filter before sampling, in analog",
+        "Wagon-wheel effect = visual aliasing; stroboscope exploits it deliberately",
+        "Frequency domain: steady-state structure (resonance, harmonics); time domain: transients",
+        "FFT bin width = $f_s/N$; windowing tames leakage"
+      ],
+      "cards": [
+        {
+          "question": "A 60 Hz hum appears in data sampled at 100 Hz from a sensor with no 60 Hz content below 50 Hz. Where could it come from?",
+          "answer": "True 60 Hz interference aliases to |60 − 100| = 40 Hz... so a 40 Hz tone in the data IS the 60 Hz mains pickup folded down. Any tone in band could be an alias of $nf_s \\pm f$ — without a pre-ADC analog filter you can't tell, which is the whole argument for one."
+        }
+      ]
+    },
+    {
+      "title": "Standard responses & Bode plots",
+      "subject": "Applied Electronics",
+      "tags": ["signals", "controls"],
+      "content": "1st order to a step: exponential, τ to 63%, ~5τ to settle; to a ramp: lags by τ steady-state. 2nd order to a step: overshoot/ringing per ζ, peak time $\\pi/\\omega_d$. Impulse response = derivative of step response = the system fingerprint. Bode: magnitude (dB) and phase vs log ω; poles contribute −20 dB/dec and −90° each (corner at the pole), zeros the opposite; sketch by summing asymptotes. Gain/phase margins read stability robustness off the open-loop Bode.",
+      "recall_prompt": "Sketch 1st/2nd-order responses to impulse, step, and ramp, then build a Bode plot from poles and zeros using asymptote rules.",
+      "key_ideas": [
+        "1st order step: 63% at τ, settled ~5τ; ramp following error = τ·slope",
+        "2nd order: overshoot set by ζ alone; frequency of ringing = $\\omega_d$",
+        "Each pole: −20 dB/decade and −90° phase, centered at its corner frequency",
+        "Bode of products = sum of asymptotes (log magnitude adds)",
+        "Gain margin / phase margin quantify distance to instability"
+      ],
+      "cards": []
+    },
+    {
+      "title": "Filters & bandwidth",
+      "subject": "Applied Electronics",
+      "tags": ["signals", "circuits"],
+      "content": "Low-pass (anti-alias, smoothing), high-pass (AC coupling, drift removal), band-pass (lock-in to a carrier), band-stop/notch (kill 50/60 Hz hum). Passive RC: corner $f_c = 1/2\\pi RC$, −20 dB/dec per pole, loads the source; active (op-amp) filters buffer, add gain, and stack poles without interaction (Sallen-Key, MFB). Bandwidth = −3 dB span. Filter choice trades passband flatness (Butterworth), rolloff steepness (Chebyshev ripple), and phase linearity (Bessel — best for waveform fidelity).",
+      "recall_prompt": "Pick the right filter type for: anti-aliasing, mains hum, AC-coupling, envelope detection — and explain passive vs active and Butterworth vs Chebyshev vs Bessel trades.",
+      "key_ideas": [
+        "$f_c = 1/2\\pi RC$; −20 dB/dec per pole; −3 dB defines bandwidth",
+        "LP anti-alias/smooth, HP AC-couple, BP carrier select, notch hum removal",
+        "Active filters: buffering, gain, easy multi-pole — at op-amp bandwidth/noise cost",
+        "Butterworth flat / Chebyshev steep+ripple / Bessel linear-phase (no waveform distortion)",
+        "Phase shift near the corner matters in feedback loops and timing measurements"
+      ],
+      "cards": []
+    },
+    {
+      "title": "R, L, C and impedance in the s-domain",
+      "subject": "Applied Electronics",
+      "tags": ["circuits"],
+      "content": "Constitutive: $v = Ri$; $i = C\\,dv/dt$ (caps resist voltage change, integrate current); $v = L\\,di/dt$ (inductors resist current change). Impedances: $Z_R = R$, $Z_C = 1/Cs$, $Z_L = Ls$ — circuit analysis becomes resistor algebra in s. Caps: open at DC, short at high f; inductors the opposite. First-order blocks like $H(s) = \\frac{ks}{1+\\tau s}$ read directly as filters (that one: differentiator at low f, flat above 1/τ — a high-pass). Energy: $\\frac{1}{2}CV^2$, $\\frac{1}{2}LI^2$.",
+      "recall_prompt": "Write the time-domain and s-domain laws for R, L, C, their DC/high-frequency limits, and read H(s) = ks/(1+τs) as a filter.",
+      "key_ideas": [
+        "$Z_R = R,\\ Z_C = 1/Cs,\\ Z_L = Ls$ — dynamics become algebra",
+        "Capacitor: DC open, HF short, integrates current; inductor: dual",
+        "Voltage can't jump on a C; current can't jump on an L (energy continuity)",
+        "Read transfer functions by limits: s→0 and s→∞ identify the filter type",
+        "Energy storage $\\frac{1}{2}CV^2$, $\\frac{1}{2}LI^2$ — basis of snubbers, flyback spikes"
+      ],
+      "cards": [
+        {
+          "question": "Why does interrupting current through a relay coil destroy a transistor switch without a flyback diode?",
+          "answer": "$v = L\\,di/dt$: forcing inductor current to zero instantly makes di/dt huge — the coil generates whatever voltage it needs to keep current flowing, avalanching the transistor. The diode gives that current a recirculation path, clamping the spike to a diode drop."
+        }
+      ]
+    },
+    {
+      "title": "Circuit analysis & semiconductor models",
+      "subject": "Applied Electronics",
+      "tags": ["circuits"],
+      "content": "Linear toolkit: node voltage (KCL at nodes — the default), mesh current (KVL in loops), superposition (one source at a time), Thevenin/Norton (any linear two-terminal → V_th + R_th — find R_th by killing sources). Diode: $I = I_s(e^{V/V_T} - 1)$, ~0.7 V on. BJT (npn/pnp): current-controlled, $I_C = \\beta I_B$; small-signal π-model with $g_m = I_C/V_T$, $r_\\pi = \\beta/g_m$. MOSFET (NMOS/PMOS): voltage-controlled, square-law saturation, same π/T small-signal skeleton with $g_m = 2I_D/V_{ov}$, infinite gate resistance. Digital: Karnaugh maps minimize logic; latches/flip-flops store state; FSMs = state register + next-state combinational logic.",
+      "recall_prompt": "Outline the linear analysis toolkit (node/mesh/superposition/Thevenin), the diode law, and the BJT vs MOSFET small-signal models — then how K-maps and FSMs organize digital design.",
+      "key_ideas": [
+        "Node voltage = KCL default; Thevenin: V_oc + R_th (sources killed) — model anything linear",
+        "Diode $I = I_s(e^{V/V_T}-1)$; $V_T \\approx 26$ mV at room T",
+        "BJT: $I_C = \\beta I_B$, $g_m = I_C/V_T$ — high gm per current, finite base resistance",
+        "MOSFET: voltage-controlled, no gate current, $g_m = 2I_D/V_{ov}$",
+        "K-maps: group 1s in powers of 2 → minimal logic; FSM = register + next-state logic"
+      ],
+      "cards": [
+        {
+          "question": "Why does the same amplifier topology give more gain per milliamp with a BJT than a MOSFET?",
+          "answer": "Transconductance: BJT $g_m = I_C/V_T \\approx I_C/26\\,mV$ — exponential device physics; MOSFET $g_m = 2I_D/V_{ov}$ with $V_{ov}$ typically 100s of mV — square law. At equal bias current the BJT's gm (and thus gain $g_m R_L$) is several times higher; the MOSFET buys you infinite input resistance instead."
+        }
+      ]
+    },
+    {
+      "title": "Op-amp circuits & the Wheatstone bridge",
+      "subject": "Applied Electronics",
+      "tags": ["circuits", "measurement"],
+      "content": "Ideal op-amp with negative feedback: two golden rules — no input current, and the feedback drives $V_+ = V_-$. Inverting: $-R_f/R_{in}$, virtual ground; non-inverting: $1 + R_f/R_g$, high input impedance; summing amp adds weighted inputs; difference/instrumentation amps reject common-mode — the front end for bridges. Wheatstone bridge converts tiny ΔR (strain gauge ~0.1%) to a differential voltage: quarter/half/full configurations — full bridge 4× signal and temperature compensation by gauge placement. ADC closes the chain: resolution = FSR/2ⁿ; sample-and-hold + reference quality set real accuracy.",
+      "recall_prompt": "Derive the inverting and non-inverting gains from the golden rules, then explain quarter vs half vs full bridge — sensitivity and temperature compensation — and how the signal reaches an ADC.",
+      "key_ideas": [
+        "Golden rules (negative feedback only): $I_{in} = 0$, $V_+ = V_-$",
+        "Inverting gain $-R_f/R_{in}$ (virtual ground); non-inverting $1 + R_f/R_g$",
+        "Instrumentation amp: buffered diff pair — gain + common-mode rejection for sensors",
+        "Bridge output ∝ ΔR/R; full bridge = 4× quarter, inherently T-compensated",
+        "ADC: LSB = FSR/2ⁿ; reference, noise and anti-aliasing set true resolution"
+      ],
+      "cards": [
+        {
+          "question": "Why mount a second 'dummy' strain gauge perpendicular to the active one and wire it into the adjacent bridge arm?",
+          "answer": "Both gauges see identical temperature (same ΔR thermal drift) but only the active one sees strain. In adjacent arms, common ΔR cancels in the bridge output — temperature compensation for free, and the Poisson gauge even adds signal (half bridge)."
+        }
+      ]
+    },
+    {
+      "title": "Sensors: strain, temperature, motion, light",
+      "subject": "Applied Electronics",
+      "tags": ["measurement"],
+      "content": "Strain: foil gauges (GF≈2) in bridges. Temperature: thermocouple (Seebeck junction EMF — wide range, needs cold-junction compensation, ~μV/°C), RTD (platinum resistance, linear, accurate, slow), thermistor (huge nonlinear sensitivity, narrow range). Displacement: LVDT (transformer with movable core — frictionless, infinite resolution, AC excitation). Light: photoresistor (slow), photodiode (fast, linear in photocurrent), phototransistor (gain, slower). Speed: magnetic pickup (tooth-passing frequency), Doppler radar/lidar/sonar ($f_d = 2v/\\lambda$), stroboscope (aliasing on purpose). Accel/vibration: piezo accelerometer = seismic mass at r ≪ 1.",
+      "recall_prompt": "For temperature (TC vs RTD vs thermistor), displacement (LVDT), light (3 photo-devices), and speed (pickup, Doppler, strobe): how each transduces, and its defining strength/weakness.",
+      "key_ideas": [
+        "Thermocouple: Seebeck EMF, any range, needs cold-junction reference; mV-level signals",
+        "RTD: accurate/linear/stable; thermistor: 100× sensitivity, nonlinear, narrow",
+        "LVDT: AC transformer, frictionless, null at center — position with no wear",
+        "Photodiode fast/linear (reverse-biased); phototransistor adds gain; LDR slow",
+        "Magnetic pickup: pulses/teeth → frequency = speed; Doppler shift $2v/\\lambda$",
+        "Choose by: range, sensitivity, linearity, speed, robustness — never one winner"
+      ],
+      "cards": [
+        {
+          "question": "Why can't you just measure a thermocouple's voltage with a meter and look up the temperature?",
+          "answer": "The meter's own terminals form a second thermocouple pair where the TC wires join the copper leads — you always measure the *difference* between hot junction and that reference junction. You need the reference junction's temperature (cold-junction compensation) to extract the hot-end value."
+        }
+      ]
+    },
+    {
+      "title": "Transformers & per-unit",
+      "subject": "Applied Electronics",
+      "tags": ["machines", "power"],
+      "content": "Ideal: $V_2/V_1 = N_2/N_1$, $I_2/I_1 = N_1/N_2$; impedance reflects by turns² — AC only (flux must change). Real losses: copper (I²R in windings, load-dependent), core/iron (hysteresis + eddy currents, voltage-dependent, constant), magnetizing current, leakage flux (series reactance → voltage regulation under load). Equivalent circuit: series R + X, shunt magnetizing branch. Per-unit analysis normalizes V, I, Z to base values — transformer ratios drop out of system studies and impedances of similar machines fall in narrow ranges.",
+      "recall_prompt": "Explain ideal transformer relations and impedance reflection, the loss taxonomy (copper vs core), what leakage reactance does, and why per-unit makes grid analysis tractable.",
+      "key_ideas": [
+        "$V \\propto N$, $I \\propto 1/N$, $Z' = (N_1/N_2)^2 Z$ — AC only",
+        "Copper loss ∝ load²; core loss ≈ constant at rated voltage (hysteresis + eddy)",
+        "Max efficiency where copper loss = core loss",
+        "Leakage reactance → voltage droop with load (regulation), limits fault current",
+        "Per-unit: normalize to bases → turns ratios vanish, plausible values ~0.05-0.15 pu"
+      ],
+      "cards": []
+    },
+    {
+      "title": "Induction & synchronous machines",
+      "subject": "Applied Electronics",
+      "tags": ["machines", "power"],
+      "content": "Induction motor: stator's rotating field induces rotor currents only when rotor lags — slip $s = (n_s - n)/n_s$; torque-speed curve rises to breakdown torque then collapses; starts hard (high current, low PF). Starting: wye-start/delta-run (1/3 voltage² torque), soft starters, or VFDs (V/f control — full torque at any speed). Synchronous machine: rotor locked to line frequency, $P = \\frac{3VE}{X_s}\\sin\\delta$ (power angle δ), $Q = \\frac{3V}{X_s}(E\\cos\\delta - V)$ — excitation controls reactive power/power factor. Wye vs delta: $\\sqrt{3}$ relations between line and phase quantities. Single-phase induction needs a starting winding/capacitor (no rotating field on its own).",
+      "recall_prompt": "Contrast induction (slip, breakdown torque, starting problem and its three fixes) with synchronous machines (power angle equation, excitation → PF control), plus wye/delta bookkeeping.",
+      "key_ideas": [
+        "Slip s is mandatory for induction torque; rated slip a few %, breakdown torque at moderate slip",
+        "Starting: Y-Δ (cuts inrush 3×), soft start, or VFD (constant V/f → torque everywhere)",
+        "Synchronous: $P = \\frac{3VE}{X_s}\\sin\\delta$ — load grows δ; pole slip past 90°",
+        "Over-excite → leading PF (acts capacitive): synchronous condenser trick",
+        "Wye: $V_{line} = \\sqrt{3}V_{phase}$; Delta: $I_{line} = \\sqrt{3}I_{phase}$",
+        "Single-phase: pulsating field — needs capacitor/split-phase start"
+      ],
+      "cards": [
+        {
+          "question": "Why can't an induction motor ever reach synchronous speed, even unloaded?",
+          "answer": "Torque comes from rotor currents induced by relative motion between the rotating field and rotor (slip). At synchronous speed the rotor sees no flux change — zero induced current, zero torque — so it must settle just below, where slip-torque balances friction/windage."
+        }
+      ]
+    },
+    {
+      "title": "DC machines, drives & microcontroller buses",
+      "subject": "Applied Electronics",
+      "tags": ["machines", "embedded"],
+      "content": "Brushed DC: torque ∝ current, speed ∝ voltage (back-EMF) — simple control, brushes wear/arc. Brushless (BLDC/PMSM): electronic commutation from rotor position, better life/power density — needs a drive. Servo = motor + feedback (position/velocity loop). PWM: switch fast, average voltage by duty cycle — efficient (transistor saturated or off), motor inductance smooths current. VFDs do PWM synthesis of variable-frequency AC. Buses: UART (async, two-wire, point-to-point, baud agreement), I2C (two-wire shared bus, addressed, ~100k-1M, pull-ups), SPI (4-wire, fast, chip-selects). Error control: parity (1-bit detect), checksum (block detect), CRC (robust detect), ECC/Hamming (correct).",
+      "recall_prompt": "Compare brushed vs brushless DC + how PWM controls them, then UART vs I2C vs SPI (wires, speed, topology) and the error-detection ladder from parity to ECC.",
+      "key_ideas": [
+        "Brushed: V→speed, I→torque, brushes are the wear/noise item; BLDC: electronic commutation",
+        "PWM: duty-cycle averaging with switching efficiency; inductance filters current",
+        "Servo = motor + sensor + control loop; VFD = PWM-synthesized variable-frequency AC",
+        "UART async point-to-point; I2C addressed 2-wire multi-drop; SPI fast 4-wire with CS",
+        "Parity detects 1 bit; checksum/CRC detect blocks (CRC catches bursts); ECC corrects",
+        "Grid path: plant → transmission (HV, ↓losses) → distribution transformer → breaker panel; 3-phase for constant power + smaller conductors"
+      ],
+      "cards": [
+        {
+          "question": "Why is PWM drastically more efficient than driving a motor with a linear (resistive) voltage regulator?",
+          "answer": "The pass transistor in PWM is either saturated (V≈0 across it) or off (I=0) — power = V·I stays near zero in both states; a linear regulator drops the full voltage difference at full motor current, dissipating it as heat. The motor's inductance integrates the pulses into smooth current."
+        }
+      ]
+    }
+  ]
+}
