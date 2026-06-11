@@ -181,6 +181,24 @@ class TestDotenv(unittest.TestCase):
     def test_missing_file_is_fine(self):
         load_dotenv(Path("/nonexistent/.env"))   # must not raise
 
+    def test_windows_encodings(self):
+        """Notepad writes a UTF-8 BOM; PowerShell's `>` writes UTF-16.
+        Both must still yield the key (and never crash startup)."""
+        import os
+        cases = {
+            "RR_TEST_BOM": "GEMINI_TEST=bomval\n".encode("utf-8-sig"),
+            "RR_TEST_U16": "GEMINI_TEST=u16val\n".encode("utf-16"),        # BOM'd, PS 5.1
+            "RR_TEST_U16LE": "GEMINI_TEST=leval\n".encode("utf-16-le"),    # BOM-less
+        }
+        for label, raw in cases.items():
+            with tempfile.TemporaryDirectory() as tmp:
+                env = Path(tmp) / ".env"
+                env.write_bytes(raw)
+                os.environ.pop("GEMINI_TEST", None)
+                load_dotenv(env)
+                self.assertTrue(os.environ.get("GEMINI_TEST"), label)
+        os.environ.pop("GEMINI_TEST", None)
+
 
 class TestLLMRetryLadder(unittest.TestCase):
     """_complete_json must rescue capped calls: empty responses retry uncapped,

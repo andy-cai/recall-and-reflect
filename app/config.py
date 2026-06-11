@@ -11,11 +11,20 @@ from pathlib import Path
 def load_dotenv(path: Path) -> None:
     """Tiny .env loader (KEY=VALUE lines) so secrets like GEMINI_API_KEY can live
     in a git-ignored file instead of the shell environment. Real environment
-    variables always win; this never overrides one."""
+    variables always win; this never overrides one.
+
+    Tolerates the encodings Windows tools actually produce: Notepad's UTF-8
+    BOM, PowerShell's UTF-16 redirect. Never raises — a malformed .env must
+    not stop the app from starting."""
     try:
-        text = path.read_text(encoding="utf-8")
+        raw = path.read_bytes()
     except OSError:
         return
+    if raw[:2] in (b"\xff\xfe", b"\xfe\xff"):
+        text = raw.decode("utf-16", errors="ignore")
+    else:
+        # utf-8-sig eats Notepad's BOM; stray NULs cover BOM-less UTF-16LE
+        text = raw.decode("utf-8-sig", errors="ignore").replace("\x00", "")
     for line in text.splitlines():
         line = line.strip()
         if not line or line.startswith("#") or "=" not in line:
