@@ -18,6 +18,10 @@
         {
           "question": "Where does the factor of 2 in the Coriolis term $2\\Omega\\times v_{rel}$ come from?",
           "answer": "Two distinct effects each contribute once: the relative velocity vector being rotated by the frame ($\\Omega\\times v_{rel}$), and the changing position making the transport velocity $\\Omega\\times r$ change ($\\Omega\\times \\dot{r}_{rel}$). They're equal, hence 2."
+        },
+        {
+          "question": "A pin slides outward at constant speed along a slot in a turntable spinning at constant $\\Omega$. What force must the slot wall exert, and which acceleration term demands it?",
+          "answer": "The wall pushes sideways (tangentially) with $F = 2m\\Omega v_{rel}$ — the Coriolis term: the pin's tangential speed $\\Omega r$ must keep rising as r grows, and its radial velocity vector is being rotated. Direction rule: rotate $v_{rel}$ 90° in the sense of $\\Omega$. The radial direction needs only centripetal $m\\Omega^2 r$ — note both terms exist even with nothing accelerating 'visibly'."
         }
       ]
     },
@@ -38,6 +42,10 @@
         {
           "question": "A rotor is statically balanced (CM on the axis) but still shakes its bearings at speed. What's wrong, and what does it mean in inertia terms?",
           "answer": "Dynamic imbalance: nonzero products of inertia — the spin axis isn't a principal axis, so $H = I\\omega$ isn't parallel to $\\omega$ and must precess, requiring a rotating bearing couple. Fix needs corrections in two planes, not one."
+        },
+        {
+          "question": "Toss a phone spinning about each of its three principal axes. Which one tumbles, and why does a spin-stabilized satellite care?",
+          "answer": "The intermediate-inertia axis: spins about the maximum and minimum axes are stable to small disturbances, but about the middle axis perturbations grow exponentially — the half-twist tumble (tennis-racket theorem). Satellites add a twist: with any energy dissipation aboard, only the MAXIMUM-inertia spin survives long-term — Explorer 1, spun about its slender minor axis, ended up in a flat spin."
         }
       ]
     },
@@ -58,6 +66,10 @@
         {
           "question": "In a perfectly plastic collision (e = 0), where does the lost kinetic energy go, and why is momentum still conserved?",
           "answer": "Energy goes to plastic deformation, heat, and vibration — internal degrees of freedom. Momentum is conserved because the contact forces are internal and equal-opposite (Newton's third law); conservation of momentum needs no statement about energy."
+        },
+        {
+          "question": "During impact analysis, weight and spring forces are routinely dropped from the momentum balance. When is that licensed, and what's the trap case?",
+          "answer": "Finite forces integrate to ~zero over a millisecond contact ($\\int F dt$ small), while contact forces are impulsive — so only impulsive forces survive. Two traps: long 'impacts' (airbags, soft bumpers) where ordinary forces have time to act, and impulsive CONSTRAINT reactions — strike a pinned bar and the pin reaction is also impulsive, so linear momentum of the bar is NOT conserved (use angular momentum about the pin instead)."
         }
       ]
     },
@@ -78,6 +90,10 @@
         {
           "question": "Kutzbach says your linkage has M = 0 but the physical prototype clearly moves. What's going on?",
           "answer": "Special geometry Kutzbach can't see — redundant constraints (e.g., parallel links of equal length) create an overconstrained mechanism that still moves. The formula counts topology, not dimensions; exceptions like this are why mobility is checked, not trusted blindly."
+        },
+        {
+          "question": "You need a motor-driven four-bar whose input rotates fully while the output rocks. Which Grashof condition and inversion do you specify — and what changes if you ground the shortest link instead?",
+          "answer": "Grashof ($s + l \\le p + q$) with the shortest link as the crank, adjacent to ground → crank-rocker: continuous motor rotation in, oscillation out. Ground the shortest link and you get a double-crank (drag link) — both connected links rotate fully. Make the shortest the coupler → double-rocker: neither grounded link can complete a turn, so a simple motor drive no longer works."
         }
       ]
     },
@@ -98,6 +114,10 @@
         {
           "question": "In a quick-return mechanism, when is the Coriolis acceleration component largest, and why do these mechanisms demand it in analysis?",
           "answer": "When the slider's speed along the rotating arm and the arm's ω are both large (mid-stroke at speed) — quick-returns are precisely 'slider on rotating link' mechanisms, so omitting $2\\Omega v_{rel}$ gives badly wrong accelerations and inertia forces."
+        },
+        {
+          "question": "Two meshing gears plus the ground frame make three bodies. Where does Arnold-Kennedy force the gears' relative IC to sit, and what law of gearing falls out?",
+          "answer": "The three ICs must be collinear: the two fixed centers are ICs with ground, so the gear-to-gear IC lies on the line of centers — it's the pitch point, and the speed ratio is the inverse ratio of distances to it. A constant velocity ratio therefore requires the pitch point to stay fixed as teeth roll through mesh — the fundamental law of gearing that involute profiles satisfy."
         }
       ]
     },
@@ -114,7 +134,20 @@
         "Also a clean way to write vibration EoMs (balance spring, damper, inertia 'forces')",
         "Equivalent to Newton — a reformulation enabling virtual-work methods"
       ],
-      "cards": []
+      "cards": [
+        {
+          "question": "For bearing forces in a high-speed linkage, what does D'Alembert's trick buy you that raw Newton ($\\Sigma M = I\\alpha$) doesn't?",
+          "answer": "Once $-ma$ and $-I\\alpha$ are placed on the free body, the link is in 'equilibrium' — so you may sum moments about ANY convenient point to kill unknowns. Newton's $\\Sigma M = I\\alpha$ holds only about the mass center (or a fixed pivot), which rarely sits where the unknowns vanish."
+        },
+        {
+          "question": "A linkage's shaking force has been balanced to zero, yet the frame still vibrates. What did the D'Alembert bookkeeping leave over?",
+          "answer": "The shaking moment: the inertia forces can sum to zero (CM of the whole mechanism stationary) while their moments — plus the $-I\\alpha$ inertia torques — form a time-varying couple on the frame. Force balance fixes translation shake only; moment balance is a separate, harder problem."
+        },
+        {
+          "question": "When does treating 'centrifugal force' as a real force give correct answers, and what's the classic way to double-count it?",
+          "answer": "It's legitimate exactly within D'Alembert: move $-ma$ (here $m\\omega^2 r$ outward) to the force side, then write equilibrium $\\Sigma F = 0$. The error is writing the inertia force on the free body AND setting $\\Sigma F = ma$ — the same physics counted twice. Pick one ledger: forces = ma, or forces + inertia forces = 0."
+        }
+      ]
     },
     {
       "title": "Deriving equations of motion (Newton, energy, Rayleigh)",
@@ -134,6 +167,10 @@
         {
           "question": "Rayleigh's quotient with a guessed mode shape always errs in which direction for the first natural frequency, and why?",
           "answer": "It overestimates $\\omega_1$: any shape other than the true mode adds constraint, stiffening the assumed system. (Dunkerley errs low — so the two bracket the true value.)"
+        },
+        {
+          "question": "Newton free-body vs the energy method for deriving an EOM: when does the energy method simply fail to deliver, and what does Newton cost you in exchange for generality?",
+          "answer": "$\\frac{d}{dt}(T+U) = 0$ requires a conservative system — dampers and arbitrary forcing break it, and one scalar equation can't serve multiple DOF. Newton/D'Alembert handles c and F(t) and any DOF count, but you must draw every constraint and internal force correctly — the usual error source. Practical split: energy for a quick $\\omega_n$ of clean systems, Newton (or Lagrange) when damping, forcing, or joints appear."
         }
       ]
     },
@@ -158,6 +195,10 @@
         {
           "question": "How do you tell viscous from Coulomb damping just by looking at a decay trace?",
           "answer": "Viscous: exponential envelope (equal *ratios* per cycle, asymptotic to zero). Coulomb: straight-line envelope (equal *decrements* per cycle) and the motion stops abruptly at nonzero displacement inside the friction dead-band."
+        },
+        {
+          "question": "Sketch an underdamped free-decay trace x(t), marking everything you would measure to extract $\\zeta$ and $\\omega_n$.",
+          "answer": "Axes: x vs t, released from initial displacement $x_0$.\nOscillation with constant period $T_d = 2\\pi/\\omega_d$ — measure it peak-to-peak ($\\omega_d \\approx \\omega_n$ for small ζ).\nExponential envelope $\\pm x_0 e^{-\\zeta\\omega_n t}$ kissing the peaks.\nTwo successive peaks labeled $x_n, x_{n+1}$: $\\delta = \\ln(x_n/x_{n+1})$, then $\\zeta \\approx \\delta/2\\pi$.\nValid for ζ < 1 only; a straight-line envelope ending at a nonzero rest offset would mean Coulomb, not viscous, damping."
         }
       ]
     },
@@ -240,10 +281,23 @@
         "Forcing amplitude $= me\\omega^2$ — grows with speed squared",
         "$MX/(me) = r^2/\\sqrt{(1-r^2)^2+(2\\zeta r)^2}$: 0 at rest → peak ≈ resonance → 1",
         "High speed: $X \\to me/M$ — system spins about the combined center of mass",
-        "Transmitted force still scales with $\\omega^2$ at high speed — isolation or balancing required",
+        "Hard-mounted, the rotating bearing force is $me\\omega^2$ — it keeps growing with speed squared even after X levels off; balance it or isolate it",
         "Balance quality grades set allowable $me$ per speed"
       ],
-      "cards": []
+      "cards": [
+        {
+          "question": "Sketch $MX/(me)$ vs $r$ for rotating imbalance, for a small and a moderate $\\zeta$.",
+          "answer": "Axes: $MX/me$ vertical, $r = \\omega/\\omega_n$ horizontal.\nStarts at 0 at $r = 0$ — forcing $me\\omega^2$ vanishes at rest (unlike constant-force excitation, which starts at 1).\nPeak slightly ABOVE $r = 1$, at $r = 1/\\sqrt{1-2\\zeta^2}$; height ≈ $1/(2\\zeta)$ for light damping.\nAll curves flatten to 1 as $r \\to \\infty$ (X → me/M asymptote).\nLarger ζ: lower, later, broader peak; curves merge again at high r."
+        },
+        {
+          "question": "Rotating imbalance and base excitation both produce r²-shaped response curves — but their high-r limits send opposite design messages. What are the limits?",
+          "answer": "Base excitation: displacement transmissibility → 0 above $\\sqrt{2}$ — spin faster (softer mounts, higher r) and the mass stands still; isolation works. Imbalance: $X \\to me/M$, a floor that no speed escapes — the machine forever orbits its combined CM. You can isolate away base motion, but only balancing removes imbalance response."
+        },
+        {
+          "question": "Why do washing machines ship with a large concrete block bolted inside?",
+          "answer": "Two jobs from one mass: at spin speed (r ≫ 1) the orbit is $X = me/M$, so raising M directly shrinks the wobble for the same wet-clothes imbalance $me$; and the added mass lowers the suspension's $\\omega_n$, pushing r further above $\\sqrt{2}$ for better force isolation to the floor."
+        }
+      ]
     },
     {
       "title": "Multi-DOF systems: modes & orthogonality",
