@@ -5,19 +5,28 @@
       "title": "Classes of engineering materials",
       "subject": "Mechanics of Materials",
       "tags": ["materials"],
-      "content": "Metals (crystalline, ductile, stiff, conductive), polymers (molecular chains, low stiffness, temperature-sensitive), ceramics (ionic/covalent, hard, brittle, refractory), composites (matrix + reinforcement, anisotropic, high specific stiffness/strength). Selection trades stiffness, strength, density, toughness, temperature capability, and cost.",
+      "content": "Metals (crystalline, ductile, stiff, conductive), polymers (molecular chains, low stiffness, temperature-sensitive), ceramics (ionic/covalent, hard, brittle, refractory), composites (matrix + reinforcement, anisotropic, high specific stiffness/strength). Selection trades stiffness, strength, density, toughness, temperature capability, and cost. Stiffness is structure-insensitive (bond stretching); strength is structure-sensitive (defect motion) — the key split behind what processing can and cannot fix.",
       "recall_prompt": "Walk through the four classes of materials — what microstructure gives each its character, and what failure mode dominates each?",
       "key_ideas": [
         "Metals: metallic bonding + dislocations → ductile, stiff, conductive",
         "Polymers: chain mobility sets behavior — temperature- and rate-sensitive",
         "Ceramics: strong ionic/covalent bonds, no dislocation slip → hard but brittle (flaw-dominated)",
         "Composites: matrix + reinforcement, anisotropic, best stiffness/strength per weight",
+        "Stiffness = bond stretching (structure-insensitive); strength = dislocation resistance (structure-sensitive)",
         "Selection = stiffness, strength, density, toughness, max temperature, cost"
       ],
       "cards": [
         {
           "question": "Why are ceramics strong in compression but unreliable in tension?",
           "answer": "No dislocation slip means no plasticity to blunt cracks — tensile strength is governed by the worst flaw (Griffith), so it's statistical and far below compressive strength."
+        },
+        {
+          "question": "All steels share E ≈ 200 GPa, yet their yield strengths span nearly a factor of 10. Why — and what does that mean when a part is too flexible vs too weak?",
+          "answer": "Stiffness is structure-insensitive: it comes from stretching metallic bonds, which alloying and heat treatment barely touch. Strength is structure-sensitive: it is resistance to dislocation motion, tunable via grain size, solutes, precipitates, martensite. So heat treatment can rescue a weak part, but a too-flexible one needs new geometry (more I) or a different material class — no steel is stiffer than another."
+        },
+        {
+          "question": "Why is a composite laminate's strength quoted with a layup and load direction while steel gets one number — and which failure modes have no metal analogue?",
+          "answer": "Fibers carry the load: along-fiber properties are excellent but matrix-dominated directions are roughly an order of magnitude weaker, so properties depend on ply stack and load angle. Steel's random polycrystal averages out to isotropy. Composite design means aligning plies with load paths and checking modes metals don't have: transverse ply cracking, delamination between plies, and bearing failure at bolted joints."
         }
       ]
     },
@@ -31,7 +40,7 @@
         "FCC: close-packed, 12 slip systems → ductile at all temperatures (Al, Cu, austenite)",
         "BCC: thermally-activated slip → ductile-brittle transition (ferrite, W)",
         "HCP: few slip systems → low ductility, twinning, anisotropy (Mg, Ti)",
-        "Slip systems = close-packed planes × directions; more systems = more ductility",
+        "Slip systems = close-packed planes × directions; ~5 independent systems needed for polycrystal ductility",
         "Crystal structure also sets density, conductivity, magnetic behavior"
       ],
       "cards": [
@@ -42,6 +51,10 @@
         {
           "question": "Which phase of steel is FCC, and what does that explain about it?",
           "answer": "Austenite (γ). FCC explains its high ductility/formability at temperature and its higher carbon solubility than BCC ferrite — the basis of heat-treating."
+        },
+        {
+          "question": "Why is magnesium sheet formed warm (~250 °C) when aluminum forms fine at room temperature?",
+          "answer": "A polycrystal needs about five independent slip systems to deform into an arbitrary shape (von Mises criterion). FCC aluminum has them at any temperature. HCP magnesium at room temperature slips essentially only on basal planes — too few independent systems — so grains can't accommodate their neighbors and the sheet twins or cracks. Heating activates prismatic/pyramidal slip and formability appears."
         }
       ]
     },
@@ -62,6 +75,14 @@
         {
           "question": "Hall-Petch is unusual among strengthening mechanisms — what trade-off does it largely avoid, and why?",
           "answer": "It strengthens without the usual ductility penalty: boundaries impede dislocations but grains still deform compatibly, unlike solute/precipitate strengthening which embrittles more. Fine grain also improves toughness."
+        },
+        {
+          "question": "Why is the heat-affected zone next to a weld often the weakest, least tough region even though its composition is unchanged?",
+          "answer": "The near-fusion HAZ gets hot enough for grain growth: d rises, so $\\sigma_y = \\sigma_0 + k/\\sqrt{d}$ falls, and coarse grains also hurt toughness (longer pile-ups, easier cleavage). Any cold-work strengthening recrystallizes away too. That's why welded designs take allowables from the HAZ, not the parent plate — and why fine-carbide, grain-growth-resistant steels exist."
+        },
+        {
+          "question": "Nanocrystalline metals were supposed to be ultra-strong — why does Hall-Petch stop working below ~20 nm grains?",
+          "answer": "The mechanism needs dislocation pile-ups at boundaries, and a grain only a few dislocation spacings wide can't host one — the source-and-pile-up picture dies. Deformation switches to grain-boundary sliding and diffusion, which get EASIER with more boundary area: strength plateaus, then falls (inverse Hall-Petch)."
         }
       ]
     },
@@ -82,6 +103,14 @@
         {
           "question": "Why does the yield point of low-carbon steel come back after the part sits for months (strain aging)?",
           "answer": "Carbon/nitrogen atoms diffuse back to dislocations and re-form Cottrell atmospheres, re-pinning them — so the upper yield point and Luder's behavior reappear."
+        },
+        {
+          "question": "Sketch the engineering stress–strain curve of annealed low-carbon steel from zero through fracture, with the yield region drawn honestly.",
+          "answer": "A correct sketch shows:\n- Axes: engineering stress vs engineering strain\n- Linear elastic rise to a sharp peak — the upper yield point\n- Abrupt drop to the lower yield point\n- Flat, slightly ragged plateau at the lower yield stress: yield-point elongation of ~1–3% strain (Luder's bands sweeping the gauge)\n- Smooth rising strain-hardening curve after the plateau, peaking at the UTS\n- Falling engineering stress beyond UTS (necking), ending at fracture ×\n- Valid only for annealed/aged low-C steel — pre-strained or temper-rolled material rejoins the curve smoothly with no peak or plateau"
+        },
+        {
+          "question": "How does a ~1% temper-rolling skin pass eliminate stretcher strains — and why does the fix expire on the shelf?",
+          "answer": "The skin pass pre-strains the sheet just past the yield-point elongation, so the Luder's fronts have already swept through; later forming starts on the smooth strain-hardening curve and leaves no bands. But strain aging lets C/N atmospheres re-pin the dislocations over weeks to months (faster warm), restoring the yield point — so sheet is formed within a window after temper rolling, or you buy interstitial-free steel."
         }
       ]
     },
@@ -106,6 +135,14 @@
         {
           "question": "Why is as-quenched martensite brittle, and what does tempering actually do?",
           "answer": "Carbon trapped in the BCT lattice creates huge internal strain with no slip capacity. Tempering lets carbon precipitate as fine carbides — strain relaxes, toughness returns, at modest hardness cost."
+        },
+        {
+          "question": "Sketch the TTT diagram for a eutectoid steel and overlay two cooling paths: one ending in coarse pearlite, one in martensite.",
+          "answer": "A correct sketch shows:\n- Axes: temperature (vertical) vs log time (horizontal)\n- Horizontal line near 727 °C — above it austenite is stable\n- C-shaped start and finish curves with the nose around 550 °C at roughly 1 s\n- Products labeled: coarse pearlite near the top, fine pearlite toward the nose, bainite below the nose\n- Horizontal Ms (≈220 °C for eutectoid) and Mf lines at the bottom — martensite fraction depends on temperature reached, not time\n- Path 1: gentle cooling curve crossing start and finish lines high up → coarse pearlite\n- Path 2: steep quench missing the nose entirely, continuing down past Ms → martensite\n- Caveat noted: strictly isothermal data — a real continuous quench needs the CCT, with curves shifted right and down"
+        },
+        {
+          "question": "TTT vs CCT — which matches a real quench, and in which direction does reading the wrong one bite?",
+          "answer": "TTT is isothermal: instant-quench to one temperature, hold, watch — it matches salt-bath practice like austempering. A real quench cools continuously; its map is the CCT, whose curves sit at longer times and lower temperatures. Reading a continuous quench against TTT overestimates how easily pearlite forms — you can predict 'soft' where the part actually hardens to martensite (how weld HAZs crack unexpectedly) — and the critical cooling rate it implies is faster than the part really needs."
         }
       ]
     },
@@ -126,6 +163,43 @@
         {
           "question": "Why does over-aging soften an age-hardened aluminum alloy?",
           "answer": "Precipitates coarsen: fewer, larger, less coherent particles are easier for dislocations to bypass (Orowan looping) than the fine coherent ones they must cut at peak age — strength drops."
+        },
+        {
+          "question": "For a gear that must survive both flank pitting and root bending fatigue, why does carburizing usually beat through-hardening?",
+          "answer": "Carburizing puts a hard, high-carbon martensite case exactly where contact stress and crack initiation live, over a tough low-carbon core that arrests cracks and takes shock — and the case transforms last, leaving residual surface compression that directly buys fatigue life. A through-hardened gear at case hardness would be brittle to the core; at core toughness it would pit. Case + core decouples the two requirements."
+        },
+        {
+          "question": "Same steel, same austenitizing — one part furnace-cools, one air-cools. Which is stronger, and what lever did the cooling rate actually pull?",
+          "answer": "The air-cooled (normalized) part: faster cooling undercools the austenite more, so pearlite nucleates at lower temperature with finer lamellar spacing and smaller grains — more interface area blocking dislocations. The furnace-cooled anneal maximizes softness, ductility and machinability instead. Same chemistry; the only knob was transformation temperature."
+        }
+      ]
+    },
+    {
+      "title": "Hardness testing & strength correlations",
+      "subject": "Mechanics of Materials",
+      "tags": ["materials", "testing"],
+      "content": "Hardness is resistance to localized plastic indentation — a constrained compression test. Because the surrounding elastic material confines the plastic zone, mean indentation pressure ≈ 3× the flow stress (Tabor), which is why hardness tracks strength: for steels $S_{ut} \\approx 3.45\\,HB$ in MPa (≈ 500·HB in psi). Brinell: 10 mm ball, large indent that averages coarse microstructure — castings, weldments; unreliable above ~650 HB. Rockwell: depth-based, direct-reading, fast — shop QC; each scale (B, C, …) is its own number. Vickers: 136° diamond pyramid, geometrically similar so one load-independent scale; microhardness traverses map case depth. Hardness says nothing about toughness or ductility — a file-hard part can be glass-brittle.",
+      "recall_prompt": "Compare Brinell, Rockwell and Vickers — what each measures and when you'd pick each — then explain physically why hardness correlates with tensile strength and what it cannot tell you.",
+      "key_ideas": [
+        "Hardness = resistance to plastic indentation; elastic constraint makes indentation pressure ≈ 3× flow stress (Tabor)",
+        "Steel correlation: $S_{ut} \\approx 3.45\\,HB$ (MPa) — a fast, near-nondestructive strength estimate and heat-treat QC check",
+        "Brinell: big ball indent averages coarse microstructure (castings, welds); don't trust above ~650 HB",
+        "Rockwell: reads indentation depth directly — fast shop test, but scales (B, C) don't interconvert simply",
+        "Vickers: geometrically similar pyramid → one continuous load-independent scale; microhardness maps case-depth profiles",
+        "Hardness ranks strength, not toughness or ductility — it cannot see brittleness or quench cracks"
+      ],
+      "cards": [
+        {
+          "question": "Why does $S_{ut} \\approx 3.45\\,HB$ (MPa) work for steels — what is hardness physically measuring?",
+          "answer": "The indenter drives a plastic zone into elastically confined material; that constraint roughly triples the pressure needed versus uniaxial flow, so hardness ≈ 3× the flow stress at a representative strain of ~8% (Tabor). For steels, flow stress at that strain tracks $S_{ut}$, giving the 3.45·HB rule. The constant drifts across material classes and work-hardening states — don't carry it to aluminum or cold-worked parts."
+        },
+        {
+          "question": "Rockwell C on the shop floor, Vickers in the lab — why does each own its niche, and when does Rockwell flatly mislead?",
+          "answer": "Rockwell reads depth directly: seconds per test, no optics — ideal QC, but each scale has a valid range and the indent is relatively deep. Vickers' geometrically similar pyramid gives one continuous number at any load, with indents tiny enough to traverse a carburized case in cross-section. Rockwell misleads on thin cases, coatings, or thin stock: the indenter's plastic zone punches through and reads the soft substrate underneath."
+        },
+        {
+          "question": "Two parts both read 45 HRC — one quench-and-tempered alloy steel, one untempered martensite of a leaner steel. Hardness says they're equal. What does it miss?",
+          "answer": "Everything crack-related: the Q&T part is tough, while untempered martensite can have a small fraction of its impact energy plus locked-in quench stresses and microcracks. Hardness measures resistance to plastic flow only — it ranks strength but is blind to toughness, ductility, and residual stress, so accept parts on hardness plus evidence of temper (or an impact requirement), never hardness alone."
         }
       ]
     },
@@ -146,6 +220,14 @@
         {
           "question": "Why do semi-crystalline plastics shrink and warp more than amorphous ones in injection molding?",
           "answer": "Crystallization is a packing/densification event — crystals are denser than melt, and crystallinity varies with local cooling rate, so shrinkage is bigger and non-uniform → warpage. Amorphous resins just freeze in place."
+        },
+        {
+          "question": "Polypropylene's Tg is around 0 °C yet PP parts hold shape at 100 °C; polycarbonate's Tg is ~147 °C and it's structurally useless above it. Reconcile.",
+          "answer": "Tg is the transition of the amorphous fraction only. In semi-crystalline PP the crystallites stay solid up to Tm (~165 °C) and act as physical crosslinks, so between Tg and Tm you get a tough, leathery solid — that IS its service window, and the rubbery amorphous phase is why it's tough. Amorphous PC is all glass: above Tg the whole material goes rubbery. Rule: max use temperature tracks Tg for amorphous polymers but approaches (a margin below) Tm for semi-crystalline ones."
+        },
+        {
+          "question": "A plastic bracket is ductile in a slow pull test but shatters in a drop test at the same temperature. Why, and what's the design takeaway?",
+          "answer": "Yielding needs chain segments to move within the load's timescale, and raising strain rate is equivalent to lowering temperature (time–temperature superposition). In a millisecond impact the chains can't relax, the material behaves as if below Tg, and it fails by brittle crazing/cracking. Takeaway: qualify polymers at service strain rate AND temperature — a quasi-static datasheet curve says nothing about impact."
         }
       ]
     },
@@ -171,6 +253,14 @@
         {
           "question": "A cylindrical pressure vessel fails — along which direction does the crack run, and why?",
           "answer": "Longitudinally (axially): hoop stress $Pr/t$ is twice the axial $Pr/2t$, and hoop stress opens an axial crack. Sausages split lengthwise."
+        },
+        {
+          "question": "Two beams with equal cross-sectional area: solid square vs I-beam. Why does the I-beam carry several times the moment — and which loading makes it exactly the wrong choice?",
+          "answer": "Bending stress is $\\sigma = My/I$, and parking area far from the neutral axis grows I (≈ A·d²) without adding material — the flanges work at full stress, the web just connects them. The same trick fails in torsion: an I-section is an OPEN thin-wall shape with torsional stiffness ∝ Σbt³/3, nearly worthless — it twists and warps. For torsion use a closed tube or box, where shear flow circulates around enclosed area."
+        },
+        {
+          "question": "Why does transverse shear govern short stubby beams, wood, and laminates — but almost never long steel beams?",
+          "answer": "Peak bending stress grows with span (M ∝ PL) while peak shear $\\tau = 1.5V/A$ (rectangle, at the neutral axis) doesn't — their ratio scales with L/h. Steel shears at ~0.58$\\sigma_y$, so bending wins except at absurd stubbiness. Wood and composite laminates carry weak planes (grain, interlaminar) at ~a tenth of bending strength, lying exactly where $VQ/It$ peaks — short spans split or delaminate at the neutral axis first."
         }
       ]
     },
@@ -191,6 +281,14 @@
         {
           "question": "When is the true maximum shear stress NOT the in-plane Mohr's circle radius, and what is it instead?",
           "answer": "When $\\sigma_1$ and $\\sigma_2$ have the same sign (both tensile, say): then $\\tau_{max} = |\\sigma_1 - \\sigma_3|/2 = \\sigma_1/2$ with $\\sigma_3 = 0$ out of plane — bigger than the in-plane radius. Tresca checks must use all three circles."
+        },
+        {
+          "question": "Sketch Mohr's circle for σx = 80 MPa, σy = 20 MPa, τxy = 40 MPa, marking everything a grader should find.",
+          "answer": "A correct sketch shows:\n- Axes: σ horizontal, τ vertical, equal scales\n- Plotted points X(80, 40) and Y(20, −40) — opposite shear signs per your convention — joined by a diameter\n- Center on the σ-axis at ((80+20)/2, 0) = (50, 0)\n- Radius R = √(30² + 40²) = 50\n- Principal stresses where the circle crosses the σ-axis: σ1 = 100 MPa, σ2 = 0 (the circle passes through the origin)\n- Max in-plane shear = R = 50 MPa at the top/bottom, where σ = 50 MPa\n- 2θp = arctan(40/30) ≈ 53° on the circle → θp ≈ 27° in the part\n- Note: σ3 = 0 coincides with σ2 here, so max absolute shear is still 50 MPa"
+        },
+        {
+          "question": "Twist a piece of chalk until it breaks. Why does the fracture spiral at 45° — and what does the matching steel shaft failure look like?",
+          "answer": "Pure shear plots as a Mohr's circle centered at the origin: principals +τ and −τ on planes 45° to the axis. Chalk is brittle — governed by max normal stress — so the crack follows the peak-tension plane: a 45° helix. A ductile shaft fails on the max-shear plane instead and breaks off square. The fracture surface tells you which failure mode governed."
         }
       ]
     },
@@ -211,6 +309,14 @@
         {
           "question": "Why does a channel section twist when you load it through its centroid?",
           "answer": "The internal shear flow in the flanges forms a couple; its resultant acts at the shear center (offset from the centroid, outside the web). A centroidal load is then eccentric to that resultant → net torque → twist."
+        },
+        {
+          "question": "Sketch the shear and moment diagrams, aligned one above the other, for a simply supported beam of span L with a point load P at midspan.",
+          "answer": "A correct sketch shows:\n- Reactions P/2 at each support\n- V diagram: constant at +P/2 over the left half, step down by P at midspan, constant at −P/2 to the right support, closing to zero\n- M diagram: straight line from 0 up to PL/4 at midspan, straight back down to 0 — a triangle\n- Slope check labeled: dM/dx = V, so the moment slopes are ±P/2\n- Peak moment exactly where V crosses zero (midspan)\n- No distributed load anywhere → V piecewise constant, M piecewise linear"
+        },
+        {
+          "question": "A built-up wood beam is nailed together from planks. How does shear flow set the nail spacing, and where must the nails crowd?",
+          "answer": "The interface must carry longitudinal shear flow $q = VQ/I$ (force per length) or the planks slide and the section stops acting as one I. Each nail of capacity F permits spacing $s = F/q$. Since q follows V, spacing tightens where shear is largest — at the supports for distributed loads — and can relax where V is small. Get it wrong and the splice shears apart at the support, collapsing the composite stiffness."
         }
       ]
     },
@@ -231,6 +337,14 @@
         {
           "question": "Why doesn't making a column out of stronger steel raise its Euler buckling load?",
           "answer": "Buckling is an elastic *stiffness* instability: $P_{cr} = \\pi^2 EI/(KL)^2$ contains E and I, not $\\sigma_y$. All steels share E ≈ 200 GPa — you need more I (geometry) or shorter effective length, not strength."
+        },
+        {
+          "question": "Euler's formula dangerously overpredicts the strength of intermediate columns — why exactly, and what replaces it?",
+          "answer": "Euler assumes the column is still elastic at buckling. For stockier columns the predicted critical stress exceeds the proportional limit, the tangent modulus drops below E, and real capacity falls under Euler's curve. Practice uses the Johnson parabola: $S_y$ at zero slenderness, meeting Euler tangentially at $\\sigma_{cr} = S_y/2$ — switch at the transition slenderness $(KL/r)_1 = \\sqrt{2\\pi^2E/S_y}$, Johnson below it, Euler above."
+        },
+        {
+          "question": "You weld the base of a pinned-pinned column so it becomes fixed-pinned. How much buckling capacity did you buy — and why do codes not give you all of it?",
+          "answer": "K drops from 1.0 to a theoretical 0.7, and $P_{cr} \\propto 1/K^2$ → about 2× capacity (fixed-fixed would be 4×). But real 'fixed' ends rotate — base plates flex, footings rock — giving back part of the gain, so design codes use degraded values (e.g., 0.8 instead of 0.7, 0.65 instead of 0.5). Claim theoretical K only when the foundation truly is rigid."
         }
       ]
     },
@@ -255,6 +369,10 @@
         {
           "question": "Why is hydrostatic pressure invisible to both Von Mises and Tresca?",
           "answer": "Both depend only on principal stress *differences* (shear/distortion). Hydrostatic stress changes volume, not shape — and ductile yield is a shear (dislocation slip) phenomenon. A submarine hull doesn't yield from depth pressure alone."
+        },
+        {
+          "question": "When must Coulomb-Mohr replace Von Mises/Tresca, and what extra material data does it need?",
+          "answer": "When tensile and compressive strengths differ — gray cast iron's $S_{uc}$ is 3–4× its $S_{ut}$. It needs both strengths, building the failure envelope tangent to the tension and compression Mohr circles: $\\sigma_1/S_{ut} - \\sigma_3/S_{uc} = 1/n$ in the mixed quadrant. A symmetric theory errs both ways: it wastes the real compressive capacity, and in torsion (σ1 = −σ3) it misses that failure is dominated by the weak tensile leg."
         }
       ]
     },
@@ -280,6 +398,10 @@
         {
           "question": "Why is fracture toughness lowest in thick sections?",
           "answer": "Thickness enforces plane strain: through-thickness contraction is constrained, triaxial tension builds at the crack tip, the plastic zone shrinks, and less energy dissipates before fracture — hence $K_{IC}$ (plane strain) is the conservative, quoted value."
+        },
+        {
+          "question": "$K_I$ and $K_{IC}$ share the same units (MPa·√m) — what's the actual distinction, and what's the static-design analogy?",
+          "answer": "$K_I$ is the applied crack-driving force: it lives on the load side, computed from stress, crack size and geometry ($\\beta\\sigma\\sqrt{\\pi a}$), and changes with every load case. $K_{IC}$ is the material's measured resistance — a property like yield strength, varying only with material, temperature, thickness. The check $K_I < K_{IC}/n$ is exactly parallel to $\\sigma < S_y/n$; confusing the two is like quoting 'the stress of 4340 steel'."
         }
       ]
     },
@@ -305,6 +427,80 @@
         {
           "question": "Why does shot peening extend fatigue life?",
           "answer": "It plastically dimples the surface, leaving residual *compressive* stress where fatigue cracks initiate — the local mean stress drops, so the allowable amplitude rises and initiation is delayed. It also work-hardens the surface."
+        },
+        {
+          "question": "Sketch the S-N curves for steel and aluminum on the same axes.",
+          "answer": "A correct sketch shows:\n- Axes: stress amplitude S (vertical) vs cycles to failure N on a log scale, ~10³ to 10⁸⁺\n- Both curves sloping down from the low-cycle end (around 0.9·Sut at 10³)\n- Steel: a distinct knee at ~10⁶–10⁷ cycles, then a horizontal plateau — the endurance limit Se ≈ 0.5·Sut (capped ~700 MPa)\n- Aluminum: no knee — the curve keeps falling, so only a fatigue strength Sf at a stated life (conventionally 5×10⁸) exists\n- Labels: below Se steel lives indefinitely; aluminum never has a safe stress, only a design life\n- Caveat: curves are for polished R = −1 lab specimens — Marin factors slide the whole curve down for real parts"
+        },
+        {
+          "question": "Sketch a Goodman diagram (σa vs σm) for a steel part, including the Gerber, Soderberg and first-cycle-yield lines and a proportional load line.",
+          "answer": "A correct sketch shows:\n- Axes: alternating stress σa (vertical) vs mean stress σm (horizontal)\n- Goodman: straight line from Se on the σa-axis to Sut on the σm-axis\n- Soderberg: straight line from Se to Sy, everywhere inside Goodman\n- Gerber: parabola from Se to Sut, bowing above Goodman\n- Langer first-cycle-yield line σa + σm = Sy cutting the corner near the σm-axis\n- Safe region = under the chosen fatigue line AND under the yield line\n- Load line from the origin through the operating point, slope r = σa/σm; safety factor read as the distance ratio to the criterion along that line\n- Compressive-mean side: data flattens (σa ≈ Se holds) — don't extend Goodman's penalty below σm = 0"
+        }
+      ]
+    },
+    {
+      "title": "Fatigue crack growth: Paris law & damage tolerance",
+      "subject": "Mechanics of Materials",
+      "tags": ["failure", "fatigue", "fracture"],
+      "content": "Between initiation and fast fracture, a crack grows a measurable amount per cycle: $da/dN = C\\,\\Delta K^m$ (Paris law), with $\\Delta K = \\beta\\,\\Delta\\sigma\\sqrt{\\pi a}$ and m ≈ 3–4 for metals. The log-log da/dN–ΔK curve is sigmoidal: below the threshold $\\Delta K_{th}$ cracks don't grow; the straight middle is the Paris regime; growth runs away as $K_{max} \\to K_{IC}$. Because ΔK rises with √a, growth compounds — most of the life elapses while the crack is small. Damage-tolerant design assumes the largest flaw inspection can miss, integrates Paris to the critical size, and sets the inspection interval at a fraction of that growth life.",
+      "recall_prompt": "Sketch the da/dN vs ΔK curve, write the Paris law, and walk through how damage-tolerant design turns crack growth into an inspection interval.",
+      "key_ideas": [
+        "$da/dN = C\\,\\Delta K^m$ with $\\Delta K = \\beta\\,\\Delta\\sigma\\sqrt{\\pi a}$; m ≈ 3–4 for metals",
+        "Sigmoidal log-log curve: threshold $\\Delta K_{th}$ (no growth) → straight Paris regime → fast fracture as $K_{max} \\to K_{IC}$",
+        "ΔK grows with √a, so growth accelerates — most of the life is spent while the crack is small",
+        "Damage tolerance: assume the largest flaw NDT can MISS already exists; integrate to critical size $a_c$ from $K_{IC}$",
+        "Inspection interval = a fraction (commonly half) of the detectable-to-critical growth life, so every crack is seen before it's critical",
+        "Steep stress sensitivity: life scales ~$\\Delta\\sigma^{-m}$ — a 20% stress bump costs ~40% of growth life"
+      ],
+      "cards": [
+        {
+          "question": "Sketch the fatigue crack growth curve — da/dN vs ΔK on log-log axes — with its three regions labeled.",
+          "answer": "A correct sketch shows:\n- Both axes logarithmic: ΔK horizontal, da/dN vertical\n- A sigmoidal curve with three labeled regions\n- Region I: steep plunge to a vertical asymptote at the threshold ΔK_th — below it, no measurable growth\n- Region II: straight line (Paris regime), slope = m ≈ 3–4 for metals\n- Region III: curve sweeping up toward a vertical asymptote where K_max → K_IC (fast fracture)\n- Validity note: long cracks and small-scale yielding only — short cracks grow faster than the curve predicts"
+        },
+        {
+          "question": "Why does most of a cracked part's remaining life elapse while the crack is still small — and what does that imply about inspection?",
+          "answer": "$\\Delta K = \\beta\\Delta\\sigma\\sqrt{\\pi a}$ rises with crack length and $da/dN \\propto \\Delta K^m$, so growth compounds: the final doubling of crack size consumes only a few percent of the cycles. Implication: usable life is controlled by the smallest crack you can reliably FIND (NDT sensitivity), not by the critical size — better inspection buys far more life than tougher material."
+        },
+        {
+          "question": "How does damage-tolerant design set the inspection interval for a wing skin?",
+          "answer": "Assume a crack equal to the largest flaw the NDT method can miss already exists at the worst location. Integrate the Paris law from that size to the critical size where $K_{max} = K_{IC}$ (or net-section failure). Divide that growth life by a safety factor — commonly 2 — so any real crack is inspected at least once, ideally twice, before it can go critical."
+        },
+        {
+          "question": "Safe-life vs damage-tolerant design — what does each assume about flaws, and which do you pick for a helicopter rotor hub vs an airliner fuselage?",
+          "answer": "Safe-life assumes the part starts flaw-free and retires it at a scatter-factored fraction of demonstrated life — required where inspection is impractical and failure is instantly catastrophic (rotor hubs, landing gear). Damage tolerance assumes flaws exist from day one and guarantees inspections catch growth first — right for inspectable, slow-growing structure (fuselage and wing skin). Choosing wrong matters: damage tolerance on an uninspectable part is unconservative; safe-life on inspectable structure throws away serviceable hardware."
+        }
+      ]
+    },
+    {
+      "title": "Creep & stress relaxation",
+      "subject": "Mechanics of Materials",
+      "tags": ["failure", "high temperature"],
+      "content": "Above roughly 0.3–0.4 of the absolute melting temperature, metals deform slowly under constant stress. The creep curve has three stages: primary (rate decelerates as strain hardening wins), secondary/steady-state (hardening and recovery balance → constant minimum rate, the design number), tertiary (necking and grain-boundary cavitation accelerate to rupture). Steady-state rate: $\\dot{\\epsilon} = A\\,\\sigma^n e^{-Q/RT}$ — dislocation climb at high stress (n ≈ 3–8), diffusional flow at low stress (n ≈ 1), the latter FASTER for fine grains. Larson-Miller $LM = T(C + \\log t)$, C ≈ 20, T absolute, trades time against temperature so short hot tests predict long service. Stress relaxation is the same physics at constant strain: stress decays — hot bolted joints lose preload.",
+      "recall_prompt": "Sketch the three-stage creep curve, give the steady-state rate law and its mechanisms vs T/Tm, explain the Larson-Miller time–temperature trade, and contrast creep with stress relaxation.",
+      "key_ideas": [
+        "Creep matters above ~0.3–0.4 $T/T_m$ (absolute — homologous temperature)",
+        "Three stages: primary (decelerating), secondary (constant minimum rate — the design basis), tertiary (accelerating to rupture via necking and cavitation)",
+        "$\\dot{\\epsilon}_{ss} = A\\,\\sigma^n e^{-Q/RT}$: dislocation climb n ≈ 3–8 at high stress; diffusional creep n ≈ 1 at low stress",
+        "Diffusional creep and boundary sliding speed up as grains shrink — Hall-Petch inverts hot; turbine blades go single-crystal",
+        "Larson-Miller $LM = T(C + \\log t)$, C ≈ 20: equal LM ⇒ equal damage — test hot-and-short to predict cool-and-long",
+        "Stress relaxation = constant strain, decaying stress: bolted joints, press fits, plastic snap fits"
+      ],
+      "cards": [
+        {
+          "question": "Sketch the strain–time creep curve for a metal under constant stress at high temperature, labeling all three stages.",
+          "answer": "A correct sketch shows:\n- Axes: strain (vertical) vs time (horizontal), at constant σ and T\n- An instantaneous elastic (+ any plastic) strain jump at t = 0 — the curve does not start at zero strain\n- Primary stage: slope decreasing (strain hardening winning)\n- Secondary stage: straight segment — the constant minimum slope is the steady-state creep rate, the design quantity\n- Tertiary stage: slope increasing, curve turning up to rupture (×)\n- Trend note: raising σ or T steepens and shortens everything — secondary shrinks, rupture arrives sooner"
+        },
+        {
+          "question": "Creep vs stress relaxation — same physics, different boundary condition. Which one loosens a hot bolted joint, and why does the distinction matter?",
+          "answer": "Creep: constant stress, accumulating strain — a blade slowly lengthens. Relaxation: constant total strain, so elastic strain converts to creep strain and stress decays — that's the bolted joint: the clamped stretch is fixed, the bolt creeps, preload falls. Choosing wrong matters: a hot joint passes every static check and still leaks or rattles loose; the fix is re-torque schedules, creep-resistant fasteners, or spring elements that tolerate the lost stretch."
+        },
+        {
+          "question": "Fine grains strengthen metals at room temperature (Hall-Petch). Why are creep-limited turbine blades grown as single crystals?",
+          "answer": "At high temperature the deformation paths run through the boundaries themselves: diffusional creep scales like $1/d^2$–$1/d^3$, and boundaries slide and cavitate (tertiary damage). More boundary area = faster creep and earlier rupture — Hall-Petch inverts. Directional solidification removes transverse boundaries; single-crystal blades remove them all."
+        },
+        {
+          "question": "You must qualify a part for 100,000 hours at 550 °C. How does Larson-Miller let you skip the 11-year test, and when does the shortcut lie?",
+          "answer": "$LM = T(C + \\log t)$, T absolute, C ≈ 20: equal parameter means equal creep damage, so test hotter for shorter at the same LM and read rupture strength off the material's master curve. It lies when the higher temperature changes the physics — new precipitate phases, oxidation, a mechanism shift from climb to diffusional flow — so extrapolate only within one mechanism regime."
         }
       ]
     },
@@ -318,13 +514,21 @@
         "$\\sigma_{max} = K_t \\sigma_{nom}$ — Kt from geometry charts (r/d, D/d)",
         "Fatigue: $K_f = 1 + q(K_t-1)$, q = notch sensitivity (material + notch radius)",
         "Static ductile: local yield redistributes → Kt often ignored; brittle/fatigue: never ignore",
-        "Generous fillets, grooves relief, spread load paths — design the concentration down",
+        "Generous fillets, relief grooves, spread load paths — design the concentration down",
         "Fits: clearance (H7/g6), transition (H7/k6), interference (H7/p6) — hole-basis standard"
       ],
       "cards": [
         {
           "question": "Why can you often ignore a stress concentration in a statically loaded ductile part but never in the same part under fatigue?",
           "answer": "Static: the notch root yields locally, strain hardens, and load redistributes — net section carries it. Fatigue: cyclic stress at the root initiates a crack long before any beneficial redistribution; the concentration acts every cycle ($K_f$)."
+        },
+        {
+          "question": "A sharp shoulder has Kt = 3 but the measured fatigue knockdown is only ~2. Reconcile Kt vs Kf — and explain why upgrading to a stronger steel can make the notch WORSE.",
+          "answer": "Kt is pure elasticity and geometry; fatigue feels $K_f = 1 + q(K_t - 1)$ with notch sensitivity q < 1. The elastic peak lives in a tiny, steeply graded volume: when the notch radius is small relative to the material's characteristic (Neuber/Peterson) length, the stress averaged over a grain-scale process zone sits well below the peak, so q drops. Hard, fine-grained, high-strength steels have tiny characteristic lengths → q → 1: the stronger steel feels nearly the full Kt, so notched fatigue life can fall even as $S_{ut}$ rises."
+        },
+        {
+          "question": "What stresses does an interference fit add before any service load is applied, and where do press-fitted assemblies then fail in service?",
+          "answer": "The assembly squeeze creates an interface pressure (Lamé thick-cylinder equations): the hub goes into hoop tension, maximum at its bore — thin hubs can yield or split on assembly — while the shaft sees compression. Torque transmits by friction, ≈ $\\mu p\\,\\pi d L\\,(d/2)$. In rotating bending, the press edges add a stress concentration plus micro-slip → fretting fatigue at the hub faces is the classic failure; relieve it with raised seats, grooves, or generous edge radii."
         }
       ]
     },
@@ -349,6 +553,39 @@
         {
           "question": "Why are long, thin bolts better than short, fat ones for fatigue-loaded joints?",
           "answer": "They're springier ($k_b = EA/L$ drops), so $C$ shrinks and the bolt sees even less of the alternating load — and they hold preload better against embedding/relaxation."
+        },
+        {
+          "question": "Two identical joints torqued to the same spec — one assembled dry, one with anti-seize. Which is in danger, and of what?",
+          "answer": "The lubricated one: $T = KdF_i$, and lube cuts the nut factor from ≈0.2 toward ≈0.1–0.15, so the same torque delivers up to ~50–100% more preload — enough to yield the bolt or crush the joint. Roughly 90% of installation torque fights friction (~50% under-head, ~40% threads), so friction scatter IS preload scatter. Critical joints control lubrication explicitly or measure stretch/turn-of-nut instead of torque."
+        }
+      ]
+    },
+    {
+      "title": "Hertzian contact stress",
+      "subject": "Machine Element Design",
+      "tags": ["machine elements", "contact"],
+      "content": "Curved bodies touch over a tiny patch, so modest loads create GPa-scale pressures. Hertz: sphere contact gives a circular patch with $p_{max} = 3F/(2\\pi a^2)$ (1.5× the mean); cylinders give a strip with $p_{max} = 2F/(\\pi b L)$. The patch grows with load, so contact stiffens nonlinearly ($F \\propto \\delta^{3/2}$ for spheres). Under the patch center the stress state is near-hydrostatic compression — first yield needs $p_{max} \\approx 1.6\\,\\sigma_y$ — and the maximum shear hides BELOW the surface (≈0.3 $p_{max}$ at depth ≈0.48a for spheres, ≈0.8b for cylinders). That's why rolling-contact fatigue (gear pitting, bearing spalling) starts subsurface. Hertz assumes frictionless, elastic, non-conforming contact: sliding traction drags the shear peak to the surface; conforming or plastic contacts need other tools.",
+      "recall_prompt": "Walk through Hertzian contact: pressure distribution and peak for sphere and cylinder, why first yield and pitting start below the surface, the nonlinear stiffness, and the assumptions whose violation kills the theory.",
+      "key_ideas": [
+        "Sphere: circular patch, $p_{max} = 3F/(2\\pi a^2)$ = 1.5× mean; cylinder: strip, $p_{max} = 2F/(\\pi b L)$ — semi-elliptical pressure distributions",
+        "Effective properties combine the pair: $1/E^* = (1-\\nu_1^2)/E_1 + (1-\\nu_2^2)/E_2$, $1/R = 1/R_1 + 1/R_2$",
+        "Patch grows with load → nonlinear stiffening: $F \\propto \\delta^{3/2}$ for point contact",
+        "Contact center is near-hydrostatic compression → first yield only at $p_{max} \\approx 1.6\\,\\sigma_y$ (same constraint physics as hardness ≈ 3× flow stress)",
+        "Max shear ≈ 0.3 $p_{max}$ at depth ≈ 0.48a (sphere) / 0.8b (cylinder) → rolling-contact fatigue initiates subsurface",
+        "Breaks down with sliding friction (shear moves to the surface), conforming geometry, plasticity, or an EHL film reshaping the pressure"
+      ],
+      "cards": [
+        {
+          "question": "Why do gear pitting and bearing spalling initiate below the surface rather than at it?",
+          "answer": "In pure rolling Hertz contact the maximum shear (≈0.3 $p_{max}$) sits at a depth of roughly half the contact half-width, while the surface itself is in near-hydrostatic compression that suppresses yielding. Fatigue cracks nucleate at that subsurface shear peak — often at an inclusion — and grow up to flake out a spall. Add sliding traction and the shear peak migrates to the surface: surface distress and micropitting instead."
+        },
+        {
+          "question": "A bearing raceway runs at 3 GPa contact pressure — several times the steel's yield strength. Why doesn't it simply squash?",
+          "answer": "Under the contact all three principal stresses are large, compressive, and nearly equal — near-hydrostatic. Yield is driven by principal-stress differences (von Mises), which stay modest, so first yield doesn't occur until $p_{max} \\approx 1.6\\,\\sigma_y$ and full plasticity near 3$\\sigma_y$ — the same ~3× constraint factor that makes hardness ≈ 3× flow stress."
+        },
+        {
+          "question": "Why is contact stiffness nonlinear — and which Hertz assumptions, when violated, invalidate the whole solution?",
+          "answer": "The patch grows with load, recruiting area: $F \\propto \\delta^{3/2}$ for a sphere, so doubling the load raises approach only ~1.6×. The solution assumes elastic, frictionless, non-conforming contact with patch ≪ body radii. Sliding friction adds surface shear (moves the critical point up), conforming contacts (ball in a close race, gear past the pitch point) violate the small-patch assumption, and plasticity or an EHL pressure spike rewrites the distribution."
         }
       ]
     },
@@ -369,6 +606,14 @@
         {
           "question": "A gearbox must last 10^9 cycles. Which AGMA check almost certainly governs, and why?",
           "answer": "Surface contact (pitting): contact-strength S-N keeps falling with cycles (no real endurance limit) while bending often has one — so at very long life the flank pits before a root cracks."
+        },
+        {
+          "question": "Pitting and root bending are both fatigue — why do designers carry a bigger safety margin against the bending mode even when pitting governs the sizing?",
+          "answer": "A root crack snaps the whole tooth: instant loss of drive, debris through the mesh, often cascading failure — with little warning. Pitting is progressive and announces itself in noise, vibration, and oil debris long before the gear stops, allowing condition-based replacement. Same math, very different consequence severity, so bending gets the larger reliability factor."
+        },
+        {
+          "question": "Doubling face width F halves nominal tooth stress — why does AGMA's Km claw part of that back, and when does widening stop paying?",
+          "answer": "Km (load distribution) accounts for non-uniform contact across the face from shaft slope, housing tolerance, and lead error: the wider the face, the harder it is to keep load centered, so Km grows with F and with flimsy mounting. Past roughly 3–5× the circular pitch, the extra width carries load only at one end — you've bought an edge stress concentration, not capacity — unless you stiffen the shafts or crown the teeth."
         }
       ]
     },
@@ -389,6 +634,73 @@
         {
           "question": "Marketing wants 99% bearing reliability instead of 90%. Roughly what happens to rated life and why?",
           "answer": "Life drops to roughly a fifth ($a_1 \\approx 0.21$): the Weibull failure distribution is broad, so demanding the 1st percentile instead of the 10th costs most of the rated revolutions. Reliability is expensive in fatigue-governed components."
+        },
+        {
+          "question": "A machine sits parked for months under vibrating load. Why is the L10 equation the wrong tool for its bearings, and what's the right check?",
+          "answer": "$L_{10} = (C/P)^p$ counts revolutions — it assumes rotation sweeps the contact stress around the whole raceway. Stationary, the same balls hammer the same spots: true brinelling (dents from shock exceeding the static capacity) or false brinelling (fretting wear under vibration with no lubricant replenishment). Check P against the static rating C0 with a safety factor, and protect idle or transported machines — lock the rotor or rotate it periodically."
+        },
+        {
+          "question": "Why do lubricant film and cleanliness swing bearing life so strongly that ISO gives them their own life factor?",
+          "answer": "Rated life assumes failure starts subsurface. With a full EHL film (thickness ≳ ~3× the composite surface roughness) the surfaces never touch and life can exceed catalog severalfold; a starved film or a hard particle dents the raceway and converts failure to surface-initiated fatigue — every dent is a stress raiser that spalls early. Hence the ISO $a_{ISO}$ factor spans orders of magnitude: dirty, starved contacts can lose 10× life."
+        }
+      ]
+    },
+    {
+      "title": "Shaft design under combined loading",
+      "subject": "Machine Element Design",
+      "tags": ["machine elements", "fatigue"],
+      "content": "A transmission shaft carries steady torque plus transverse gear/pulley loads — and because it rotates, every surface fiber sees fully reversed bending each revolution even when the loads are fixed in space. Standard procedure (Shigley DE-Goodman): alternating von Mises stress from bending, $\\sigma_a' = 32K_f M_a/(\\pi d^3)$; mean from steady torsion, $\\sigma_m' = \\sqrt{3}\\cdot 16K_{fs}T_m/(\\pi d^3)$; combine on Goodman with the Marin-corrected $S_e$ and solve for d. The critical section sits at a stress concentration — bearing shoulder, keyseat ($K_f \\approx 2$ in bending), groove — not at the nominal max-moment point. Strength often isn't binding: slope at rolling bearings, deflection at gear meshes, and the first critical speed frequently demand a fatter shaft than fatigue does.",
+      "recall_prompt": "Walk through sizing a rotating shaft under steady torque + bending: which stress goes in the alternating bin vs the mean bin, where Kf applies, the DE-Goodman combination, and the stiffness checks that often govern instead.",
+      "key_ideas": [
+        "Rotation turns a fixed transverse load into fully reversed bending (R = −1) at every fiber; steady torque stays a mean shear",
+        "DE-Goodman: $\\sigma_a' = 32K_f M_a/(\\pi d^3)$, $\\sigma_m' = \\sqrt{3}\\cdot 16K_{fs}T_m/(\\pi d^3)$, then $\\sigma_a'/S_e + \\sigma_m'/S_{ut} = 1/n$",
+        "Critical location = shoulder, keyseat ($K_f \\approx 2$ bending), or groove — wherever $K_f M/d^3$ peaks, not where M peaks",
+        "Stress falls with $d^3$ — small diameter changes buy large margins ($d \\propto n^{1/3}$)",
+        "Stiffness often governs: slope limits at rolling bearings and deflection limits at gear meshes; long shafts are sized by deflection",
+        "Keep the first critical speed well clear of operating speed (commonly ≥ 2× margin)"
+      ],
+      "cards": [
+        {
+          "question": "A shaft sees a constant-direction transverse load and a steady torque — nothing fluctuates. Why is sizing it still a fatigue problem?",
+          "answer": "Because the shaft rotates through the fixed bending field: each surface fiber cycles tension → compression once per revolution — fully reversed bending at shaft speed, so 10⁸ cycles arrives in weeks. The steady torque contributes only mean shear. The canonical load case is therefore alternating bending + mean torsion → DE-Goodman against the Marin-corrected $S_e$."
+        },
+        {
+          "question": "Why do keyseats and bearing shoulders, not the nominal diameter, decide where a shaft fails — and what are the cheap fixes?",
+          "answer": "Each feature carries $K_f$ ≈ 1.5–2+ (a profiled keyseat is ≈2 in bending), halving local fatigue strength, so the critical point is where $K_f M/d^3$ peaks — often a shoulder next to a bearing, not the max-moment plane. Fixes are geometric: bigger fillet radii, relief grooves, sled-runner instead of end-milled keyseats, or move the shoulder out of the high-moment zone. Material upgrades barely help — notch sensitivity rises with strength."
+        },
+        {
+          "question": "A shaft passes DE-Goodman with n = 2. Name the checks that can still reject it — and why a stronger alloy fixes none of them.",
+          "answer": "Slope at rolling bearings (misaligned races collapse bearing life), relative deflection at gear meshes (load concentrates at tooth ends, Km climbs), and the first critical speed (keep ~2× margin or sprint through it). All scale with $EI$ and span — stiffness, not strength — and every steel shares E ≈ 200 GPa, so only diameter, span, and bearing placement move them."
+        }
+      ]
+    },
+    {
+      "title": "Helical compression springs",
+      "subject": "Machine Element Design",
+      "tags": ["machine elements", "springs"],
+      "content": "A compression spring is a torsion bar wound into a helix: the axial force F acts at moment arm D/2 and twists the wire, $\\tau = K_w\\,8FD/(\\pi d^3)$, where the Wahl factor $K_w = (4C-1)/(4C-4) + 0.615/C$ adds the curvature concentration (shear piles up on the coil's inside) plus direct shear; spring index C = D/d is kept ~6–12. Rate: $k = Gd^4/(8D^3N_a)$ — wire diameter to the fourth power, coil diameter cubed and active coils in the denominator; end treatment (squared, ground) sets $N_a$. Checks: stress at solid height, shear fatigue of the wire (shot peening and presetting leave helpful residual stress), lateral buckling of slender springs (free length ≳ ~5× D needs a guide), and surge — the spring's own longitudinal resonance — in high-speed cyclic service.",
+      "recall_prompt": "Explain where the stress in a helical compression spring lives, write the rate and Wahl-corrected stress equations, and walk the failure checks: solid-height stress, fatigue, buckling, surge.",
+      "key_ideas": [
+        "The wire is in torsion: $\\tau = K_w\\,8FD/(\\pi d^3)$ — axial force × moment arm D/2 twists the wire",
+        "Wahl $K_w = (4C-1)/(4C-4) + 0.615/C$: curvature concentrates shear on the coil ID; worse at low index C = D/d (keep ~6–12)",
+        "Rate $k = Gd^4/(8D^3N_a)$ — d⁴ sensitivity; squared/ground ends reduce active coils $N_a$",
+        "Check stress at solid height — assembly or bottoming must not yield the spring",
+        "Slender springs buckle laterally (free length ≳ ~5× D, end-condition dependent) → guide over a rod or in a bore",
+        "Surge = longitudinal resonance of the coil line; keep the first surge frequency well above the forcing frequency (rules of thumb ≥ ~13×)",
+        "Presetting and shot peening leave favorable residual stresses → higher static capacity and fatigue life"
+      ],
+      "cards": [
+        {
+          "question": "An axially loaded compression spring fails in shear, starting at the inside of the coil. Why there?",
+          "answer": "The axial force acts at moment arm D/2 about the wire axis — the spring is a coiled torsion bar, so wire stress is $\\tau = K_w\\,8FD/(\\pi d^3)$. Coil curvature makes the inner fiber shorter, concentrating the twist there, and the transverse direct shear adds on the same side: the Wahl factor (≈1.2 at C = 8, worse for tighter coils) captures both. Fatigue cracks therefore start at the coil ID."
+        },
+        {
+          "question": "You need double the spring rate in the same envelope. Compare the three levers — wire diameter, coil diameter, active coils — and what each one costs.",
+          "answer": "$k = Gd^4/(8D^3N_a)$. Wire diameter is strongest: +19% on d doubles k (d⁴), but solid height and weight grow. Halving $N_a$ doubles k, but the same working deflection now needs double force → double wire stress, and fewer coils means less stress relief at solid. Shrinking D by 21% doubles k (D³) and lowers stress per newton (τ ∝ FD), but the index C falls, driving the Wahl factor up and making winding harder. There's no free doubling — recheck solid-height stress whichever lever you pull."
+        },
+        {
+          "question": "What is spring surge, and why can a valve spring that passes every static and fatigue check still fail at high engine speed?",
+          "answer": "The spring is a distributed mass-elastic line with its own longitudinal natural frequencies. When cam harmonics approach a surge mode, compression waves travel along the coil: individual coils over-travel, momentarily clash or unload, wire stress spikes far beyond the quasi-static prediction, and valve control is lost. Design rule: put the first surge frequency well above the drive frequency (classic rules ≥ ~13×) so the strong low cam harmonics can't find it."
         }
       ]
     },
@@ -409,6 +721,14 @@
         {
           "question": "Why does a rapid quench crack thick ceramic or glass parts but not thin ones?",
           "answer": "The surface cools and contracts while the core is still hot — the core constrains the surface, putting it in tension. Thicker sections sustain larger ΔT between surface and core (Biot number grows), so the self-constraint stress exceeds the (flaw-limited) tensile strength."
+        },
+        {
+          "question": "A steel bolt clamps an aluminum housing and the assembly heats uniformly by 80 °C — no gradients anywhere. Why does the joint get tighter, and what must you check?",
+          "answer": "CTE mismatch: aluminum (α ≈ 23 µm/m·°C) wants to grow about twice as much as the steel bolt (α ≈ 12) allows, so compatibility forces extra bolt stretch — preload climbs with temperature. Check bolt yield hot and gasket/member crush; then check the cold case, because cooling LOOSENS the same joint (preload loss → leaks, slip, fatigue). The load is the differential expansion, not the temperature itself."
+        },
+        {
+          "question": "Why doesn't a fully constrained bar's thermal stress depend on its length — and what DOES scale with length, biting pipelines and rails?",
+          "answer": "$\\sigma = E\\alpha\\Delta T$ comes from strain compatibility, so a 1 m and a 100 m bar see identical stress (steel at ΔT = 50 °C → ~120 MPa either way). What grows with length is the free displacement $\\alpha\\Delta T\\,L$ — millimeters per 10 m — which must be absorbed somewhere. That's why pipelines get expansion loops and bridges get sliding bearings: park the displacement deliberately, or it shows up as buckling (rail sun kink) or enormous anchor loads."
         }
       ]
     },
@@ -423,7 +743,8 @@
         "$[K]\\{d\\} = \\{r\\}$: assemble, constrain (kill rigid-body modes), solve",
         "Stress is recovered by differentiating displacement → one order less accurate",
         "Generalized Hooke: $\\epsilon_{ij} = \\frac{1}{E}[(1+\\nu)\\sigma_{ij} - \\nu\\sigma_{kk}\\delta_{ij}]$",
-        "Energy view: equilibrium = minimum potential energy; $u = \\frac{1}{2}\\sigma\\epsilon$"
+        "Energy view: equilibrium = minimum potential energy; $u = \\frac{1}{2}\\sigma\\epsilon$",
+        "2D idealizations: plane stress ($\\sigma_z = 0$, thin parts) vs plane strain ($\\epsilon_z = 0$, long/constrained parts)"
       ],
       "cards": [
         {
@@ -433,6 +754,10 @@
         {
           "question": "Your FEA solver reports a singular stiffness matrix. What are the usual suspects?",
           "answer": "Unconstrained rigid-body modes (part can translate/rotate freely — missing BCs), disconnected mesh regions, or mechanisms (e.g., pin-jointed chain). The matrix has zero-energy modes, so it can't be inverted."
+        },
+        {
+          "question": "Plane stress vs plane strain — which 2D idealization for a thin bracket vs the mid-section of a long dam, and what goes wrong if you swap them?",
+          "answer": "Plane stress sets $\\sigma_z = 0$ — right for thin parts whose faces are free to contract (sheet, brackets). Plane strain sets $\\epsilon_z = 0$ — right where material is constrained along its own length (dams, pipe cross-sections, the mid-thickness of thick parts); it develops $\\sigma_z = \\nu(\\sigma_x+\\sigma_y)$ and behaves stiffer. Swapping shifts stiffness by ν² effects, but the worse error is triaxiality: plane stress hides the constraint that suppresses yielding and drops fracture toughness in thick sections."
         }
       ]
     }

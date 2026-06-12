@@ -2,6 +2,7 @@
 
 import threading
 from contextlib import asynccontextmanager
+from typing import Optional
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
@@ -14,7 +15,7 @@ from app.services.cloud import get_cloud
 from app.services.llm import OllamaError, get_llm
 from app.services.notify import ReminderService
 
-_reminder: ReminderService | None = None
+_reminder: Optional[ReminderService] = None
 
 
 @asynccontextmanager

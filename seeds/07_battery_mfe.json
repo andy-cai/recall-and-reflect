@@ -1,5 +1,5 @@
 {
-  "deck": "Battery Engineering & Internship Emphasis",
+  "deck": "Battery & Test Engineering",
   "topics": [
     {
       "title": "Cell capacity testing: CC-CV protocols",
@@ -18,6 +18,14 @@
         {
           "question": "Why does a cell discharged at 3C deliver noticeably fewer Ah than at C/5, and why does some of it 'come back' after a rest?",
           "answer": "At 3C, I·R drop and concentration polarization depress terminal voltage, hitting the cutoff while lithium remains; resting lets gradients relax, voltage recovers, and a follow-up discharge extracts the remainder. It's accessibility, not destruction, of capacity."
+        },
+        {
+          "question": "Sketch a full CC-CV charge of a Li-ion cell: current and voltage vs time on shared axes, labeled phase by phase.",
+          "answer": "A correct sketch shows:\n- Time on the horizontal axis; voltage on one vertical axis, current on the other, two labeled traces\n- CC phase: current flat at the set rate while voltage climbs, steepening as it approaches the ceiling\n- Switch point where V hits the ceiling (e.g., 4.2 V): voltage clamps flat from here on\n- CV phase: current decays in a roughly exponential taper while voltage holds\n- Termination marked where taper current crosses the cutoff (~C/20)\n- Proportion note: most of the Ah goes in during CC; the final ~10–20% arrives in CV\n- Diagnostic note: higher resistance (aged, cold, or fast-charged cells) hits the ceiling earlier → a longer CV fraction"
+        },
+        {
+          "question": "A new cell and an aged cell follow the same CC-CV protocol to the same cutoff. Why does the aged one spend visibly longer in CV, and what free diagnostic does that give you?",
+          "answer": "The terminal voltage includes the I·R overpotential, so a higher-resistance cell hits the 4.2 V ceiling earlier in the charge — less real charge stored during CC — and the CV phase must then taper the current while the remaining lithium goes in. The growing CV-time fraction therefore tracks resistance growth: a state-of-health indicator extracted from charge logs you were already recording, no extra test required."
         }
       ]
     },
@@ -38,6 +46,10 @@
         {
           "question": "In a pulse test, why attribute the instantaneous voltage step to ohmic resistance and the slow tail to diffusion?",
           "answer": "Ohmic paths (electrolyte, contacts, foils) respond at electromagnetic speed — V = IR instantly. Charge transfer and lithium diffusion build concentration gradients which grow/relax over seconds to minutes — RC-like tails. Time separates the mechanisms cleanly enough to fit them as distinct elements."
+        },
+        {
+          "question": "Sketch the voltage-vs-time trace of a single HPPC discharge pulse and the rest after it, labeling what each feature measures.",
+          "answer": "A correct sketch shows:\n- Flat open-circuit voltage before the pulse (cell rested)\n- At current ON: an instantaneous vertical drop — this step ÷ I is R0, the ohmic resistance\n- During the pulse: continued downward sag with decreasing slope — polarization building (RC branches charging, then diffusion)\n- At current OFF: an instantaneous jump back up of the same I·R0 size\n- After the pulse: slow exponential-ish relaxation toward a new OCV over seconds to minutes — the RC/diffusion tail used to fit time constants\n- Annotation: ΔV/I measured at 1 s vs 10 s gives different DCIR — duration must be stated\n- Caveat: the rest must be long enough for voltage to settle, or the OCV-SOC point logged next is corrupted"
         }
       ]
     },
@@ -54,23 +66,49 @@
         "ACIR: screening/matching cells in production; DCIR: real-world power prediction",
         "EIS = the full frequency sweep that resolves each contribution"
       ],
-      "cards": []
+      "cards": [
+        {
+          "question": "A cell measures 15 mΩ ACIR but 28 mΩ DCIR at 10 s. Which number predicts voltage sag during a 10-second acceleration — and why does the production line use the other one?",
+          "answer": "DCIR: a 10 s pulse develops the charge-transfer and diffusion polarization that actually depress voltage under load; ACIR at 1 kHz cycles too fast for either, seeing only the ohmic core. Production screens with ACIR anyway because it takes seconds, needs no SOC conditioning or thermal recovery, and is exquisitely repeatable — perfect for catching weld/electrolyte/assembly variation and binning matched cells, even though it can't predict sag. Different questions, different instruments."
+        },
+        {
+          "question": "Why is a DCIR number meaningless without pulse duration, SOC, and temperature attached?",
+          "answer": "Each condition adds or removes physics: longer pulses accumulate more diffusion polarization, so DCIR grows with duration by construction; charge-transfer resistance varies strongly with SOC (worst near empty/full) and is Arrhenius in temperature — cold can multiply it severalfold. A 1 s / 50% SOC / 25 °C value and a 10 s / 10% SOC / 0 °C value from the SAME cell can differ by 2–3×. Comparisons — cell to cell, or aged to new — are only valid at matched conditions."
+        },
+        {
+          "question": "Two cells from one lot match on capacity but one reads 20% higher ACIR. Why does the pack builder reject the pairing even though the energy is identical?",
+          "answer": "In a parallel group, current divides inversely with resistance: the low-R cell takes the larger share, runs hotter, and ages faster — the mismatch self-amplifies. In series, the high-R cell sags hardest, hits the voltage cutoff first (limiting pack power), and dissipates more I²R heat. Resistance matching at build is cheap; the imbalance, thermal spread, and early degradation it prevents are not."
+        }
+      ]
     },
     {
       "title": "Pack design flow: LapSim to cell count",
       "subject": "Battery Engineering",
       "tags": ["design"],
-      "content": "Requirements flow down from the vehicle: lap simulation produces the power-time trace over a lap/race → energy per stint, peak and continuous power, regen profile. From that: pack energy (with reserve and usable-SOC window), voltage architecture (motor/inverter limits, rules ceiling), then series count (V) × parallel count (Ah, current sharing) from the chosen cell. Cell selection trades specific energy vs power capability vs thermal behavior; the thermal model closes the loop (continuous power limited by heat rejection, not nameplate). Iterate: mass affects lap time affects energy. Validate against rules (FSAE: voltage ceiling, energy meter, fusing).",
-      "recall_prompt": "Walk the design chain: LapSim outputs → energy/power requirements → S-P architecture and cell selection → thermal closure — and why it must iterate on mass.",
+      "content": "Pack sizing starts from a duty cycle, not a datasheet: a drive-cycle simulation (lap simulation, in the FSAE case that named this flow) converts vehicle mass, aero, and track/route into a power-vs-time trace — yielding energy per stint, peak power, continuous (RMS) power, and the regen profile. From that flow the architecture: pack energy with reserve and a usable-SOC window; voltage set by inverter/motor limits and any rules ceiling; then series count (voltage) × parallel count (capacity and current sharing) for the chosen cell. Cell selection trades specific energy vs power capability vs thermal behavior, and the thermal model closes the loop — continuous power is limited by heat rejection, not the nameplate. The whole thing iterates: pack mass changes the duty cycle that sized the pack. Validate against rules (voltage ceiling, energy metering, fusing).",
+      "recall_prompt": "Walk the sizing chain: drive-cycle/lap-sim outputs → energy and power requirements → series-parallel architecture and cell selection → thermal closure — and explain why the loop must iterate on mass.",
       "key_ideas": [
-        "LapSim gives the duty cycle: energy/stint, peak & continuous power, regen",
-        "Series count sets voltage (inverter + rules); parallel sets capacity & current split",
-        "Cell choice = energy density vs power vs thermal vs packaging trade",
-        "Continuous power is a thermal number, not a datasheet number",
-        "Mass ↔ lap time ↔ energy: the loop converges, not solves",
-        "Usable window < 100% SOC: reserve, voltage sag margin, longevity"
+        "Drive-cycle simulation gives the duty cycle: energy per stint, peak & continuous power, regen profile",
+        "Series count sets voltage (inverter + rules ceiling); parallel count sets capacity & splits current",
+        "Cell choice = specific energy vs power capability vs thermal vs packaging trade",
+        "Continuous power is a thermal number (RMS current vs heat rejection), not a datasheet number",
+        "Mass ↔ duty cycle ↔ energy: the loop converges by iteration, it doesn't solve in one pass",
+        "Usable window < 100% SOC: reserve, voltage-sag margin, longevity"
       ],
-      "cards": []
+      "cards": [
+        {
+          "question": "Why is a pack's peak power an electrical number but its continuous power a thermal one — and what test data feeds each?",
+          "answer": "Peak power (seconds) is limited by voltage sag: current × resistance must not drive cells below their minimum voltage — straight out of HPPC resistance data. Continuous power is limited by heat: $I^2R$ generation must balance the cooling system's rejection at an acceptable cell temperature, so it depends on the thermal design, not the cell datasheet. In between, the duty cycle's RMS current is the sizing current — a pack can deliver huge peaks all day only if the RMS stays inside the thermal budget."
+        },
+        {
+          "question": "Walk the series-parallel split: what fixes S, what fixes P, and which way do you round each?",
+          "answer": "S = pack maximum voltage ÷ cell maximum voltage, rounded DOWN to stay under the inverter/rules ceiling — series count sets the voltage window. P comes from the binding requirement: needed capacity ÷ cell capacity, or peak current ÷ cell current limit — take the larger and round UP. Then re-check everything the rounding moved: usable energy = nominal × usable-SOC window (not nameplate), and current per parallel group at the real S×P. Voltage is a hard ceiling; energy and current are floors."
+        },
+        {
+          "question": "Why can't the pack be sized in one pass — what makes the mass loop converge rather than circle forever?",
+          "answer": "The duty cycle that sized the pack was computed at an assumed vehicle mass; adding cells adds mass, which raises energy-per-lap, which demands more cells. The loop converges because the sensitivity is less than one — each added kg costs only a fraction of a kg's worth of new energy — so iterations shrink geometrically. Skipping the iteration systematically undersizes the pack, and the same feedback couples into thermal (more mass, more braking regen) and structural budgets."
+        }
+      ]
     },
     {
       "title": "HV bay packaging: DFA & DFR",
@@ -85,7 +123,20 @@
         "HV overrides: IP2X finger safety, interlock through covers, creepage after re-assembly",
         "Busbar joints: controlled torque + witness marks — resistance drift = heat"
       ],
-      "cards": []
+      "cards": [
+        {
+          "question": "Why does the HV interlock loop (HVIL) thread through every removable cover and connector — what does it actually do electrically, and what does it NOT protect against?",
+          "answer": "It's a low-voltage continuity loop wired in series through every cover and HV connector: removing any one breaks the loop, and the controller opens the contactors and commands a DC-link bleed before fingers can reach the conductors. It converts a procedural rule ('de-energize before opening') into a physical guarantee. It does not protect against stored energy already in the link — bleed-down time still matters — or against bypassed/jumpered loops, which is why finger-safe IP2X terminals remain mandatory underneath."
+        },
+        {
+          "question": "A torqued busbar joint shows discoloration at the one-year inspection. Walk the failure chain — and name the design features that catch or break it early.",
+          "answer": "Joint preload relaxes (thermal cycling, vibration, plating creep) → contact resistance rises → $I^2R$ heat → oxidation of the contact faces → more resistance: a self-accelerating loop ending in a glowing joint. Defenses: conical/Belleville washers to hold preload through cycling, torque-stripe witness marks that show rotation at a glance, temperature-indicating labels or IR-thermography windows for inspection without teardown — which is exactly why DFR demands those joints be reachable without de-stacking the pack."
+        },
+        {
+          "question": "Two identical-looking connectors sit within reach of each other's harnesses in the HV bay. Why is that a build-stopper rather than a training item, and what's the poka-yoke fix?",
+          "answer": "Mis-mating can put the wrong potential on sense or interlock pins, defeat the safety chain, or short circuits — and at 400 V the discovery event is not reworkable. Procedures and labels fail at some rate; assembly mistakes must be made IMPOSSIBLE: mechanically keyed connector variants, different families per function, and harness lengths that physically cannot reach the wrong header. DFA's 'self-locating, one-way assembly' rule is a quality rule everywhere else — in an HV bay it's a safety rule."
+        }
+      ]
     },
     {
       "title": "Battery test apparatus: loads & bidirectional supplies",
@@ -100,7 +151,20 @@
         "Slew rate for clean HPPC edges; remote sense kills lead-drop error",
         "SCPI scripting + safety limits (OVP/OCP/OTP) for unattended protocols"
       ],
-      "cards": []
+      "cards": [
+        {
+          "question": "A 600 W load rated 120 V / 30 A refuses to pull 30 A from your cell at 2.8 V. Neither the power nor current rating is exceeded — what spec did you miss?",
+          "answer": "The low-voltage capability: an electronic load is a controlled FET bank that needs minimum voltage headroom across it to conduct, so below a few volts the available current derates toward zero along a published minimum-operating-voltage curve. Battery testing lives exactly in that corner — full rated current at the 2.5–3 V discharge cutoff. Check the I-V operating envelope at YOUR cutoff voltage, not the nameplate corners; the same envelope logic applies to the power hyperbola clipping the V×I rectangle."
+        },
+        {
+          "question": "What error does remote (4-wire) sense remove in cell testing, and how can the sense leads themselves create a hazard?",
+          "answer": "Lead and contact drop: at 50 A, even 5 mΩ of cabling is 250 mV — a huge error against a ~3.5 V cell, and worse, the instrument regulates ITS terminals, so CC-CV transitions and cutoffs all happen at the wrong cell voltage. Four-wire sensing regulates and measures at the cell tabs through separate, current-free leads. The bite: a broken or swapped sense lead makes the supply 'see' low voltage and wind up its output — instruments need sense-loss protection, and sense pairs should be routed twisted and separate from power leads."
+        },
+        {
+          "question": "When does a bidirectional supply genuinely replace a supply-plus-load pair, and what's the energy argument for the price tag?",
+          "answer": "When the protocol crosses zero current seamlessly — drive-cycle replay with regen, charge/discharge cycling, HPPC's discharge and regen pulses — a separate source and sink hand off with glitches and can't follow fast sign changes. And a recovery-type unit pushes discharge energy back to the grid instead of burning it: a kW-scale cycler running endurance protocols dissipates megawatt-hours per year, so electricity plus the HVAC to remove that heat from the lab often repays the instrument."
+        }
+      ]
     },
     {
       "title": "Composite enclosures & bonded joint testing",
@@ -119,6 +183,10 @@
         {
           "question": "Why does a longer overlap stop adding strength to a bonded lap joint beyond a certain length?",
           "answer": "Shear-lag: the adhesive shear stress concentrates at the two ends of the overlap while the middle goes nearly unloaded — extra length just adds unloaded middle. Strength scales with width, not length, once past the load-transfer length; tapering the adherend ends does more than lengthening."
+        },
+        {
+          "question": "The adhesive system was fully qualified during development. Why does production still cure witness coupons alongside every bond batch?",
+          "answer": "Bond strength is dominated by process variables — surface prep, mix ratio, humidity, cure cycle — that drift batch to batch and leave no visible evidence after cure: a 'kissing bond' (full contact, no adhesion) looks perfect and can pass many NDT methods. Qualification proved the DESIGN; witness coupons broken from each batch prove the PROCESS that day. They're the only destructive evidence available without sacrificing flight/production hardware, and they're what you pull when a field failure demands a paper trail."
         }
       ]
     },
@@ -139,6 +207,14 @@
         {
           "question": "Why does LFP's flat open-circuit-voltage curve, a feature for power delivery, become a problem for the BMS?",
           "answer": "SOC estimation leans on the OCV-SOC map: LFP's voltage barely changes from ~20-90% SOC, so a few mV of measurement error becomes tens of percent SOC error. The BMS must rely on coulomb counting with periodic full-charge resets instead of voltage lookup."
+        },
+        {
+          "question": "NMC for a range-critical EV, LFP for a grid buffer — defend the stereotype on energy, safety, life/cost, and SOC estimability, and name when it flips.",
+          "answer": "NMC: ~3.6–3.7 V nominal and higher specific energy → range and mass win; sloped OCV makes SOC easy; but lower thermal-runaway onset and oxygen release from the cathode make abuse harsher. LFP: ~3.2 V and heavier per kWh, but no cathode oxygen release, higher runaway onset, longer cycle life, and no Ni/Co cost — ideal where mass is cheap and calendar/cycle count is the business case; the flat OCV is the BMS tax. It flips when packaging mass matters less than lifetime cost (city buses, base-trim EVs run LFP) or when energy density is existential (aviation stays high-nickel)."
+        },
+        {
+          "question": "An 'energy' cell and a 'power' cell of the same chemistry and format — what's physically different inside, and what breaks if you swap them?",
+          "answer": "Electrode architecture: energy cells coat thick, dense electrodes — more active material per liter, but longer lithium diffusion paths and higher resistance; power cells coat thin, with more layers, foil, and tab area — low resistance, less stored energy. Swap an energy cell into a power duty and the polarization overheats it and invites lithium plating on fast charge; a power cell in an energy role just surrenders runtime. The datasheet tells: compare max continuous C-rate and Wh/kg — you can't max both in one can."
         }
       ]
     },
@@ -160,6 +236,10 @@
         {
           "question": "Why is a steel fastener in an aluminum HV busbar joint a corrosion problem, but an aluminum rivet in a steel panel even worse?",
           "answer": "The less noble aluminum is the anode in both. With a steel bolt in big aluminum, the anode (Al) is large vs the cathode — slow distributed attack. An aluminum rivet in big steel reverses the area ratio: all the galvanic current concentrates on a tiny anode, dissolving the rivet fast. Anode area must be large relative to cathode."
+        },
+        {
+          "question": "Why is gold plated only a fraction of a micron thick over a nickel underlayer, rather than thicker gold straight onto the copper?",
+          "answer": "Each layer has one job. Gold supplies the noble, oxide-free contact surface — low and STABLE contact resistance. Nickel underneath is the barrier and the backbone: it blocks copper from diffusing through the thin gold (where it would oxidize at the surface and raise contact resistance) and its hardness backs the contact against fretting wear. Thicker gold without nickel buys cost, not function — soft gold over soft copper still wears and still lets copper through pores."
         }
       ]
     },
@@ -180,6 +260,160 @@
         {
           "question": "A cell measurably cools during part of a low-rate charge. Which heat term explains this and why doesn't it help at high rate?",
           "answer": "The reversible entropic term $T\\Delta S$ — for some SOC windows the intercalation entropy change absorbs heat. It scales with I (first power) while Joule heating scales with I², so at high rate the irreversible terms bury it."
+        },
+        {
+          "question": "Raising continuous current 41% doubles the pack's heat load. What law is that, and why must the cooling system be sized for end-of-life cells anyway?",
+          "answer": "$Q = I^2R$: heat goes with the square of current (1.41² = 2), which is why duty cycles are reduced to an RMS current for thermal sizing. The R in that product grows with age — SEI thickening and contact degradation can raise resistance substantially over life — so the same duty cycle generates progressively more heat. Cooling sized to beginning-of-life resistance quietly loses margin every year; the design case is end-of-life R at the hottest ambient."
+        }
+      ]
+    },
+    {
+      "title": "BMS architecture & cell balancing",
+      "subject": "Battery Engineering",
+      "tags": ["bms", "electronics"],
+      "content": "The BMS measures every series group's voltage and a spread of temperatures, estimates SOC/SOH, enforces current/voltage/temperature limits, drives contactors, and balances the string. Balancing exists because series cells diverge: the string current is identical through every cell, so differences in self-discharge, coulombic efficiency, temperature, and capacity pull SOCs apart — and the pack hits its charge cutoff at the HIGHEST cell and its discharge cutoff at the LOWEST, shrinking usable capacity from both ends. Passive balancing bleeds the high cells through resistors (typically tens to ~200 mA), usually near top of charge where the OCV curve separates cells; it's simple and dominant in production. Active balancing shuttles charge between cells (capacitive/inductive/transformer) — efficiency for cost and complexity. Neither fixes capacity fade: a genuinely weak cell re-diverges forever.",
+      "recall_prompt": "Explain why series cells diverge despite identical current, how imbalance eats usable capacity from both ends, and compare passive vs active balancing — including when balancing runs and at what current.",
+      "key_ideas": [
+        "Series string: identical current through all cells — divergence comes from self-discharge, efficiency, temperature, and capacity differences, not current",
+        "Charge stops at the highest cell, discharge at the lowest → imbalance shrinks usable capacity from both ends; pack Ah = weakest cell",
+        "Passive balancing: bleed high cells through resistors (tens–~200 mA) — simple, cheap, energy becomes heat",
+        "Balance near top of charge: the steep OCV region makes SOC differences visible as voltage (critical for LFP's flat middle)",
+        "Active balancing moves charge cell-to-cell (cap/inductor/transformer shuttles) — earns its complexity only for large imbalance or big strings",
+        "Balancing corrects SOC offsets, not capacity fade — a low-capacity cell always re-diverges",
+        "Protection is per-cell: every series group gets voltage sense; temperature sensors spread across the pack"
+      ],
+      "cards": [
+        {
+          "question": "Passive balancing literally burns energy, yet it dominates production packs. When does active balancing actually earn its cost and complexity?",
+          "answer": "Healthy matched cells diverge slowly — self-discharge mismatch needs only milliamp-hours per day of correction, so a bleed resistor per cell with trivial failure modes wins on every axis that matters. Active balancing earns its magnetics when the imbalance is structurally large or the energy is precious: second-life or poorly matched cells, very long strings, or when the weak cell must be SUPPORTED during discharge — passive can only burn from the rich at the top, never feed the poor at the bottom."
+        },
+        {
+          "question": "Why does one weak cell set the capacity of a 100-cell series string — and why can't the charger just push a little more in to compensate?",
+          "answer": "The same current flows through every cell, so the lowest-capacity cell sweeps its SOC window fastest: first to hit the top voltage on charge and first to hit the bottom on discharge — both limits belong to it, so pack usable Ah equals the weakest cell's. Charging past the top cell's limit is overcharge: lithium plating, gassing, runaway risk. Balancing reclaims SOC OFFSETS between cells, but a capacity deficit re-opens every cycle — that cell is the pack until it's replaced."
+        },
+        {
+          "question": "Why is balancing scheduled near the top of charge rather than mid-discharge?",
+          "answer": "Near full, the OCV-SOC curve is steep, so millivolt differences map to real SOC differences and the cells that hit the ceiling first identify themselves — bleeding them while the rest finish converges the string with mere milliamps. In the flat mid-curve (especially LFP), voltage can't even RANK the cells reliably, so mid-SOC balancing chases measurement noise. Top-of-charge also gives the BMS time on the charger and quiet, low-current readings to act on."
+        }
+      ]
+    },
+    {
+      "title": "SOC & SOH estimation",
+      "subject": "Battery Engineering",
+      "tags": ["bms", "testing"],
+      "content": "No sensor reads SOC: the BMS estimates it from two imperfect sources. The OCV-SOC curve is ground truth — but only after hours of rest, with temperature correction and (especially LFP) hysteresis between charge and discharge branches. Coulomb counting ($\\int I\\,dt / Q$) is responsive but drifts without bound: current-sensor offset integrates linearly, coulombic efficiency isn't quite 1, and the capacity reference Q itself fades. Practical estimators fuse the two — voltage measurements pull the integrator back via an observer/Kalman filter built on an equivalent-circuit model (Plett-style). LFP's flat curve (tens of mV across ~20–90% SOC) makes mid-range voltage correction nearly useless → periodic full-charge resets. SOH is TWO numbers: capacity fade (energy/range) and resistance growth (power/sag) — tracked separately, aging on different schedules.",
+      "recall_prompt": "Lay out the SOC estimation problem: OCV as ground truth and its rest/hysteresis caveats, why coulomb counting drifts unboundedly, how fusion fixes both, why LFP is the hard case — then define SOH's two components and how each is measured.",
+      "key_ideas": [
+        "SOC has no direct sensor: OCV lookup is true but needs hours of rest; coulomb counting is live but open-loop",
+        "Coulomb-counting drift: sensor offset integrates linearly, efficiency < 1 accumulates, and the Q denominator fades with age",
+        "Fusion (Kalman/observer on an equivalent-circuit model): voltage innovation pulls the integrator back — Plett's framework",
+        "OCV-SOC needs temperature correction and carries hysteresis (worst in LFP): charge and discharge branches differ even after rest",
+        "LFP's flat plateau: mV-scale slope across ~20–90% SOC → voltage correction dead mid-range; periodic full-charge resets re-anchor",
+        "SOH is two numbers: capacity fade (range) and resistance growth (power) — they degrade on different schedules",
+        "Measure: capacity by full/partial cycle integration; resistance by pulse ΔV/I at matched SOC and temperature vs beginning-of-life"
+      ],
+      "cards": [
+        {
+          "question": "Sketch OCV vs SOC for an NMC cell and an LFP cell on the same axes, and mark where each chemistry lets the BMS correct SOC from voltage.",
+          "answer": "A correct sketch shows:\n- Axes: SOC 0–100% horizontal, OCV vertical spanning ~2.5–4.2 V\n- NMC: smooth monotonic slope from ~3.0 up to ~4.2 V — usable gradient nearly everywhere; mark 'voltage correction works' across most of the range\n- LFP: fast rise from ~2.5 V, then a long FLAT plateau near 3.3 V spanning roughly 20–90% SOC (tens of mV total), steepening only near empty and full\n- Correction regions for LFP marked ONLY at the two ends\n- Hysteresis noted on LFP: separate charge and discharge OCV branches even after rest\n- Takeaway label: on the plateau, a few mV of sensor error = tens of % SOC error — coulomb counting must carry the middle"
+        },
+        {
+          "question": "With a perfect initial SOC, why does pure coulomb counting still walk away from the truth — name the three drift sources and what anchors it back.",
+          "answer": "It's an open-loop integrator: (1) current-sensor offset integrates linearly — a constant mA error becomes percent-per-day; (2) coulombic efficiency is slightly under 1, so every charge cycle books energy that didn't store; (3) the denominator Q fades with age, mis-scaling every update. With no restoring force the error is unbounded — hence anchors: OCV at genuine rests, full-charge detection as a 100% reset, or continuous fusion where the voltage model's innovation corrects the integrator (Kalman-style)."
+        },
+        {
+          "question": "A pack reports 95% capacity SOH yet fails its application in winter. Which second health number did the spec miss, and why do the two diverge?",
+          "answer": "Resistance growth — power SOH. Available power is limited by sag: $I \\cdot R$ against the minimum-voltage floor, so as R grows (thickening SEI, contact degradation, and a steep cold multiplier), peak power and regen collapse even while stored energy barely moves. Capacity and resistance age by different mechanisms on different schedules, so track both: an Ah test for energy SOH, pulse ΔV/I at matched SOC/temperature vs beginning-of-life for power SOH."
+        }
+      ]
+    },
+    {
+      "title": "Battery degradation & aging mechanisms",
+      "subject": "Battery Engineering",
+      "tags": ["aging", "electrochem"],
+      "content": "Two clocks run simultaneously. Calendar aging: the SEI keeps thickening even at rest, consuming cyclable lithium — diffusion-limited, so fade goes roughly as √t, accelerated by temperature (Arrhenius) and by high SOC (the anode held at low potential). Cycle aging adds throughput damage: particle cracking and loss of active material (worse at deep DOD), plus SEI re-formation on every fresh crack surface. Lithium plating is the sharp edge: charging too fast or too cold drives the graphite surface potential below 0 V vs Li/Li+, depositing metallic lithium — partly irreversible, dendrite-capable, and the reason charge current derates in the cold. The capacity 'knee' is when gradual fade turns autocatalytic (plating → pore clogging → more plating; electrolyte dry-out) and capacity collapses. Resistance grows alongside capacity fade, so power dies too. Storage rule: cool and mid-SOC; full-and-hot is the worst shelf state.",
+      "recall_prompt": "Separate calendar from cycle aging with their mechanisms and accelerants, explain why cold/fast charging plates lithium while discharge doesn't, and describe the capacity knee — what turns gradual fade into collapse.",
+      "key_ideas": [
+        "Calendar aging: SEI growth consumes lithium at rest — diffusion-limited ⟹ fade ∝ √t; accelerated by heat (Arrhenius) and high SOC",
+        "Cycle aging: particle cracking & loss of active material (worse at deep DOD) + SEI re-forming on fresh crack surfaces",
+        "Lithium plating: fast or cold charging pushes anode potential below 0 V vs Li/Li+ → metallic Li; partly irreversible, dendrite risk",
+        "Discharge has no plating pathway — cold discharge is merely inefficient, cold charge is damaging",
+        "The knee: fade turns autocatalytic (plating ↔ porosity loss, electrolyte depletion) and capacity collapses — extrapolating early fade misses it",
+        "Resistance grows in parallel with capacity fade → power and regen degrade too",
+        "Storage: cool, mid-SOC; full-and-hot is the worst shelf state"
+      ],
+      "cards": [
+        {
+          "question": "Sketch capacity retention vs cycle count for a cell aged through its knee, with the features a reviewer should find.",
+          "answer": "A correct sketch shows:\n- Axes: capacity as % of initial (100% down to ~60%) vs equivalent full cycles\n- A long, shallow, slightly decelerating fade (√-shaped) through the early life\n- The KNEE: a distinct downward inflection where the slope multiplies\n- Post-knee: steep, accelerating collapse\n- An EOL line marked (commonly 80%) — a healthy design crosses it BEFORE the knee\n- Annotations: cold/fast charging and deep DOD pull the knee earlier; the trap is extrapolating the early gentle slope, which predicts a life the knee deletes"
+        },
+        {
+          "question": "A telecom backup battery and an e-bike battery both die in four years. Different killers — what aged each, and why does mixing up the fixes waste money?",
+          "answer": "The backup unit sat at 100% SOC, warm, almost never cycled: calendar aging — SEI growth ∝ √t, accelerated by high SOC and temperature. Fix: float at reduced SOC and cool the cabinet. The e-bike cycled daily: DOD swings cracked particles and fast/cold charging plated lithium. Fix: shallower charge window and temperature-aware charge rates. Crossed fixes do nothing — cycle-rated cells don't help a hot float application, and a lower float voltage doesn't save a commuter pack from its charger."
+        },
+        {
+          "question": "Why does charging below ~0 °C at normal rates damage a cell when discharging at the same temperature is merely inefficient?",
+          "answer": "Charging pushes lithium INTO graphite; cold slows the intercalation kinetics and solid-state diffusion so much that the anode surface potential dips below 0 V vs Li/Li+ — lithium then deposits as metal on the surface instead of intercalating. Plating is partly irreversible (lost capacity) and can grow dendrites toward separator puncture. Discharge pulls lithium out — no plating pathway exists, just higher resistance and sag. Hence BMS charge-derating maps vs temperature, and self-heating before DC fast charge."
+        }
+      ]
+    },
+    {
+      "title": "Precharge & contactor sequencing",
+      "subject": "Battery Engineering",
+      "tags": ["hv", "safety"],
+      "content": "Closing a contactor straight onto a discharged DC-link capacitor is a dead short for milliseconds — inrush limited only by ESR and loop inductance arcs the contacts and can weld them shut. So packs precharge: close the negative main contactor (no complete circuit yet), then a precharge relay + resistor charges the link with time constant τ = RC; close the positive main only when the link reaches ~90–95% of pack voltage (small ΔV across the contacts), then open precharge. Resistor truths: peak current = $V_{pack}/R$, but the energy it absorbs is $\\frac{1}{2}CV^2$ regardless of R — pulse-energy rating, not average wattage, is the gotcha, and repeated aborted precharges cook it. Sequencing logic: every contact should close at ~zero current or ~zero voltage difference. Weld detection: open contactors one at a time and verify voltage divergence across them — which is why packs measure voltage on both sides. A shorted load means the link never comes up: time out and abort, never close the main anyway.",
+      "recall_prompt": "Explain why closing onto a discharged DC-link welds contactors, walk the full precharge sequence and what each step protects, size the resistor (peak current vs the ½CV² truth), and describe welded-contactor detection.",
+      "key_ideas": [
+        "Closing onto a discharged DC-link cap = momentary dead short → contact arcing and welding",
+        "Sequence: negative main (no circuit yet) → precharge relay/resistor (τ = RC) → positive main at ~90–95% link voltage → open precharge",
+        "Design rule: every contactor actuates at ~zero current or ~zero ΔV — arc-free by construction",
+        "Resistor absorbs $\\frac{1}{2}CV^2$ regardless of R; R only sets peak current ($V/R$) and wait time (~3–5 τ) — pulse energy rating is the gotcha",
+        "Precharge timeout: if the link doesn't rise (shorted load), abort — never close the main into the fault",
+        "Weld detection every cycle: open one contactor at a time, verify voltage divergence across it; voltage sensed on both sides of the contactors",
+        "Contactors break far less current than they carry — sequence to zero current before opening; emergency opens spend contact life"
+      ],
+      "cards": [
+        {
+          "question": "Why does the precharge resistor absorb exactly ½CV² no matter what resistance you pick — and what does R actually control?",
+          "answer": "Charging a capacitor through a resistor from a fixed source delivers $CV^2$ from the source: half ends up stored, half dissipates in the resistor — the integral of $I^2R$ over the exponential is $\\frac{1}{2}CV^2$ independent of R. R only sets the peak current ($V_{pack}/R$) and the wait (~3–5 RC). So the resistor is sized by pulse energy and repetition rate, not steady wattage — and back-to-back aborted precharge attempts are what actually burn them."
+        },
+        {
+          "question": "At shutdown the contactors are commanded open but the DC-link voltage doesn't fall. What happened, why is it dangerous, and what check should have caught it before the NEXT drive cycle?",
+          "answer": "A welded contactor — likely from a past inrush or under-load break — is holding the pack on the bus: HV persists beyond the boundary everyone now believes is dead, and the next close would slam the remaining contactor without protection. The defense is a weld check every cycle: actuate one contactor at a time and verify the voltages on either side diverge; if they track, it's welded — latch the fault, refuse to operate, annunciate. This check is the reason packs instrument voltage on BOTH sides of each contactor."
+        },
+        {
+          "question": "Why close the negative contactor first, precharge second, and the positive main last — what is each step's closure protected by?",
+          "answer": "Each contact must actuate at zero current or zero voltage difference. The negative main closes first into no complete circuit — zero current by topology. The precharge relay closes next with the resistor limiting current to $V/R$ — small by design. The positive main closes last, when precharge has equalized the link to within ~5–10% of pack voltage — near-zero ΔV, so no inrush. Opening runs in reverse after current is commanded to zero. The sequence preserves contact life for the emergency opens that can't be polite."
+        }
+      ]
+    },
+    {
+      "title": "Pack thermal management",
+      "subject": "Battery Engineering",
+      "tags": ["thermal", "design"],
+      "content": "The cooling ladder — passive air, forced air, liquid cold plate, immersion — buys heat-flux capability and uniformity with cost and complexity; most EVs land on cold plates, immersion appears where flux or runaway suppression justifies dielectric fluid. The target is uniformity as much as peak temperature: aging is Arrhenius (a sustained ~10 °C hotter cell ages roughly twice as fast), so a cell-to-cell gradient converts a matched pack into a mismatched one — common practice keeps ΔT ≲ 5 °C. The thermal interface (gap pads/TIM bridging cell-to-plate tolerance stacks) often dominates the resistance chain. Cold is the other half: charging below ~0–10 °C must derate against lithium plating, so packs pre-heat before fast charge. Propagation defense tensions against cooling — conduction paths that cool also spread runaway heat; resolve with direction-selective design: pull heat down into the plate, block lateral cell-to-cell paths with mica/aerogel barriers, route vent gas away from neighbors. Size cooling for continuous RMS duty at end-of-life resistance.",
+      "recall_prompt": "Walk the cooling topology ladder and what flips each decision, explain why cell-to-cell ΔT is an aging-uniformity spec, cover cold-side preheating, and resolve the cooling-vs-propagation-barrier tension.",
+      "key_ideas": [
+        "Topology ladder: passive air → forced air → liquid cold plate → immersion; each rung buys heat flux + uniformity for cost/complexity",
+        "Aging is Arrhenius: ~10 °C hotter ⟹ roughly 2× faster aging — so gradients create capacity/resistance spread, not just hot cells",
+        "ΔT target (commonly ≲5 °C cell-to-cell) is really an aging-uniformity and balance spec; pack EOL arrives with the first cell",
+        "Thermal interface materials (gap pads) bridge tolerance stacks and often dominate the cell-to-plate resistance chain",
+        "Cold side: charge derates below ~0–10 °C (plating) → pre-heat before fast charge",
+        "Cooling vs propagation: the same conduction that cools spreads runaway — use directional paths (down to plate) + lateral barriers (mica/aerogel) + dedicated vent routing",
+        "Size for continuous RMS current at end-of-life resistance, not nameplate peaks at BOL"
+      ],
+      "cards": [
+        {
+          "question": "Every cell stays inside its allowed temperature window, yet a steady 6 °C cell-to-cell gradient still costs pack life. Through what mechanism?",
+          "answer": "Aging is Arrhenius — the chronically warmer cells fade and grow resistance roughly twice as fast per ~10 °C — so the gradient manufactures a mismatched pack in-house: in series, the weakest cell sets usable capacity and trips the limits first; the spread also outruns what balancing can hide. Pack end-of-life arrives with the FIRST cell, not the average, so the ΔT spec is an aging-uniformity spec wearing a thermal costume."
+        },
+        {
+          "question": "When is forced air honestly enough for a pack, and what requirement most often flips the decision to a liquid cold plate?",
+          "answer": "Air is fine when the duty is gentle and intermittent — low C-rates, time to recover between bursts, loose ΔT needs (e-bikes, backup units, mild hybrids): it's cheap, leak-free, and self-contained. The flip is usually DC fast charge or sustained high C-rate: air's low heat capacity and film coefficient can't hold flux OR uniformity at high power, while a plate couples to a chiller and keeps ΔT tight in dense packaging. As a rule, the fast-charge spec alone decides it before anything else gets a vote."
+        },
+        {
+          "question": "Cooling wants thermal paths between cells and the plate; propagation resistance wants cells isolated from each other. How do real packs satisfy both?",
+          "answer": "By making conduction directional. Heat is pulled DOWN through can bottoms/sides into the cold plate — the normal-operation path — while LATERAL cell-to-cell conduction is blocked with mica or aerogel barriers, and vent gas gets dedicated channels routed away from neighbors. In a runaway, the plate even helps, sinking a chunk of the released heat. The contradiction dissolves once you stop treating thermal conductance as one number and route it like any other load path."
         }
       ]
     },
@@ -200,6 +434,10 @@
         {
           "question": "A fuse rated 58 V AC held fine in a 400 V DC pack short — until it didn't. What rating was ignored?",
           "answer": "DC voltage/interrupt rating. AC arcs quench at current zero-crossings 100/120 times a second; DC has none, so the arc across the melted element keeps conducting and burns through the body. A pack fuse needs a DC rating above pack voltage and interrupt capacity above the pack's prospective short-circuit current."
+        },
+        {
+          "question": "A 100 A fuse carries 115 A for hours without opening. Is it broken — and what should be protecting against that 'just-under' overload?",
+          "answer": "Working as designed: fuses are fault devices with tolerance bands — they typically must carry ~110% of rating indefinitely, with guaranteed opening only well above that (commonly ~135–200% within an hour, depending on class). Near-rating overloads sit under the time-current curve, possibly forever. Sustained mild overloads are the BMS's job — current limits, temperature monitoring, derating — while the fuse exists for faults. Sizing a fuse tight enough to catch small overloads just buys nuisance trips on inrush instead."
         }
       ]
     },
@@ -216,7 +454,20 @@
         "Trace current capacity per IPC-2152; thermal relief vs solid for power pads",
         "Outputs: Gerber/ODB++, drill, BOM (MPNs), pick-and-place, assembly drawings + DFM pass"
       ],
-      "cards": []
+      "cards": [
+        {
+          "question": "Why do current-shunt measurements demand Kelvin connections, and what does that physically look like in the layout?",
+          "answer": "A shunt is sub-milliohm — solder joints and copper in the current path are comparable resistances, so sensing through the power traces measures the wrong resistance plus its temperature drift. Kelvin routing taps dedicated sense traces at the shunt's inner sense pads (or a 4-terminal shunt's sense terminals), carrying essentially zero current → zero IR error. Layout signature: a symmetric sense pair peeling off inside the power connections, routed differentially away from the switching loop."
+        },
+        {
+          "question": "The schematic simulates perfectly and the netlist is DRC-clean, yet the assembled board is scrap. What class of error survived every electrical check, and what gate catches it?",
+          "answer": "Library errors: a mirrored pinout, wrong pad pitch, or swapped anode/cathode in the footprint — the tools trust the symbol-footprint binding completely, so every downstream check inherits the lie. The gate is library hygiene: verify footprint against the physical datasheet drawing (pin-1 orientation, pad numbering), check the 3D model against mechanical, and print 1:1 to lay parts on paper for new footprints. This is the classic respin generator precisely because no automated check owns it."
+        },
+        {
+          "question": "Your HV sense board passes electrical DRC but fails safety review on creepage. What's the distinction DRC missed, and what are the layout fixes?",
+          "answer": "DRC checks clearance — straight-line spacing. Creepage is the path ALONG the surface, where dust and humidity (pollution degree) enable tracking at much larger distances than air breakdown requires, per the material's CTI. Fixes: encode voltage-class spacing rules per net class so DRC enforces them, widen the physical separation, and where geometry can't stretch, mill slots — forcing the surface path around a slot multiplies creepage without moving components."
+        }
+      ]
     },
     {
       "title": "Seal design & leak testing",
@@ -236,6 +487,10 @@
         {
           "question": "Why does a pressure-decay leak test give false failures in the morning and false passes in the afternoon, and what's the fix?",
           "answer": "Ideal gas: the trapped air's pressure tracks its temperature (~0.3%/°C) — a part cooling during the test mimics a leak; warming masks one. Fix: temperature-compensate, let parts soak to ambient, use a reference volume in differential mode, or switch to tracer gas."
+        },
+        {
+          "question": "O-ring groove design holds squeeze in a band and caps fill around 85%. What fails at each extreme — too little squeeze, too much, and an overfilled groove?",
+          "answer": "Too little squeeze: tolerance stack, thermal contraction, or compression set opens a leak path — the seal must stay compressed through the worst-case cold corner. Too much: assembly damage, high installation force, and accelerated compression set that becomes 'too little' over time. Overfill is the sneaky one: rubber is incompressible, and thermal expansion plus fluid swell need somewhere to go — a brimming groove hydraulically locks, extrudes the ring into the gap, or jacks the joint open. The groove is a pressure vessel for rubber; leave it room."
         }
       ]
     },
@@ -257,6 +512,10 @@
         {
           "question": "Why can a pack that meets clearance requirements still fail insulation in service due to creepage, and what two design levers fix it?",
           "answer": "Clearance is through-air; creepage is along surfaces, where dust + humidity (pollution degree) form conductive tracks at much longer required distances. Levers: increase the surface path (ribs, slots, boots raise effective creepage) and choose higher-CTI materials that resist tracking."
+        },
+        {
+          "question": "Why is the trigger method — nail, film heater, overcharge — such a fought-over detail in propagation (PPR) testing?",
+          "answer": "The trigger sets the failure mode being defended against: a nail makes a localized internal short, possibly breaching the sidewall toward a neighbor; a film heater drives a slower, whole-cell runaway with different vent timing; overcharge adds extra electrical energy and plated lithium beyond any field-representative state. A barrier stack tuned to one trigger's heat and ejecta path can fail another's. That's why protocols pin the trigger precisely (location, energy, rate) — results only compare at matched triggers — and why you pick the trigger matching the field threat, not the easiest pass."
         }
       ]
     },
@@ -273,7 +532,20 @@
         "Random response → stress PSD → Miner's-rule fatigue prediction",
         "Traps: fixture modes in band, unrealistic boundary conditions, guessed joint damping"
       ],
-      "cards": []
+      "cards": [
+        {
+          "question": "Your shaker fixture has a resonance at 800 Hz, inside the test band. Why does a 'passing' endurance run mean nothing, and how should it have been caught?",
+          "answer": "The control accelerometer holds the spec at the control point, but the fixture resonance amplifies or notches what the ARTICLE'S mounting points actually receive — you over-tested at some frequencies and under-tested at others, so neither a pass nor a failure maps to the spec. Catch it beforehand: survey the bare fixture (sine sweep) and require its first mode comfortably above the test band, design fixtures as stiff, light blocks (magnesium/aluminum tooling plate), and use multi-point control or response limiting when a clean fixture isn't achievable."
+        },
+        {
+          "question": "FE modal frequencies match test within 2%, but the MAC values are poor. What does that combination tell you about the model — and about the test?",
+          "answer": "Frequencies are scalars and easy to match through compensating errors — mass wrong here, stiffness wrong there. MAC compares mode SHAPES, so low MAC with matched frequencies means the model distributes stiffness/mass wrongly (usually joints and boundary conditions), and any stress or response prediction inherits that error. Check the test too: too few accelerometers spatially alias — two distinct modes can look identical to a sparse array. Update the model's joints and BCs until shapes agree; don't just tune frequencies."
+        },
+        {
+          "question": "Mass and stiffness come from CAD, but vibration engineers insist damping must be measured. Why is damping different, and how much does guessing it cost?",
+          "answer": "Mass follows from geometry and density (accurate), stiffness from geometry and modulus (decent), but damping has no geometric theory — it lives in micro-slip at bolted joints, material loss, and trapped interfaces, and it varies with amplitude and assembly. Resonant response scales as $1/(2\\zeta)$, so a 2× damping error is a 2× stress error at every resonance — easily the largest error in the whole prediction chain. Extract ζ from test (half-power bandwidth, log decrement) at representative amplitude, on representative joints."
+        }
+      ]
     }
   ]
 }

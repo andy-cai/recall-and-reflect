@@ -18,6 +18,110 @@
         {
           "question": "Closing a feedback loop moved a system's poles. Why is that the whole point of feedback control?",
           "answer": "Open-loop poles are fixed by the plant's physics; the closed-loop characteristic equation 1 + GH = 0 makes pole locations a function of controller gain — so you can place them (faster, better damped, stable) within actuator limits. Feedback also rejects disturbances and parameter drift that open-loop can't."
+        },
+        {
+          "question": "Commanding a step UP makes the output dip DOWN first, then recover. What does that signature say about G(s), and why can't more gain fix the resulting sluggishness?",
+          "answer": "Initial wrong-way motion is the fingerprint of a right-half-plane zero (a non-minimum-phase plant) — classic cases: a boost converter's output sags when duty steps up, boiler drum level 'shrink/swell'. An RHP zero adds delay-like phase lag without any gain rolloff, and as loop gain rises the closed-loop poles migrate toward that zero — toward instability. Bandwidth must stay well below the zero frequency: the plant, not the controller, sets the speed limit."
+        },
+        {
+          "question": "A 6th-order servo model behaves almost exactly like a textbook 2nd-order system. When is that reduction legitimate, and what quietly invalidates it?",
+          "answer": "Legitimate when one complex pole pair dominates — the other poles' real parts sit ~5× or more farther left, so their transients die before the slow pair gets moving, leaving the familiar ζ, ωn response. It breaks when a neglected pole lies within a few× of the dominant pair, or a zero sits near them and reshapes the transient. Sanity check: overshoot and settling predicted from the pair should match a full-model simulation."
+        }
+      ]
+    },
+    {
+      "title": "Standard responses & Bode plots",
+      "subject": "Applied Electronics",
+      "tags": ["signals", "controls"],
+      "content": "1st order to a step: exponential, τ to 63%, ~5τ to settle; to a ramp: lags by τ steady-state. 2nd order to a step: overshoot/ringing per ζ, peak time $\\pi/\\omega_d$. Impulse response = derivative of step response = the system fingerprint. Bode: magnitude (dB) and phase vs log ω; poles contribute −20 dB/dec and −90° each (corner at the pole), zeros the opposite; sketch by summing asymptotes. Resonant peak exists only for ζ < 0.707: $M_r = \\frac{1}{2\\zeta\\sqrt{1-\\zeta^2}}$ at $\\omega_r = \\omega_n\\sqrt{1-2\\zeta^2}$. Gain/phase margins read stability robustness off the open-loop Bode.",
+      "recall_prompt": "Sketch 1st/2nd-order responses to impulse, step, and ramp, then build a Bode plot from poles and zeros using asymptote rules.",
+      "key_ideas": [
+        "1st order step: 63% at τ, settled ~5τ; ramp following error = τ·slope",
+        "2nd order: overshoot set by ζ alone; frequency of ringing = $\\omega_d$",
+        "Each pole: −20 dB/decade and −90° phase, centered at its corner frequency",
+        "Bode of products = sum of asymptotes (log magnitude adds)",
+        "Resonant peak only for ζ < 0.707: $M_r = \\frac{1}{2\\zeta\\sqrt{1-\\zeta^2}}$ — tall peak = low damping",
+        "Gain margin / phase margin quantify distance to instability"
+      ],
+      "cards": [
+        {
+          "question": "Sketch unit-step responses of $\\frac{\\omega_n^2}{s^2+2\\zeta\\omega_n s+\\omega_n^2}$ for ζ = 0.2, 0.5, 0.7, 1, and 2 on one set of axes.",
+          "answer": "A correct sketch shows:\n- All curves start at 0 with ZERO initial slope and settle to the same final value\n- ζ = 0.2: ~50% overshoot with several visible decaying oscillations\n- ζ = 0.5: ~16% overshoot, one clear overshoot and a small undershoot\n- ζ = 0.7: ~5% overshoot — the classic fast-but-calm design point\n- ζ = 1: no overshoot, fastest non-overshooting rise; ζ = 2: same monotone shape but visibly slower creep\n- Overshoot depends on ζ alone ($e^{-\\pi\\zeta/\\sqrt{1-\\zeta^2}}$); the time axis scales as 1/ω_n"
+        },
+        {
+          "question": "Sketch the Bode magnitude and phase asymptotes for $G(s) = \\frac{100}{s(s+10)}$ and read off the phase margin.",
+          "answer": "A correct sketch shows:\n- Rewritten as 10/(s(s/10+1)): an integrator with gain 10 and a pole corner at ω = 10 rad/s\n- Magnitude: −20 dB/dec line passing through 20 dB at ω = 1, breaking to −40 dB/dec at ω = 10\n- Asymptotes cross 0 dB at ω = 10; the true curve sits −3 dB at the corner, true crossover ≈ 8 rad/s\n- Phase: −90° flat at low ω (integrator), S-curve falling through −135° at ω = 10, approaching −180° a decade above\n- Phase margin = 180° + phase at crossover ≈ 45–50°\n- Rules encoded: each pole adds −20 dB/dec and −90°, spread over a decade either side of its corner"
+        },
+        {
+          "question": "From a recorded step response of a black box, how do you tell 1st-order from 2nd-order before any curve fitting — and then extract τ, or ζ and ω_n?",
+          "answer": "Look at t = 0⁺: a 1st-order response takes off at its maximum slope; a 2nd-order one starts with zero slope (S-shaped). First order: τ = time to 63%, done. Second order: invert the overshoot formula $M_p = e^{-\\pi\\zeta/\\sqrt{1-\\zeta^2}}$ for ζ, take $\\omega_d = 2\\pi/(\\text{ringing period})$, then $\\omega_n = \\omega_d/\\sqrt{1-\\zeta^2}$. No ringing at all → overdamped: fit two time constants instead."
+        },
+        {
+          "question": "Which 2nd-order systems show a resonant hump in the Bode magnitude, and what does the hump's height promise about the step response?",
+          "answer": "Only ζ < 0.707: the peak sits at $\\omega_r = \\omega_n\\sqrt{1-2\\zeta^2}$ with height $M_r = \\frac{1}{2\\zeta\\sqrt{1-\\zeta^2}}$; at ζ ≥ 0.707 the magnitude is maximally flat. Tall peak ↔ low ζ ↔ large overshoot and long ringing — the same damping shortage read in two domains. A 20 dB hump ($M_r$ = 10 → ζ ≈ 0.05) predicts ~85% step overshoot before you ever run the test."
+        }
+      ]
+    },
+    {
+      "title": "PID control",
+      "subject": "Controls",
+      "tags": ["controls", "tuning"],
+      "content": "$u = K_p e + K_i\\int e\\,dt + K_d\\,\\dot{e}$ — present, past, and predicted error. P provides muscle but on a type-0 plant must keep some error to keep pushing (steady-state offset). I integrates history: it erases offset, but contributes −90° of phase (a margin eater) and winds up when the actuator saturates. D supplies damping and phase lead from the error's slope, but amplifies sensor noise and kicks on setpoint steps — so implement it as a filtered derivative acting on the measurement. Ziegler-Nichols ultimate-gain tuning: raise $K_p$ until sustained oscillation at $K_u$ with period $P_u$, then $K_p = 0.6K_u$, $T_i = P_u/2$, $T_d = P_u/8$ — deliberately aggressive (quarter-amplitude decay), a starting point not an endpoint. Matching: PI for fast noisy loops (flow, current), PID for slow clean ones (temperature), PD where the plant already integrates (position servos).",
+      "recall_prompt": "Explain what each PID term does physically and what each one breaks — offset, windup, kick, noise — then walk a Ziegler-Nichols ultimate-gain tune and say when you'd choose PI vs PID vs PD.",
+      "key_ideas": [
+        "$u = K_p e + K_i \\int e\\,dt + K_d \\dot{e}$: P = present error, I = accumulated past, D = predicted future",
+        "P alone leaves steady-state offset on a type-0 plant — it needs nonzero error to hold any output",
+        "I erases offset but adds −90° phase near crossover and winds up when the actuator saturates",
+        "Anti-windup: clamp/freeze the integrator at the limits, or back-calculate",
+        "D on the measurement (not the error) and low-pass filtered — otherwise setpoint kick and amplified noise",
+        "Ziegler-Nichols: find $K_u$, $P_u$ at sustained oscillation → $K_p = 0.6K_u$, $T_i = P_u/2$, $T_d = P_u/8$ (aggressive start)",
+        "Match the plant: PI for flow/current (fast, noisy), PID for temperature (slow, clean), PD for position servos (plant integrates)"
+      ],
+      "cards": [
+        {
+          "question": "After a large setpoint step, a PI temperature loop holds the heater at 100% long past the target, then overshoots wildly and takes ages to come back. Diagnose and name two fixes.",
+          "answer": "Integrator windup: while the heater is saturated the loop is effectively open, but $\\int e\\,dt$ keeps growing; once temperature crosses the setpoint, that stored integral must be 'unwound' by a long stretch of negative error — hence the giant overshoot. Fixes: clamp/freeze the integrator whenever the output saturates, back-calculation anti-windup, or ramp the setpoint. Telltale: output pinned at a limit while the integral term climbs."
+        },
+        {
+          "question": "Why does a setpoint step make a PID's actuator slam momentarily when derivative acts on the error, and what is the standard implementation fix?",
+          "answer": "The derivative of a step is an impulse — $K_d\\,de/dt$ spikes the output (derivative kick). Fix: differentiate the measurement instead ($-dy/dt$), which is identical for disturbance response (the setpoint is constant between changes) but ignores commanded steps; and always low-pass filter the derivative term so it stops amplifying high-frequency sensor noise. 'Derivative on PV, filtered' is the production-grade default."
+        },
+        {
+          "question": "Adding integral action removed your steady-state error, but the loop now rings badly. What did the integrator do in frequency-domain terms, and which knobs restore damping?",
+          "answer": "A 1/s term adds −90° of phase, eating phase margin near crossover while buying infinite DC gain (that's what kills the offset). Restore damping by moving the integral corner well below crossover (smaller $K_i$ — push the lag where it's harmless) or by adding derivative lead near crossover to buy the phase back. PID tuning is exactly this trade: low-frequency gain vs phase margin."
+        },
+        {
+          "question": "Ziegler-Nichols has you push the loop into sustained oscillation. What are K_u and P_u actually measuring about the plant?",
+          "answer": "At sustained oscillation, the loop gain is exactly 1 at −180° of phase — the critical point. So $K_u$ is the plant's gain margin in disguise (how much proportional gain reaches instability) and $P_u = 2\\pi/\\omega_{180}$ locates the phase-crossover frequency. The Z-N rules then back off from that point by fixed factors, baking in rough gain/phase margins — which is why they work without a model, and why the result is aggressive."
+        }
+      ]
+    },
+    {
+      "title": "Feedback stability: Routh & margins",
+      "subject": "Controls",
+      "tags": ["controls", "stability"],
+      "content": "Closed-loop stability = every root of the characteristic equation 1 + GH = 0 in the open left half-plane. Routh-Hurwitz answers without solving: a missing or sign-flipped coefficient already means unstable (necessary condition); otherwise the Routh array's first-column sign changes count RHP poles, and run symbolically it yields the stabilizing gain range. On the open-loop Bode, margins measure distance to instability: gain margin = how much |GH| can grow at the −180° frequency; phase margin = 180° + phase where |GH| = 1. Healthy targets: PM ≈ 45–60° (PM ≈ 100ζ for 2nd-order-dominant loops), GM ≈ 6–12 dB. Pure time delay subtracts $\\omega T_d$ of phase with no magnitude change — the stealth phase-margin killer that caps achievable bandwidth.",
+      "recall_prompt": "Given a characteristic polynomial containing a gain K, run the Routh test to bound K; then define gain and phase margin on a Bode plot, give healthy targets, and explain what a pure time delay does to each margin.",
+      "key_ideas": [
+        "Stable iff all closed-loop poles — roots of $1 + GH = 0$ — lie strictly in the LHP",
+        "Routh necessary test: every characteristic-polynomial coefficient present and of the same sign",
+        "Routh array: sign changes in the first column = number of RHP poles; symbolic in K → stabilizing gain range",
+        "Gain margin: factor of extra gain to instability, read at the −180° frequency; phase margin: 180° + ∠GH at |GH| = 1",
+        "Targets PM 45–60° (PM ≈ 100ζ), GM 6–12 dB — margins are robustness to model error, not decoration",
+        "Pure delay: magnitude 1, phase $-\\omega T_d$ — erodes PM directly and sets a hard bandwidth ceiling"
+      ],
+      "cards": [
+        {
+          "question": "Gain margin vs phase margin: which one warns about an unmodeled transport delay, which about a hotter-than-expected actuator gain — and can one be healthy while the other is nearly zero?",
+          "answer": "Delay adds pure phase lag ($-\\omega T_d$) with no magnitude change → phase margin is the relevant guard. Uncertain gain scales |GH| up or down → gain margin. And yes: a loop with a resonant wiggle near crossover can show a fine GM with almost no PM, or vice versa — which is why you check both (a small disk/vector margin can hide behind two individually 'acceptable' numbers)."
+        },
+        {
+          "question": "Without a computer, how do you find the range of gain K that keeps 1 + K·G(s) stable, and what extra information appears at the K where stability is lost?",
+          "answer": "Form the closed-loop characteristic polynomial with K symbolic, build the Routh array, and demand every first-column entry be positive — that yields inequalities bounding K. At the marginal $K = K_u$ a Routh row goes to zero: poles are crossing the jω axis, and the auxiliary equation from the row above gives the crossing frequency — the sustained-oscillation frequency. That's the same $K_u$, $P_u$ pair Ziegler-Nichols finds by experiment."
+        },
+        {
+          "question": "Your model says the closed loop is stable with well-damped poles. Why demand 45° of phase margin instead of shipping with 5°?",
+          "answer": "Margins are robustness currency: every effect the model omits — computation and transport delays, sensor lag, neglected high-frequency poles, parameter drift, sampling — shows up as extra phase lag or gain change near crossover. PM also predicts quality: PM ≈ 100ζ, so 45–60° means decently damped transients, while 5° means violent ringing and instability at the first whiff of reality. Stability is binary in the model and a spectrum in the hardware; margin is how you buy the spectrum."
         }
       ]
     },
@@ -38,23 +142,16 @@
         {
           "question": "A 60 Hz hum appears in data sampled at 100 Hz from a sensor with no 60 Hz content below 50 Hz. Where could it come from?",
           "answer": "True 60 Hz interference aliases to |60 − 100| = 40 Hz... so a 40 Hz tone in the data IS the 60 Hz mains pickup folded down. Any tone in band could be an alias of $nf_s \\pm f$ — without a pre-ADC analog filter you can't tell, which is the whole argument for one."
+        },
+        {
+          "question": "Nyquist promises 2× sampling suffices, yet digital control loops sample 10–30× their bandwidth. What two real-world effects eat the difference?",
+          "answer": "(1) Anti-alias filters aren't brick walls: a realizable analog filter needs a transition band between the passband and $f_s/2$, so $f_s$ must sit well above 2× the band of interest. (2) Sample-and-hold acts like a delay of $T_s/2$, costing phase margin $\\omega T_s/2$ at crossover — about 9° when sampling at 20× the loop bandwidth, but a fatal ~90° at 2×. Fast sampling in control buys phase, not resolution."
+        },
+        {
+          "question": "An FFT of a clean 100.3 Hz sine sampled at 1 kHz smears energy across many bins instead of one spike. What happened, and what are the two fixes?",
+          "answer": "Spectral leakage: the FFT treats the record as one period of a repeating signal, and 100.3 Hz doesn't complete an integer number of cycles in the window — the wraparound discontinuity splatters energy into sidelobes. Fixes: apply a window (Hann etc.) to taper the ends, trading a slightly wider main lobe for crushed sidelobes; or choose $f_s$ and N so the tone lands exactly on a bin (coherent sampling). Bin width stays $f_s/N$ either way."
         }
       ]
-    },
-    {
-      "title": "Standard responses & Bode plots",
-      "subject": "Applied Electronics",
-      "tags": ["signals", "controls"],
-      "content": "1st order to a step: exponential, τ to 63%, ~5τ to settle; to a ramp: lags by τ steady-state. 2nd order to a step: overshoot/ringing per ζ, peak time $\\pi/\\omega_d$. Impulse response = derivative of step response = the system fingerprint. Bode: magnitude (dB) and phase vs log ω; poles contribute −20 dB/dec and −90° each (corner at the pole), zeros the opposite; sketch by summing asymptotes. Gain/phase margins read stability robustness off the open-loop Bode.",
-      "recall_prompt": "Sketch 1st/2nd-order responses to impulse, step, and ramp, then build a Bode plot from poles and zeros using asymptote rules.",
-      "key_ideas": [
-        "1st order step: 63% at τ, settled ~5τ; ramp following error = τ·slope",
-        "2nd order: overshoot set by ζ alone; frequency of ringing = $\\omega_d$",
-        "Each pole: −20 dB/decade and −90° phase, centered at its corner frequency",
-        "Bode of products = sum of asymptotes (log magnitude adds)",
-        "Gain margin / phase margin quantify distance to instability"
-      ],
-      "cards": []
     },
     {
       "title": "Filters & bandwidth",
@@ -69,7 +166,20 @@
         "Butterworth flat / Chebyshev steep+ripple / Bessel linear-phase (no waveform distortion)",
         "Phase shift near the corner matters in feedback loops and timing measurements"
       ],
-      "cards": []
+      "cards": [
+        {
+          "question": "Sketch the magnitude responses of the four canonical filters — low-pass, high-pass, band-pass, band-stop — marking corner/center frequencies and the −3 dB points.",
+          "answer": "A correct sketch shows:\n- Axes: |H| in dB vs log frequency, passband reference at 0 dB\n- Low-pass: flat passband, −3 dB at f_c, then falling −20 dB/dec per pole\n- High-pass: the mirror — rising +20 dB/dec per pole, −3 dB at f_c, flat above\n- Band-pass: a single hump at f₀; bandwidth = spacing between its two −3 dB points; Q = f₀/BW sets the sharpness\n- Band-stop/notch: flat everywhere except a deep narrow V at f₀\n- More poles = steeper skirts; every band edge is defined at −3 dB"
+        },
+        {
+          "question": "You need an anti-alias filter for a DAQ channel, and separately a filter ahead of a waveform-fidelity measurement. Why Chebyshev for the first but Bessel for the second?",
+          "answer": "Anti-aliasing wants maximum attenuation at $f_s/2$ per pole — Chebyshev's steep rolloff delivers it, and its passband ripple is a tolerable price on amplitude-only data. Waveform fidelity wants linear phase (constant group delay) so every frequency component arrives with the same delay and edges don't smear or ring — Bessel's specialty, paid for with lazy rolloff. Butterworth (maximally flat) is the general-purpose compromise; sharp filters always ring more on transients."
+        },
+        {
+          "question": "Cascading two passive RC low-pass stages gives a response notably worse than the product H₁·H₂ you computed. Why, and what are the two fixes?",
+          "answer": "Loading: the second RC draws current from the first, so the stages interact — corner frequencies shift and the combined response sags; transfer functions only multiply when each stage sees an ideal source and no load. Fixes: buffer between stages with op-amp followers (the core idea of active filters), or design the second stage's impedance ~10× the first's and accept the approximation. Loading errors, not component tolerance, are the classic passive-filter surprise."
+        }
+      ]
     },
     {
       "title": "R, L, C and impedance in the s-domain",
@@ -88,6 +198,14 @@
         {
           "question": "Why does interrupting current through a relay coil destroy a transistor switch without a flyback diode?",
           "answer": "$v = L\\,di/dt$: forcing inductor current to zero instantly makes di/dt huge — the coil generates whatever voltage it needs to keep current flowing, avalanching the transistor. The diode gives that current a recirculation path, clamping the spike to a diode drop."
+        },
+        {
+          "question": "Right after a switch closes (t = 0⁺) and again at DC steady state: what do you replace capacitors and inductors with, and what physical law licenses each swap?",
+          "answer": "t = 0⁺: a capacitor becomes a voltage source at its pre-switch voltage (uncharged → short); an inductor becomes a current source at its pre-switch current (un-fluxed → open) — because $v_C$ and $i_L$ carry stored energy and cannot jump. t → ∞ at DC: capacitor → open ($i = C\\,dv/dt = 0$), inductor → short ($v = L\\,di/dt = 0$). Two resistor-only circuits give the endpoints; exponentials connect them — most switching transients solved with no differential equation."
+        },
+        {
+          "question": "At $\\omega_0 = 1/\\sqrt{LC}$ a series RLC looks like a plain resistor to the source — yet the capacitor may see many times the source voltage. How are both true?",
+          "answer": "At ω₀, $Z_L = j\\omega L$ and $Z_C = 1/j\\omega C$ are equal and opposite: they cancel in the sum, the source sees only R, and current peaks at V/R. That large current still flows through each reactance individually, so $|V_L| = |V_C| = Q\\,V_{source}$ with $Q = \\omega_0 L/R$ — resonant voltage rise. Rate components for Q× the drive, and recognize the same cancellation as the heart of every tuned circuit."
         }
       ]
     },
@@ -108,6 +226,14 @@
         {
           "question": "Why does the same amplifier topology give more gain per milliamp with a BJT than a MOSFET?",
           "answer": "Transconductance: BJT $g_m = I_C/V_T \\approx I_C/26\\,mV$ — exponential device physics; MOSFET $g_m = 2I_D/V_{ov}$ with $V_{ov}$ typically 100s of mV — square law. At equal bias current the BJT's gm (and thus gain $g_m R_L$) is several times higher; the MOSFET buys you infinite input resistance instead."
+        },
+        {
+          "question": "Thevenin and Norton encode identical information. When does each form make the analysis fall out naturally, and what two measurements pin down either one?",
+          "answer": "Same resistance, related by $V_{th} = I_N R$. Thevenin suits series reasoning — voltage dividers, 'what does loading do to my sensor output'; Norton suits parallel/node reasoning — currents summing into a node, current-output devices like photodiodes, nodal analysis. Two measurements determine both: open-circuit voltage and short-circuit current, with $R = V_{oc}/I_{sc}$. Choose by the next operation: series → Thevenin, parallel → Norton."
+        },
+        {
+          "question": "Maximum power transfer says match $R_L = R_{th}$ — so why are power supplies designed with output impedance as near zero as possible?",
+          "answer": "Matching maximizes power into the load only when the source resistance is fixed and unavoidable — and it caps efficiency at 50%, with the other half cooking in $R_{th}$. A supply's job is stiff voltage at high efficiency: $R_{th} \\ll R_L$ gives both. Matching governs where source impedance is non-negotiable — antennas, RF transmission lines (reflections), squeezing the most from a weak transducer — not power delivery."
         }
       ]
     },
@@ -128,6 +254,14 @@
         {
           "question": "Why mount a second 'dummy' strain gauge perpendicular to the active one and wire it into the adjacent bridge arm?",
           "answer": "Both gauges see identical temperature (same ΔR thermal drift) but only the active one sees strain. In adjacent arms, common ΔR cancels in the bridge output — temperature compensation for free, and the Poisson gauge even adds signal (half bridge)."
+        },
+        {
+          "question": "Quarter, half, and full bridge on a bending beam: rank the sensitivities, and explain which configurations cancel temperature drift and unwanted axial strain by construction.",
+          "answer": "Sensitivity goes 1 : 2 : 4 — output ≈ $(V_{ex}/4)(\\Delta R/R) \\times n$ active arms. Quarter (one gauge) needs a dummy for temperature. Half, with gauges on top and bottom faces in adjacent arms: bending strains are equal-and-opposite so they add differentially, while temperature and axial strain are common to both and cancel. Full bridge: four gauges, 4× signal, all common-mode effects rejected. Gauge placement — not the amplifier — is the first line of error rejection."
+        },
+        {
+          "question": "An op-amp specs 1 MHz gain-bandwidth, yet your gain-of-1000 amplifier rolls off near 1 kHz. What's the budget rule, and the standard way to get more bandwidth at the same total gain?",
+          "answer": "Closed-loop bandwidth ≈ GBW / noise gain: $10^6/1000 = 1$ kHz — the internally compensated op-amp makes gain × bandwidth roughly constant. Fix: cascade — two ×32 stages each get ~31 kHz, delivering ×1000 with ~30× the single-stage bandwidth. The same budget explains why one 'fast' op-amp still makes a poor high-gain instrumentation stage."
         }
       ]
     },
@@ -149,6 +283,72 @@
         {
           "question": "Why can't you just measure a thermocouple's voltage with a meter and look up the temperature?",
           "answer": "The meter's own terminals form a second thermocouple pair where the TC wires join the copper leads — you always measure the *difference* between hot junction and that reference junction. You need the reference junction's temperature (cold-junction compensation) to extract the hot-end value."
+        },
+        {
+          "question": "Why does a piezoelectric accelerometer read steady gravity as zero, and what physics bounds each end of its usable frequency band?",
+          "answer": "The crystal generates charge only as strain changes, and that charge leaks away through the finite input resistance — an RC high-pass, so DC and very low frequencies decay to nothing (use a capacitive MEMS accelerometer for tilt or sustained g). The low end is that RC corner; the high end is the seismic-mass resonance — stay well below ω_n (r ≪ 1) so the mass faithfully tracks the case instead of amplifying."
+        },
+        {
+          "question": "Pick and defend a temperature sensor for: (a) a 1100°C furnace, (b) a ±0.01°C calibration bath reference, (c) a $0.10 over-temperature trip at 45°C.",
+          "answer": "(a) Thermocouple (e.g., Type K) — the only contender at that range; accept μV–mV signals and cold-junction compensation. (b) Platinum RTD — best stability, linearity and repeatability; it's the standards-lab instrument. (c) Thermistor — enormous dR/dT near one temperature makes a cheap, sharp comparator trip, and nonlinearity is irrelevant for a threshold. The lesson: range (TC) vs accuracy (RTD) vs sensitivity-per-dollar (thermistor) — no universal winner."
+        }
+      ]
+    },
+    {
+      "title": "MOSFET switching & gate drive",
+      "subject": "Applied Electronics",
+      "tags": ["circuits", "power"],
+      "content": "As a switch the MOSFET lives in the ohmic region: drive $V_{gs}$ well past threshold and it becomes a milliohm-scale $R_{DS(on)}$, not a current source. Losses split in two: conduction $I^2R_{DS(on)}$ (duty-weighted) and switching ≈ $\\frac{1}{2}VI(t_r+t_f)f_s$ — each transition drags the device through simultaneous high voltage and high current. Speed is gate-charge delivery: the gate is a capacitor (total gate charge $Q_g$), and during the Miller plateau all drive current feeds $C_{gd}$ while the drain swings — the plateau IS the loss window. Gate drivers exist to source/sink amps for nanoseconds; a logic pin's few mA stretches transitions to microseconds of linear-region dissipation. High-side N-channel switches need the gate driven ABOVE the rail (the source flies up to it) — bootstrap or isolated supplies. Half-bridges add dead-time against shoot-through; the body diode conducts during it.",
+      "recall_prompt": "Walk a MOSFET through one hard-switched cycle: where conduction vs switching losses occur, what the Miller plateau is, why a gate driver (and a bootstrap for the high side) is mandatory, and what dead-time protects against.",
+      "key_ideas": [
+        "Switch = ohmic region: drive $V_{gs}$ hard → small $R_{DS(on)}$; partial enhancement = linear region = heat",
+        "Conduction loss $I^2R_{DS(on)}\\cdot D$; switching loss ≈ $\\frac{1}{2}VI(t_r+t_f)f_s$ — V×I overlap at every edge",
+        "Gate = capacitor ($Q_g$): transition time = charge over drive current; Miller plateau while $C_{gd}$ absorbs the drain swing",
+        "Gate drivers deliver amps for nanoseconds — logic pins (mA) stretch edges into dissipative microseconds",
+        "High-side NFET: source flies to the rail → gate needs volts above the rail (bootstrap capacitor or isolated supply)",
+        "Half-bridge: dead-time prevents shoot-through; the body diode carries current during it (slow, lossy)"
+      ],
+      "cards": [
+        {
+          "question": "A MOSFET runs cool switching at 10 kHz but burns up at 500 kHz with the same load current and the same R_DS(on). Where is the new heat coming from, and what are the levers?",
+          "answer": "Switching loss: every edge crosses high V and high I simultaneously, dissipating ≈ $\\frac{1}{2}VI(t_r+t_f)$ per transition — multiply by 50× the frequency and it dwarfs the unchanged conduction loss. Levers: stronger gate drive (shorter $t_r/t_f$), a lower-$Q_g$ device, soft-switching topologies, or simply lower $f_s$. This is the loss side of the converter trade where higher $f_s$ shrinks the magnetics."
+        },
+        {
+          "question": "Why does a perfectly healthy power MOSFET overheat when its gate is driven straight from a 3.3 V microcontroller pin, even at modest switching frequency?",
+          "answer": "Two stacked failures. (1) 3.3 V may barely exceed the threshold: the FET operates partially enhanced — high effective resistance — unless it's a logic-level part driven to its rated $V_{gs}$. (2) A pin sources a few mA into tens of nC of gate charge, so each transition takes microseconds ($t = Q_g/I$), dwelling in the linear region with full V×I overlap. A gate driver fixes both: full gate swing, amps of transient drive, nanosecond edges."
+        },
+        {
+          "question": "During turn-on the gate voltage ramps, then mysteriously flattens at a plateau before rising again. What's happening during the flat part, and why do designers care so much about it?",
+          "answer": "The Miller plateau: the drain is swinging, and every microamp of gate drive is consumed charging/discharging $C_{gd}$ at $C_{gd}\\,dV_{ds}/dt$ — so $V_{gs}$ stalls. The plateau duration is precisely the V×I overlap window, i.e., the switching loss; driver current capability during the plateau (not the final gate voltage) sets switching speed. The same $C_{gd}$ path injects dv/dt charge into the OFF transistor of a bridge — the false turn-on mechanism behind shoot-through."
+        }
+      ]
+    },
+    {
+      "title": "Switching DC-DC converters",
+      "subject": "Applied Electronics",
+      "tags": ["circuits", "power"],
+      "content": "In steady state an inductor's average voltage must be zero (volt-second balance) — that single fact yields every ideal conversion ratio: buck $V_o = DV_{in}$, boost $V_o = V_{in}/(1-D)$, buck-boost $V_o = -V_{in}\\,D/(1-D)$. Switching wins because the transistor is only ever fully on or fully off, and the L and C doing the averaging are (ideally) lossless: 85–97% efficiency at almost any ratio, versus a linear regulator's η ≤ $V_o/V_{in}$ with the difference burned as heat. CCM: a triangular ripple $\\Delta I_L = (V_{in}-V_o)DT_s/L$ (buck) rides on the DC load current; when load falls below ΔI_L/2 the converter enters DCM and the conversion ratio becomes load-dependent. Higher switching frequency shrinks L and C but buys switching loss and EMI — the central design trade.",
+      "recall_prompt": "Derive the buck and boost conversion ratios from inductor volt-second balance, sketch the buck's switch-node and inductor-current waveforms, and argue when a switcher beats a linear regulator — and when it doesn't.",
+      "key_ideas": [
+        "Volt-second balance: $\\langle v_L \\rangle = 0$ over each steady-state period — every ratio derives from it",
+        "Buck $V_o = DV_{in}$; boost $V_o = V_{in}/(1-D)$; buck-boost $V_o = -V_{in}\\frac{D}{1-D}$",
+        "Switching beats linear because the switch never sits at high V and high I together; linear η ≤ $V_o/V_{in}$",
+        "Buck ripple $\\Delta I_L = (V_{in}-V_o)DT_s/L$; load below $\\Delta I_L/2$ → DCM, ratio goes load-dependent",
+        "Boost stores energy in L during on-time and flies above $V_{in}$ at turn-off — flyback physics harnessed",
+        "$f_s$ trade: higher → smaller L and C; lower → less switching loss and EMI"
+      ],
+      "cards": [
+        {
+          "question": "Sketch one switching period of a buck converter in CCM: the switch-node voltage and the inductor current, FET on then off. Mark slopes, averages, and where the picture stops being valid.",
+          "answer": "A correct sketch shows:\n- Switch node: a square wave — $V_{in}$ during the on-time $DT_s$, ≈ 0 (one diode drop below) during $(1-D)T_s$; its average = $DV_{in}$ = $V_o$\n- Inductor current: a triangle riding on a DC pedestal — rising at slope $(V_{in}-V_o)/L$ while on, falling at $-V_o/L$ while off\n- Rise equals fall over the period (volt-second balance); the average equals the load current\n- Peak-to-peak ripple labeled $\\Delta I_L = (V_{in}-V_o)DT_s/L$\n- Valid while the current valley stays above zero (CCM); valley touching zero marks the DCM boundary, where the switch node rings at the LC frequency during the idle interval"
+        },
+        {
+          "question": "A 12 V → 3.3 V rail at 2 A: compare what a linear regulator and a buck converter each do with the unwanted 8.7 V, and name the cases where the linear is still the right call.",
+          "answer": "The linear's pass element drops 8.7 V at 2 A continuously: 17.4 W of heat for 6.6 W delivered — η = $V_o/V_{in}$ ≈ 27%, heatsink territory. The buck chops the input and lets L and C average it: ~90%+ efficient, under a watt of loss. Linear still wins for tiny currents (loss is negligible), for the quietest rails (no switching ripple/EMI — RF and precision analog), for low cost/simplicity, and as a post-regulator cleaning up a switcher's ripple."
+        },
+        {
+          "question": "Walk through how a boost converter produces a HIGHER voltage than its input — where does the extra voltage physically come from, and why can't D → 1 give unlimited output?",
+          "answer": "Switch on: the inductor sits across $V_{in}$ and ramps up current, storing $\\frac{1}{2}LI^2$. Switch off: the current cannot stop, so the inductor drives the switch node up — above $V_{in}$, as high as needed — until the diode conducts into the output capacitor. Volt-second balance then forces $V_o = V_{in}/(1-D)$. It's the relay flyback spike, harnessed. As D → 1, real parasitic resistances eat the shrinking transfer interval and $V_o$ collapses instead of diverging — and the boost's right-half-plane zero makes its control sluggish."
         }
       ]
     },
@@ -156,16 +356,30 @@
       "title": "Transformers & per-unit",
       "subject": "Applied Electronics",
       "tags": ["machines", "power"],
-      "content": "Ideal: $V_2/V_1 = N_2/N_1$, $I_2/I_1 = N_1/N_2$; impedance reflects by turns² — AC only (flux must change). Real losses: copper (I²R in windings, load-dependent), core/iron (hysteresis + eddy currents, voltage-dependent, constant), magnetizing current, leakage flux (series reactance → voltage regulation under load). Equivalent circuit: series R + X, shunt magnetizing branch. Per-unit analysis normalizes V, I, Z to base values — transformer ratios drop out of system studies and impedances of similar machines fall in narrow ranges.",
+      "content": "Ideal: $V_2/V_1 = N_2/N_1$, $I_2/I_1 = N_1/N_2$; impedance reflects by turns² — AC only (flux must change). Real losses: copper (I²R in windings, load-dependent), core/iron (hysteresis + eddy currents, voltage-dependent, constant), magnetizing current, leakage flux (series reactance → voltage regulation under load). Equivalent circuit: series R + X, shunt magnetizing branch. Flux is set by volts per hertz: $V \\approx 4.44 f N \\Phi_{max}$. Per-unit analysis normalizes V, I, Z to base values — transformer ratios drop out of system studies and impedances of similar machines fall in narrow ranges.",
       "recall_prompt": "Explain ideal transformer relations and impedance reflection, the loss taxonomy (copper vs core), what leakage reactance does, and why per-unit makes grid analysis tractable.",
       "key_ideas": [
         "$V \\propto N$, $I \\propto 1/N$, $Z' = (N_1/N_2)^2 Z$ — AC only",
         "Copper loss ∝ load²; core loss ≈ constant at rated voltage (hysteresis + eddy)",
         "Max efficiency where copper loss = core loss",
+        "Flux ∝ V/f ($V \\approx 4.44fN\\Phi_{max}$) — the real rating is volts per hertz",
         "Leakage reactance → voltage droop with load (regulation), limits fault current",
         "Per-unit: normalize to bases → turns ratios vanish, plausible values ~0.05-0.15 pu"
       ],
-      "cards": []
+      "cards": [
+        {
+          "question": "A 60 Hz transformer is plugged into a 50 Hz line at its rated voltage. Nothing about the voltage changed — so why does it hum, overheat, and possibly fail?",
+          "answer": "Faraday: $V \\approx 4.44 f N \\Phi_{max}$, so at fixed voltage the flux scales as 1/f — 50 Hz forces 20% more flux into a core sized for 60 Hz, pushing it past the saturation knee. Magnetizing current spikes nonlinearly, core loss and noise jump, waveforms distort. Volts-per-hertz is the true rating — the same constraint that makes VFDs hold V/f constant."
+        },
+        {
+          "question": "Transformer efficiency peaks at the load where copper loss equals core loss. Why there — and why do utilities deliberately place that peak well below nameplate?",
+          "answer": "Core loss is fixed (set by voltage, burning 24/7); copper loss grows as load². Loss per delivered watt is minimized where the two are equal: below it the fixed loss dominates, above it I²R does. Distribution transformers idle around 30–50% load most of their lives, so designers put the crossover there — an energy-weighted 'all-day efficiency' choice rather than a full-load brag."
+        },
+        {
+          "question": "Three voltage levels, two transformers, one fault to analyze. What bookkeeping does per-unit erase, and what sanity check does it hand you for free?",
+          "answer": "Pick one MVA base and voltage bases tied by the turns ratios: every impedance lands on a common footing, the N² reflection factors vanish, and each transformer collapses to just its leakage impedance (~0.05–0.10 pu). A bolted fault near the source then estimates as $I_{fault} \\approx 1/X_{pu}$ — 0.06 pu leakage → ~17× rated current. Free check: healthy equipment lives in narrow pu bands, so a 0.6 pu transformer impedance is a data-entry error, not a discovery."
+        }
+      ]
     },
     {
       "title": "Induction & synchronous machines",
@@ -185,6 +399,14 @@
         {
           "question": "Why can't an induction motor ever reach synchronous speed, even unloaded?",
           "answer": "Torque comes from rotor currents induced by relative motion between the rotating field and rotor (slip). At synchronous speed the rotor sees no flux change — zero induced current, zero torque — so it must settle just below, where slip-torque balances friction/windage."
+        },
+        {
+          "question": "Induction vs synchronous machine: where does each rotor get its field, which one can't start across the line by itself, and which one can fix your plant's power factor — why?",
+          "answer": "Induction: rotor currents are induced by slip — it self-starts (with a big lagging inrush) but always runs below sync speed and always draws magnetizing VARs (lagging PF). Synchronous: the rotor field is supplied (DC excitation or magnets) and locks to the line — but average torque is zero at any other speed, so it can't start unaided (damper windings or a VFD must spin it up). The payoff knob is excitation: overexcite and it SOURCES reactive power — the synchronous condenser that cancels the induction motors' lag."
+        },
+        {
+          "question": "Why must a VFD lower voltage in lockstep with frequency below base speed, and what changes about available torque above base speed?",
+          "answer": "Flux ∝ V/f: holding V while dropping f over-fluxes and saturates the iron (magnetizing current spikes), while letting flux sag loses torque per amp. Constant V/f preserves rated flux → rated torque available at any speed. Above base speed V is already maxed, so flux weakens as 1/f: torque capability falls off roughly as 1/ω at roughly constant power — the constant-torque/constant-power corner on every traction-drive datasheet."
         }
       ]
     },
@@ -206,6 +428,14 @@
         {
           "question": "Why is PWM drastically more efficient than driving a motor with a linear (resistive) voltage regulator?",
           "answer": "The pass transistor in PWM is either saturated (V≈0 across it) or off (I=0) — power = V·I stays near zero in both states; a linear regulator drops the full voltage difference at full motor current, dissipating it as heat. The motor's inductance integrates the pulses into smooth current."
+        },
+        {
+          "question": "Why does a brushed DC motor draw many times its rated current at stall, and what two design consequences follow for the drive electronics?",
+          "answer": "$I = (V - k_e\\omega)/R$: back-EMF is the motor's built-in current regulator, and at stall it's zero — only winding resistance limits current (locked-rotor draw is many times rated). Consequences: (1) drivers and fuses must ride through start/stall or actively limit current; (2) since $T = k_t I$, a current limit IS a torque limit — exactly how smart drivers protect mechanisms. Free-running is the opposite extreme: EMF ≈ V and current covers only losses."
+        },
+        {
+          "question": "Pick the bus and defend it: (a) one fast ADC streaming samples continuously, (b) twelve slow sensors sharing a two-wire harness, (c) a debug console to a laptop.",
+          "answer": "(a) SPI: clocked at tens of MHz, full-duplex, point-to-point with chip select — built for streaming peripherals. (b) I2C: addressing puts many devices on the same two wires (plus pull-ups) at 100k–1M — minimum harness wins. (c) UART: asynchronous, point-to-point, and every terminal program on earth speaks it. The decision axes are wire count, speed, and topology/addressing — not 'which bus is best'."
         }
       ]
     }

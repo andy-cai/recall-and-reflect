@@ -5,13 +5,14 @@
       "title": "The four laws of thermodynamics",
       "subject": "Thermodynamics",
       "tags": ["thermo"],
-      "content": "0th: thermal equilibrium is transitive → temperature exists. 1st: energy conservation, $dE/dt = \\dot{E}_{in} - \\dot{E}_{out}$ (closed: $\\Delta U = Q - W$). 2nd: entropy of an isolated system can't decrease; $dQ_{rev} = T\\,dS$; defines the arrow of time and caps efficiency (Carnot). Statistical view: $s = k\\ln W$. Ideal-gas entropy change: $\\Delta s = c_p\\ln(T_2/T_1) - R\\ln(P_2/P_1)$. 3rd: S → 0 for a perfect crystal at 0 K — absolute zero unattainable.",
-      "recall_prompt": "State all four laws with their key equations, and explain what the 2nd law adds that the 1st cannot (with s = k ln W as the why).",
+      "content": "0th: thermal equilibrium is transitive → temperature exists. 1st: energy conservation, $dE/dt = \\dot{E}_{in} - \\dot{E}_{out}$ (closed: $\\Delta U = Q - W$). 2nd: entropy of an isolated system can't decrease; $dQ_{rev} = T\\,dS$; defines the arrow of time and caps efficiency (Carnot). Statistical view: $S = k\\ln W$. Entropy balance for any system: $\\Delta S = \\int \\delta Q/T + S_{gen}$, $S_{gen} \\ge 0$. Ideal-gas entropy change: $\\Delta s = c_p\\ln(T_2/T_1) - R\\ln(P_2/P_1)$. 3rd: S → 0 for a perfect crystal at 0 K — absolute zero unattainable.",
+      "recall_prompt": "State all four laws with their key equations, and explain what the 2nd law adds that the 1st cannot (with S = k ln W as the why).",
       "key_ideas": [
         "0th: transitivity of equilibrium → temperature is well-defined",
         "1st: $\\Delta U = Q - W$ — bookkeeping; forbids nothing directional",
         "2nd: $dS_{isolated} \\ge 0$, $dQ_{rev} = TdS$ — direction, irreversibility, efficiency limits",
-        "$s = k\\ln W$: entropy counts microstates — probability, not mysticism",
+        "Entropy balance: $\\Delta S = \\int \\delta Q/T + S_{gen}$ — transfer plus generation, $S_{gen} \\ge 0$ always",
+        "$S = k\\ln W$: entropy counts microstates — probability, not mysticism",
         "Ideal gas: $\\Delta s = c_p\\ln(T_2/T_1) - R\\ln(P_2/P_1)$",
         "3rd: perfect crystal at 0 K has S = 0; 0 K unreachable in finite steps"
       ],
@@ -19,6 +20,14 @@
         {
           "question": "The 1st law permits a ship engine that extracts heat from the ocean and propels the ship. What exactly does the 2nd law say is wrong with it?",
           "answer": "It's a perpetual motion machine of the second kind: converting heat from a single reservoir entirely to work decreases total entropy (no cold sink receives the compensating entropy $Q/T_c$). Kelvin-Planck statement: no cycle can produce net work exchanging heat with one reservoir only."
+        },
+        {
+          "question": "Why can no detail of an engine — working fluid, mechanism, cleverness — beat the Carnot limit, which depends only on the two reservoir temperatures?",
+          "answer": "If two reversible engines between the same reservoirs differed in efficiency, the better one could drive the worse one backward as a heat pump and the pair would move heat cold→hot with zero net work — violating Clausius. So all reversible engines tie; their efficiency is a property of the reservoirs alone (this is what defines thermodynamic temperature), giving $\\eta = 1 - T_c/T_h$ as a ceiling no hardware can touch."
+        },
+        {
+          "question": "A closed system's entropy decreases during a process. When is that legal, and what bookkeeping makes it so?",
+          "answer": "Legal whenever the system rejects heat: $\\Delta S = \\int \\delta Q/T + S_{gen}$ with $S_{gen} \\ge 0$ — entropy can leave with the heat faster than irreversibility creates it inside. Only an isolated system is forbidden to decrease. A freezer lowers the food's entropy while dumping a larger entropy stream into the kitchen."
         }
       ]
     },
@@ -39,6 +48,14 @@
         {
           "question": "Why does throttling cool nitrogen at room temperature but heat helium?",
           "answer": "Room temperature is below nitrogen's Joule-Thomson inversion temperature (μJT > 0: expansion does work against intermolecular attraction → cools) but above helium's very low inversion point (~45 K), where repulsive/kinetic effects dominate and μJT < 0 → heats. Helium must be pre-cooled before JT liquefaction."
+        },
+        {
+          "question": "Air at ambient conditions gets the ideal-gas law; steam in a 40°C condenser gets steam tables. What's the actual criterion separating them?",
+          "answer": "Distance from the vapor dome and critical point, judged by reduced properties: air at 300 K sits at $T_R \\approx 2.3$ ($T_c$ = 133 K) and tiny $P_R$, so Z ≈ 1. Condenser steam sits on the saturation line, where intermolecular attraction and imminent condensation pull Z well below 1. Rule: high $T_R$, low $P_R$ → ideal gas; anywhere near saturation or the critical point → tables or Z-charts."
+        },
+        {
+          "question": "Throttling through a valve is modeled as constant enthalpy. What buys that idealization, and what does the valve still irreversibly destroy?",
+          "answer": "Steady flow with no shaft work, negligible heat loss, and negligible KE change collapses the energy balance to $h_2 = h_1$. What's destroyed is pressure: entropy is generated and the drop can never be recovered as work — the throttle is the canonical irreversible device. For an ideal gas h = h(T) so temperature is unchanged; real gases shift by $\\mu_{JT}$."
         }
       ]
     },
@@ -60,6 +77,14 @@
         {
           "question": "Diesel cycles have lower ideal efficiency than Otto at the same compression ratio — so why are real diesels more efficient than real gasoline engines?",
           "answer": "Otto's r is capped (~10-12) by knock since fuel-air is compressed together; diesel compresses only air, ignites by injection, so r ~ 18-22. The higher achievable r more than buys back the constant-pressure penalty — plus diesels run unthrottled (no pumping loss) and lean."
+        },
+        {
+          "question": "Sketch ideal Otto and Diesel cycles on the same p-V axes, starting from the same state and compression ratio. Mark exactly where the two loops differ.",
+          "answer": "A correct sketch shows:\n- P vs v axes; both cycles share the same isentropic compression curve 1→2 from large v down to v_min\n- Otto heat addition 2→3: a vertical line at v_min (constant volume) reaching the highest peak pressure\n- Diesel heat addition 2→3: a horizontal line at peak pressure (constant p) extending right to the cutoff volume\n- Both: isentropic expansion curves down to v₁, closed by a vertical constant-volume heat rejection at v₁\n- Enclosed area = net work; Otto shows a sharp pressure spike, Diesel a flat top\n- At equal r and heat input, Otto's loop is the more efficient (heat added at higher effective temperature)"
+        },
+        {
+          "question": "A 2-point drop in compressor efficiency wounds a gas turbine far more than a 2-point pump-efficiency drop wounds a steam plant. Why?",
+          "answer": "Back-work ratio: the Brayton compressor swallows roughly half the turbine's output, because compressing gas costs $\\int v\\,dP$ and gas specific volume is huge; the Rankine pump moves liquid (tiny v) for ~1% of turbine output. Net work is a small difference of two large numbers, so component losses are amplified — the reason early jet engines barely self-sustained."
         }
       ]
     },
@@ -85,6 +110,126 @@
         {
           "question": "Why is low steam quality at the turbine exit a problem, and which two cycle modifications fix it?",
           "answer": "Liquid droplets at blade speeds erode the last-stage blades and degrade stage efficiency (target x > ~0.88). Superheating and reheat both shift the expansion line right on the T-s diagram, raising exit quality."
+        },
+        {
+          "question": "Sketch an ideal Rankine cycle with superheat on a T-s diagram, including the saturation dome. Mark the four legs and the turbine-exit quality.",
+          "answer": "A correct sketch shows:\n- T-s axes with the steam dome; two constant-pressure paths, boiler high and condenser low\n- Pump 1→2: a short, near-vertical nudge from the saturated-liquid line (tiny temperature rise)\n- Boiler 2→3 at constant pressure: up along the liquid side, horizontal across the dome (boiling at constant T), then curving up into the superheat region\n- Turbine 3→4: a vertical (isentropic) drop from the superheated point back into the dome\n- Condenser 4→1: horizontal line at condenser temperature back to saturated liquid\n- State 4 inside the dome with quality x marked (want > ~0.88); more superheat pushes 3 right so 4 lands at higher x; a real turbine's line tilts right (entropy generated)"
+        }
+      ]
+    },
+    {
+      "title": "Bernoulli & control-volume analysis",
+      "subject": "Fluids",
+      "tags": ["fluids", "incompressible"],
+      "content": "Bernoulli along a streamline: $P + \\frac{1}{2}\\rho V^2 + \\rho g z = const$ — requires steady, incompressible, frictionless flow with no shaft work or heat between the two points. It fails silently through pumps and fans (work added), across boundary layers, wakes and separated regions (friction destroys mechanical energy), and in unsteady flow. Free jets discharge at ambient pressure — the standard boundary condition. The control-volume energy equation generalizes it: $\\frac{P_1}{\\rho g} + \\frac{V_1^2}{2g} + z_1 + h_{pump} = \\frac{P_2}{\\rho g} + \\frac{V_2^2}{2g} + z_2 + h_{loss}$. Continuity: $\\dot{m} = \\rho A V$. Steady momentum: $\\sum \\vec{F} = \\dot{m}(\\vec{V}_{out} - \\vec{V}_{in})$ — the source of jet, vane, nozzle and pipe-bend forces.",
+      "recall_prompt": "State Bernoulli with every assumption that can silently fail and where each fails in practice, then set up continuity and the momentum equation to find the force on a vane and on a pipe bend.",
+      "key_ideas": [
+        "$P + \\frac{1}{2}\\rho V^2 + \\rho gz = const$ along a streamline: steady, incompressible, frictionless, no shaft work",
+        "Silent failures: through pumps/fans, across boundary layers/wakes/separated flow, unsteady flow",
+        "Free jets discharge at local ambient pressure — the boundary condition you use at exits",
+        "Energy equation adds reality: $+h_{pump}$ and $-h_{loss}$ terms in head form",
+        "Continuity first, always: $\\dot{m} = \\rho AV$",
+        "Momentum: $\\sum F = \\dot{m}(V_{out} - V_{in})$ per direction — turning or accelerating flow makes forces"
+      ],
+      "cards": [
+        {
+          "question": "A Pitot-static probe uses Bernoulli to give airspeed. Why does the same equation fail completely if applied from the freestream into the wake behind a wing?",
+          "answer": "Freestream to the probe's stagnation point is one streamline with negligible friction, so $P_0 = P + \\frac{1}{2}\\rho V^2$ holds. Wake fluid arrived only by passing through the boundary layer, where viscosity destroyed mechanical energy — its Bernoulli constant (stagnation pressure) is lower. That stagnation-pressure deficit is real and useful: integrating it across the wake is the wake-survey method of measuring drag."
+        },
+        {
+          "question": "Why does a U-bend in a water main need thrust blocks even when inlet and outlet pressures, areas, and speeds are all identical?",
+          "answer": "Momentum is a vector: reversing the flow direction changes the momentum flux by $2\\dot{m}V$ even though its magnitude never changed, and pressure pushes on both faces in the same direction. The anchor must supply $\\sum F = \\dot{m}(\\vec{V}_{out} - \\vec{V}_{in})$ plus the pressure-area forces. Bend anchor forces are momentum problems, not friction problems."
+        },
+        {
+          "question": "An ideal Pelton wheel (jet driving a series of buckets) extracts maximum power at bucket speed U = V_jet/2. Why there, and what happens at the two extremes?",
+          "answer": "Force on the buckets scales with relative speed $(V_j - U)$, but power is $F \\cdot U$: zero at U = 0 (force, no motion) and zero at U = V_j (motion, no force), peaking at U = V_j/2. There, the 180°-turned jet leaves with near-zero absolute velocity — essentially all of its kinetic energy handed to the wheel. Real wheels run just under half jet speed."
+        }
+      ]
+    },
+    {
+      "title": "Pipe flow & the Moody chart",
+      "subject": "Fluids",
+      "tags": ["fluids", "incompressible"],
+      "content": "Regime set by $Re_D = \\rho V D/\\mu$: laminar below ~2300, turbulent above ~4000, indeterminate between. Laminar (Poiseuille): $f = 64/Re$ exactly — Δp ∝ V and roughness is irrelevant. Turbulent: f comes from the Moody chart/Colebrook equation as f(Re, ε/D); in the fully-rough limit f depends on roughness alone and Δp ∝ V². Darcy-Weisbach covers every regime: $h_L = f\\frac{L}{D}\\frac{V^2}{2g}$; fittings and valves add minor losses $h_L = K\\frac{V^2}{2g}$ (or equivalent lengths), which dominate short runs. Consequences: system head rises ~Q², pumping power ~Q³. Non-circular ducts use hydraulic diameter $D_h = 4A/P$.",
+      "recall_prompt": "Walk through sizing a pipe run: compute Re, decide the regime, get f (laminar formula vs Moody), sum major and minor losses, and explain why pump power explodes as ~Q³.",
+      "key_ideas": [
+        "$Re_D = \\rho VD/\\mu$: laminar < ~2300, turbulent > ~4000",
+        "Laminar: $f = 64/Re$ exactly — Δp ∝ V, wall roughness irrelevant",
+        "Turbulent: f = f(Re, ε/D) from Moody/Colebrook; fully rough → f constant, Δp ∝ V²",
+        "Darcy-Weisbach: $h_L = f\\frac{L}{D}\\frac{V^2}{2g}$; minor losses $KV^2/2g$ dominate short, fitting-heavy runs",
+        "Pump power = $\\rho g Q h$ → scales ~Q³; head loss scales ~$1/D^5$ at fixed Q",
+        "Non-circular ducts: hydraulic diameter $D_h = 4A/P$"
+      ],
+      "cards": [
+        {
+          "question": "Sketch the Moody chart: axes, the laminar line, the transition gap, the turbulent family of roughness curves, and the fully-rough limit.",
+          "answer": "A correct sketch shows:\n- Log-log axes: Darcy friction factor f (~0.008–0.1) vs Re (10³–10⁸)\n- A single straight laminar line f = 64/Re at the left (slope −1), independent of roughness\n- A gap or shaded band around Re ≈ 2300–4000: transition, no reliable curve\n- Turbulent region: a fan of curves, one per relative roughness ε/D, each falling with Re then flattening\n- Rougher pipes sit higher and go flat (Re-independent) sooner; the lowest curve is the smooth pipe, still creeping down at high Re\n- Far right: fully-rough zone where all curves are horizontal — f set by ε/D alone"
+        },
+        {
+          "question": "Why does wall roughness control the friction factor in fast turbulent flow yet do nothing at all in laminar flow?",
+          "answer": "Turbulent flow keeps a thin viscous sublayer at the wall; once roughness elements poke through it, they shed eddies and take form drag — f rises and eventually depends only on ε/D (fully rough, Δp ∝ V²). Laminar flow's orderly profile simply drapes over small bumps, so f = 64/Re regardless of finish. Raising Re thins the sublayer, which is why each ε/D curve peels away from the smooth line at some Re."
+        },
+        {
+          "question": "A chiller loop needs 50% more flow through the same piping. Why does pump power roughly triple, and what's the only geometry change that really fixes it?",
+          "answer": "Turbulent losses scale as $h_L \\propto Q^2$ and pump power as $\\rho g Q h \\propto Q^3$: 1.5³ ≈ 3.4×. The real lever is diameter — at fixed Q, $h_L \\propto 1/D^5$ (V drops as $1/D^2$ and it enters squared, plus the L/D factor) — so one pipe size up usually beats any pump upgrade. The same cube law is why slowing pumps and fans with VFDs saves so much energy."
+        }
+      ]
+    },
+    {
+      "title": "Boundary layers, separation & drag",
+      "subject": "Fluids",
+      "tags": ["fluids", "aero"],
+      "content": "Viscosity acts in a thin boundary layer: laminar flat-plate thickness $\\delta \\approx 5x/\\sqrt{Re_x}$ (grows as √x), transition near $Re_x \\approx 5\\times10^5$, after which the turbulent layer is thicker, fuller-profiled and higher-friction — but resistant to separation. Separation happens only under an adverse pressure gradient (pressure rising downstream): near-wall fluid, already drained by shear, runs out of momentum, stalls and reverses, shedding a low-pressure recirculating wake. Total drag = friction drag (wall shear — dominates streamlined bodies) + pressure drag (wake suction — dominates bluff bodies); $F_D = \\frac{1}{2}\\rho V^2 C_D A$. Tripping the layer turbulent (dimples, trip strips) delays separation and can slash bluff-body drag — the drag crisis near Re ~ 2–4×10⁵ for spheres.",
+      "recall_prompt": "Trace a boundary layer from a leading edge through transition to separation: what grows it, what triggers transition, what an adverse gradient does, and how friction vs pressure drag decide whether to trip the layer.",
+      "key_ideas": [
+        "Laminar flat plate: $\\delta \\approx 5x/\\sqrt{Re_x}$ — grows as √x; transition near $Re_x \\sim 5\\times10^5$",
+        "Separation requires an adverse pressure gradient: near-wall fluid runs out of momentum and reverses",
+        "Friction drag (wall shear, streamlined bodies) vs pressure drag (wake suction, bluff bodies)",
+        "Turbulent layers: more wall friction but fuller profiles → cling on longer, separate later",
+        "Golf-ball dimples / drag crisis: tripping turbulence shrinks the wake — total drag drops on bluff bodies",
+        "$F_D = \\frac{1}{2}\\rho V^2 C_D A$ — C_D is constant only within a regime"
+      ],
+      "cards": [
+        {
+          "question": "Sketch a boundary layer developing along a flat plate from the leading edge through transition, then add an adverse-pressure-gradient region ending in separation. Show velocity profiles at each stage.",
+          "answer": "A correct sketch shows:\n- A plate with the boundary-layer edge growing from zero at the leading edge like √x (thin, concave-down)\n- Laminar zone: smooth thin layer; velocity profile gently curved with moderate wall slope\n- Transition marked near Re_x ≈ 5×10⁵: edge becomes irregular and the layer thickens faster\n- Turbulent profile: fuller/blunter near the wall — steeper wall gradient (more friction)\n- Adverse-gradient region: profiles develop an inflection point; wall slope reaches zero at the separation point\n- Past separation: reversed near-wall flow and a recirculating wake — thin-boundary-layer theory stops applying there"
+        },
+        {
+          "question": "Dimples add roughness and extra friction to a golf ball — so why do they cut its total drag roughly in half, and why would the same trick ruin a sailplane wing?",
+          "answer": "A sphere is a bluff body: drag is dominated by the low-pressure separated wake. Dimples trip the boundary layer turbulent; the energized layer follows the surface farther around the back, separation moves aft, the wake narrows, and pressure drag collapses — far outweighing the friction penalty. A sailplane wing is streamlined, friction-dominated, with little wake to save: tripping it early just adds friction. Trip bluff bodies; keep streamlined ones laminar."
+        },
+        {
+          "question": "Why can a nozzle turn and accelerate flow through aggressive area changes, while a diffuser must expand at only a few degrees or it stalls?",
+          "answer": "A nozzle's pressure falls downstream (favorable gradient): the pressure force pushes near-wall fluid along, replenishing what shear drains — the layer essentially cannot separate. A diffuser asks flow to climb into rising pressure; the slow near-wall fluid exhausts its momentum and reverses if the climb is too steep. Hence conical diffusers stay near ~7° included angle, and 'diffuser stall' is the classic failure of greedy ones."
+        }
+      ]
+    },
+    {
+      "title": "Dimensional analysis & similitude",
+      "subject": "Fluids",
+      "tags": ["fluids", "modeling"],
+      "content": "Buckingham π: n variables built from r independent dimensions collapse to n − r dimensionless groups — drag(V, D, ρ, μ) becomes $C_D = f(Re)$, one curve instead of a four-knob test matrix. Model testing needs geometric, kinematic and dynamic similarity: every governing π must match — Re (viscous), Ma (compressibility), Fr = $V/\\sqrt{gL}$ (gravity/free surface), We (surface tension). Complete similarity is usually impossible in one facility: a ship model cannot match Fr and Re simultaneously in water, so wave drag is Froude-scaled and skin friction corrected analytically (Froude's hypothesis); transonic wind tunnels pressurize or run cryogenic to chase Re at fixed Ma.",
+      "recall_prompt": "Run the Buckingham π recipe on sphere drag, then explain what dynamic similarity demands of a model test, and why a ship model can't honor Re and Fr at once — and what naval architects do about it.",
+      "key_ideas": [
+        "Buckingham π: n variables − r dimensions = number of independent dimensionless groups",
+        "Dynamic similarity = all governing π groups equal → model data maps exactly to prototype",
+        "The cast: Re (viscous), Fr = $V/\\sqrt{gL}$ (free surface/gravity), Ma (compressibility), We (surface tension)",
+        "Ship-model trap: Fr and Re can't both match in one fluid — Froude-scale the waves, add friction back analytically",
+        "Dimensionless plots collapse data: $C_D = f(Re)$ replaces drag tables over V, D, ρ, μ",
+        "π groups also tell you which variables an experiment can safely ignore"
+      ],
+      "cards": [
+        {
+          "question": "A 1:25 ship model is towed at one-fifth of full-scale speed — not 25× slower or at equal speed. Why exactly one-fifth, and which part of the measured drag still can't be trusted?",
+          "answer": "Wave (residual) drag obeys Froude number $Fr = V/\\sqrt{gL}$: matching Fr gives $V_m = V_p\\sqrt{L_m/L_p} = V_p/5$. At that speed the model's Re is ~125× too small, so skin friction is out of similarity — the tank keeps the measured wave drag, computes friction from flat-plate correlations at each scale's Re, and adds it back (Froude's hypothesis). One π matched, the other corrected."
+        },
+        {
+          "question": "Why do high-Reynolds-number wind tunnels run pressurized or cryogenic instead of simply blowing faster?",
+          "answer": "Blowing faster raises Mach number — compressibility effects (and eventually choking) corrupt the data long before full-scale Re is reached. Since $Re = \\rho VL/\\mu$, you raise ρ by pressurizing, or run cryogenic nitrogen (ρ up, μ down) to multiply Re at fixed, honest Ma. Matching Re and Ma simultaneously is the entire art of transonic testing."
+        },
+        {
+          "question": "Sphere drag depends on F, V, D, ρ, μ — five variables. What does dimensional analysis shrink that to, and what's the experimental payoff?",
+          "answer": "Five variables minus three dimensions (M, L, T) → two π groups: $C_D = F/(\\frac{1}{2}\\rho V^2 \\frac{\\pi}{4}D^2)$ and $Re = \\rho VD/\\mu$. Every fluid, size and speed collapses onto a single $C_D(Re)$ curve — one sweep replaces a four-dimensional test matrix, and a water-tunnel test legitimately predicts behavior in air at matched Re."
         }
       ]
     },
@@ -92,12 +237,13 @@
       "title": "Compressible flow: Mach relations & choking",
       "subject": "Fluids",
       "tags": ["compressible flow"],
-      "content": "Speed of sound $a = \\sqrt{\\gamma R T}$; M = V/a. Quasi-1D area-velocity: $\\frac{dA}{A} = (M^2 - 1)\\frac{dV}{V}$ — subsonic flow accelerates in a converging duct, supersonic in a diverging one; M = 1 only at a throat. Mass flux maxes at M = 1: choking — downstream pressure can't raise flow further. CD (de Laval) nozzle: converge to sonic throat, diverge to supersonic; P-x and M-x behavior depends on back pressure (subsonic venturi → shock in diverging section → overexpanded/underexpanded jet). Thrust $F = \\dot{m}V_e + (P_e - P_a)A_e$; specific impulse $I_{sp} = F/(\\dot{m}g)$.",
+      "content": "Speed of sound $a = \\sqrt{\\gamma R T}$; M = V/a. Quasi-1D area-velocity: $\\frac{dA}{A} = (M^2 - 1)\\frac{dV}{V}$ — subsonic flow accelerates in a converging duct, supersonic in a diverging one; M = 1 only at a throat. Mass flux maxes at M = 1: choking — downstream pressure can't raise flow further. CD (de Laval) nozzle: converge to sonic throat, diverge to supersonic; P-x and M-x behavior depends on back pressure (subsonic venturi → shock in diverging section → overexpanded/underexpanded jet). Stagnation properties: $T_0 = T(1 + \\frac{\\gamma-1}{2}M^2)$. Thrust $F = \\dot{m}V_e + (P_e - P_a)A_e$; specific impulse $I_{sp} = F/(\\dot{m}g)$.",
       "recall_prompt": "Explain why area changes act oppositely on subsonic vs supersonic flow, what choking means, and walk the CD-nozzle regimes as back pressure drops.",
       "key_ideas": [
         "$a = \\sqrt{\\gamma RT}$; the M²−1 factor flips the area rule at M = 1",
         "Converging: subsonic accelerates, M = 1 max at the throat — then choked",
         "Choked: $\\dot{m}$ fixed by throat area + upstream conditions; back pressure deaf",
+        "Stagnation vs static: $T_0 = T(1 + \\frac{\\gamma-1}{2}M^2)$ — the KE folded into temperature",
         "CD nozzle regimes vs back pressure: venturi → normal shock in diffuser → over/under-expanded",
         "Thrust = $\\dot{m}V_e + (P_e - P_a)A_e$; $I_{sp} = F/\\dot{m}g$",
         "Kantrowitz limit: self-starting supersonic inlets constrain contraction ratio"
@@ -110,6 +256,10 @@
         {
           "question": "A rocket's chamber pressure doubles. What happens to mass flow through the (choked) throat, and why doesn't the ambient pressure matter?",
           "answer": "Mass flow doubles — choked flow scales with upstream stagnation pressure ($\\dot{m} \\propto P_0 A^*/\\sqrt{T_0}$). Information travels at sound speed, which can't propagate upstream through the sonic throat, so downstream/ambient conditions can't influence it."
+        },
+        {
+          "question": "Static vs stagnation temperature: which does a probe in a Mach 2 stream actually read, and below what Mach number does the distinction stop mattering?",
+          "answer": "A probe stagnates the flow on its face, so it reads (nearly) stagnation values: $T_0 = T(1 + \\frac{\\gamma-1}{2}M^2)$ — at M = 2, $T_0 = 1.8\\,T$, an 80% misread if you wanted static. Static is what a thermometer drifting WITH the fluid would feel; the difference is the flow's kinetic energy recovered as heat. The gap grows as M²: below M ≈ 0.3 it's a ~2% effect, which is exactly why low-speed flows get treated as incompressible."
         }
       ]
     },
@@ -130,6 +280,14 @@
         {
           "question": "Compression through a shock is 'free' — no nozzle needed. What's the catch, and why do supersonic inlets use several weak oblique shocks instead of one normal shock?",
           "answer": "Shocks generate entropy: stagnation pressure (usable work potential) is destroyed, scaling steeply with shock strength. A series of weak oblique shocks accomplishes the same static compression at far lower total entropy than one strong normal shock — higher inlet pressure recovery."
+        },
+        {
+          "question": "You keep steepening a supersonic wedge. What happens at the maximum turning angle, and why do blunt reentry capsules exploit exactly that failure?",
+          "answer": "Past $\\theta_{max}$ for the incoming Mach number, the oblique-shock relations have no attached solution — the shock pops off and stands ahead as a curved bow shock, locally normal at the centerline with a subsonic pocket behind it, and drag jumps. Capsules want this: the standoff distance keeps the hottest gas off the skin, and the strong shock dumps kinetic energy into the surrounding air instead of the heat shield."
+        },
+        {
+          "question": "Compression turns collapse into a discontinuous shock, yet expansion turns spread into a smooth isentropic fan. What's the physical asymmetry?",
+          "answer": "Compression wavelets heat the gas behind them, raising the local sound speed — trailing wavelets travel faster, catch up, and coalesce into a steep front (a shock). Expansion wavelets cool the gas behind them — followers fall behind, so the fan spreads, gradients stay finite, and no entropy is generated. Supersonic expansion is thermodynamically free; compression always taxes stagnation pressure."
         }
       ]
     },
@@ -150,6 +308,14 @@
         {
           "question": "Adding insulation to a thin wire can INCREASE its heat loss. Explain.",
           "answer": "Insulation adds conduction resistance but also adds outer surface area, cutting convective resistance $1/hA$. Below the critical radius $r_c = k/h$, the area effect wins and total resistance falls. Matters for wires/tubes (mm scale), never for walls."
+        },
+        {
+          "question": "Steady conduction, no generation: why is the temperature profile a straight line through a wall but logarithmic through a pipe wall?",
+          "answer": "Steady with no generation means the same q crosses every layer. A wall offers constant area, so the gradient is constant → linear T(x). A cylinder's area grows with radius, so the flux density falls as 1/r and the gradient must too → $T \\propto \\ln r$. The same integration yields the resistance formulas $L/kA$ vs $\\ln(r_2/r_1)/2\\pi kL$ — and warns that the inner wall of a thick tube runs much hotter than the average."
+        },
+        {
+          "question": "Two flat machined blocks are bolted together, yet the joint conducts far worse than solid metal. Where does the extra resistance live, and what are the practical fixes?",
+          "answer": "Real surfaces touch only at scattered asperity tips — a percent or two of the apparent area — so heat funnels through tiny metal bridges and crosses low-conductivity gas gaps between them: thermal contact resistance, often worth millimeters of solid metal. Fixes: clamp harder (flatten asperities), smoother or softer mating surfaces, or fill the gaps with grease, pads or solder. This is why CPU coolers ship with thermal paste."
         }
       ]
     },
@@ -171,6 +337,14 @@
         {
           "question": "Liquid metals have Pr ≪ 1 and oils Pr ≫ 1. What does that say about their thermal vs velocity boundary layers, and why does it matter?",
           "answer": "Pr = ν/α compares the two diffusivities: liquid metals (Pr ~ 0.01) diffuse heat far beyond the velocity layer — heat transfer barely needs the flow; oils (Pr ~ 1000) trap heat in a thin layer inside a thick velocity layer — sluggish transfer. Correlations split by Pr regime for exactly this reason."
+        },
+        {
+          "question": "Natural vs forced convection: what supplies the velocity in each, which dimensionless group replaces Re, and how do you tell when BOTH matter?",
+          "answer": "Forced: an external mover imposes V, so $Nu = f(Re, Pr)$. Natural: the temperature field creates its own flow through buoyancy — no imposed V exists, so the driver is $Ra = Gr \\cdot Pr$. Compare regimes with $Gr/Re^2$: ≪ 1 forced dominates, ≫ 1 natural dominates, ~1 is mixed convection. The stakes: natural h is ~10× smaller, so a heatsink sized with the fan correlation fails exactly when the fan does."
+        },
+        {
+          "question": "A hot plate facing up cools several times faster by natural convection than the same plate facing down. Why?",
+          "answer": "Facing up: hot buoyant fluid sits beneath cold heavy fluid — unstable — so it breaks into rising plumes and is constantly replaced by fresh cool fluid. Facing down: the buoyant layer is trapped against the plate (stable stratification) and can only dribble out at the edges through a thick stagnant layer. Correlations encode this with different constants per orientation — a free design variable for passive cooling."
         }
       ]
     },
@@ -191,6 +365,14 @@
         {
           "question": "Why does a polished aluminum heatsink perform noticeably worse than the same heatsink anodized black — and roughly how much of a passive heatsink's dissipation is radiation?",
           "answer": "Anodizing raises ε from ~0.05 to ~0.85; in natural convection near room temperature, radiation carries roughly a third to half of total heat — so the polished version forfeits most of that channel. (IR emissivity, not visible color, is what matters: white paint works almost as well as black.)"
+        },
+        {
+          "question": "How does sliding one thin foil between two parallel hot and cold plates cut their radiative exchange — and by how much if all emissivities are equal?",
+          "answer": "The shield adds two more surface resistances and must itself float to an equilibrium temperature between the plates, re-radiating from there: with equal ε everywhere, one shield halves the net flux, and N shields cut it to 1/(N+1). Low-ε polished shields do far better still, since each $(1-\\varepsilon)/\\varepsilon A$ resistance is huge — the whole trick of multilayer insulation on spacecraft and cryostats."
+        },
+        {
+          "question": "A solar-thermal absorber should soak up sunlight but not radiate it back. Doesn't Kirchhoff's law (α = ε) make that impossible?",
+          "answer": "Kirchhoff equates absorptivity and emissivity only wavelength by wavelength. Sunlight arrives with a ~5800 K spectrum (0.3–2.5 μm); a ~350 K absorber emits near 10 μm. A selective surface pairs high α in the solar band with low ε in the far infrared — different wavelengths, no contradiction. It's also the warning behind 'it's black so it radiates well': visible color says nothing about 10 μm behavior."
         }
       ]
     },
@@ -211,6 +393,72 @@
         {
           "question": "Quenching a small steel ball in oil vs water: which assumptions change, and how does Bi tell you?",
           "answer": "Water's h is ~10× oil's, raising Bi proportionally. The ball may be lumped (Bi < 0.1) in oil but not in water — where surface martensite forms while the core is still austenite, the gradient that drives quench cracking. Check Bi before reusing the lumped exponential."
+        },
+        {
+          "question": "Sketch the temperature profile through a hot wall suddenly exposed to cold fluid — one snapshot in time — for Bi ≪ 0.1, Bi ≈ 1, and Bi ≫ 1. Include the fluid side.",
+          "answer": "A correct sketch shows:\n- x-axis from wall centerline to surface and on into the fluid; y-axis temperature from initial T down to T∞\n- Bi ≪ 0.1: profile inside the solid essentially flat (uniform T); nearly the whole drop occurs in the fluid film at the surface\n- Bi ≈ 1: comparable temperature drops inside the solid and across the film\n- Bi ≫ 1: steep gradient inside the solid with the surface already pulled near T∞; almost no film drop\n- The encoded rule: the temperature drop lives across the dominant resistance — internal L/k vs external 1/h\n- Lumped analysis is legal only for the flat-profile case (Bi < 0.1)"
+        },
+        {
+          "question": "Biot and Nusselt are both written hL/k — yet one decides whether a quench has internal gradients and the other reports convection strength. What's the actual difference, and how does mixing them up bite?",
+          "answer": "The k differs: $Bi = hL/k_{solid}$ compares external convection to conduction INSIDE the solid (the lumping decision); $Nu = hL/k_{fluid}$ is the dimensionless temperature gradient in the FLUID — it's how correlations deliver h, and it is never 'small enough to lump'. Plug the fluid's k into Bi and a water quench of steel looks lumpable when it badly isn't (k_water ≈ 0.6 vs k_steel ≈ 50 W/m·K — a ~100× error). Workflow: correlation → Nu → h, then Bi with the solid's k."
+        }
+      ]
+    },
+    {
+      "title": "Fins & extended surfaces",
+      "subject": "Heat Transfer",
+      "tags": ["heat transfer"],
+      "content": "Fins attack the convective bottleneck $1/hA$ by adding area, paid for with conduction resistance along the fin. Fin parameter $m = \\sqrt{hP/kA_c}$; adiabatic-tip straight fin: $q = \\sqrt{hPkA_c}\\,\\theta_b\\tanh(mL)$, efficiency $\\eta_f = \\tanh(mL)/(mL)$. Effectiveness $\\varepsilon_f = q_{fin}/q_{bare}$ decides whether to fin at all — for a long fin $\\varepsilon_f \\approx \\sqrt{kP/(hA_c)}$, so fins pay on low-h (gas) sides with high-k thin sections, and can actually hurt when h is huge (boiling, fast liquid). The 1-D fin model itself assumes the fin is thin enough to be transversely isothermal (transverse Bi ≪ 1). tanh saturates: past mL ≈ 2.5 added length is nearly dead metal. Spacing matters: adjacent boundary layers must not merge.",
+      "recall_prompt": "Explain how a fin trades conduction resistance for convective area: the fin parameter m, efficiency vs effectiveness, when a fin makes things worse, and why length and spacing both have diminishing returns.",
+      "key_ideas": [
+        "Fins add area against the $1/hA$ bottleneck — put them on the LOW-h side (the gas side)",
+        "$m = \\sqrt{hP/kA_c}$; adiabatic tip: $q = \\sqrt{hPkA_c}\\,\\theta_b\\tanh(mL)$, $\\eta_f = \\tanh(mL)/(mL)$",
+        "Effectiveness $\\varepsilon_f = q_{fin}/q_{bare} \\approx \\sqrt{kP/(hA_c)}$ (long fin) — want ≥ ~2 to justify the fin",
+        "High h can make $\\varepsilon_f \\le 1$: the fin's conduction resistance exceeds the convective resistance it removes",
+        "tanh(mL) saturates near mL ≈ 2.5 — longer fins are dead metal; the model needs transverse Bi ≪ 1",
+        "Fin spacing: merged boundary layers choke the channel — more fins isn't monotonic either"
+      ],
+      "cards": [
+        {
+          "question": "When does adding fins REDUCE heat transfer, and what quick test predicts it?",
+          "answer": "When h is already so high that the fin's conduction resistance exceeds the convective resistance it removes: long-fin effectiveness $\\varepsilon_f \\approx \\sqrt{kP/(hA_c)}$ drops to ≤ 1 in boiling, condensing, or fast liquid flows — the 'fin' becomes an insulating peg that also blocks base area. Test: fin only if $kP/(hA_c) \\gg 1$ (rule of thumb $\\varepsilon_f \\ge 2$). That's why a car radiator's fins live on the air side while the coolant side is bare."
+        },
+        {
+          "question": "Why do heatsink designers stop lengthening fins past a point, and what sets where that point is?",
+          "answer": "Fin heat flow goes as $\\tanh(mL)$, which saturates: temperature decays along the fin, and beyond mL ≈ 2.5 the tip already sits near ambient and contributes ~1% more. Extra length is dead mass; better to add more short fins until the boundary layers between them start to merge. The length scale is set by $m = \\sqrt{hP/kA_c}$: higher h or thinner/lower-k fins shorten the useful length."
+        },
+        {
+          "question": "Fin efficiency η_f vs fin effectiveness ε_f: which one tells you whether to add the fin at all, and how can a fin score η_f ≈ 1 yet be useless?",
+          "answer": "η_f grades the fin against an ideal fin held at base temperature — a conduction quality score; ε_f compares heat WITH the fin to the bare spot it covers — the go/no-go economics. A short stubby fin is nearly isothermal (η_f → 1) yet adds almost no area (ε_f ≈ 1): efficient and pointless. Decide with ε_f ≥ ~2; use η_f afterward to compute the actual q."
+        }
+      ]
+    },
+    {
+      "title": "Heat exchangers: LMTD vs ε-NTU",
+      "subject": "Heat Transfer",
+      "tags": ["heat transfer", "heat exchangers"],
+      "content": "Both methods solve $q = UA\\,F\\,\\Delta T_{lm}$ physics: the temperature difference decays exponentially along the exchanger, so the right mean is $\\Delta T_{lm} = (\\Delta T_1 - \\Delta T_2)/\\ln(\\Delta T_1/\\Delta T_2)$; F corrects crossflow/shell-and-tube geometries. When outlet temperatures are unknown, ε-NTU avoids iteration: $NTU = UA/C_{min}$, $C_r = C_{min}/C_{max}$, and effectiveness $\\varepsilon = q/q_{max}$ with $q_{max} = C_{min}(T_{h,in} - T_{c,in})$ — the most heat any exchanger of infinite area could move. Counterflow beats parallel flow: ΔT stays uniform along the length and the cold outlet may exceed the hot outlet. U comes from a resistance sum — films, wall, and fouling factors that grow in service. Phase change makes that stream's C effectively infinite: $C_r = 0$ and $\\varepsilon = 1 - e^{-NTU}$ for any arrangement.",
+      "recall_prompt": "Compare the LMTD and ε-NTU methods — what each needs as input and when each wins — then explain counterflow's advantage, the meaning of q_max and C_r, and how fouling degrades U over a service life.",
+      "key_ideas": [
+        "$q = UA\\,F\\,\\Delta T_{lm}$; $\\Delta T_{lm} = \\frac{\\Delta T_1 - \\Delta T_2}{\\ln(\\Delta T_1/\\Delta T_2)}$ — exponential ΔT decay makes the log mean exact",
+        "LMTD for sizing (all terminal temps known → UA); ε-NTU for rating (outlets unknown — no iteration)",
+        "$\\varepsilon = q/q_{max}$, $q_{max} = C_{min}(T_{h,in} - T_{c,in})$, $NTU = UA/C_{min}$, $C_r = C_{min}/C_{max}$",
+        "Counterflow: most uniform ΔT, highest ε for given NTU; cold outlet can pass hot outlet",
+        "$1/UA$ = sum of film + wall + fouling resistances; fouling factors grow in service and are budgeted at design",
+        "Phase change: that stream's C → ∞, $C_r = 0$, $\\varepsilon = 1 - e^{-NTU}$ regardless of flow arrangement"
+      ],
+      "cards": [
+        {
+          "question": "You know both inlet temperatures and the exchanger's UA, and want the outlet temperatures. LMTD or ε-NTU — and why does the other method fight you?",
+          "answer": "ε-NTU: compute $NTU = UA/C_{min}$ and $C_r$, look up ε, then $q = \\varepsilon\\,C_{min}(T_{h,in}-T_{c,in})$ and the outlets follow from energy balances — no iteration. LMTD needs the outlets to even form $\\Delta T_{lm}$, so you'd guess and iterate. Flip the problem (temperatures specified, size the hardware) and LMTD wins in one line. Rule: temperatures known → LMTD; hardware known → ε-NTU."
+        },
+        {
+          "question": "How can the cold stream leave a counterflow exchanger HOTTER than the hot stream leaves — doesn't that violate the second law?",
+          "answer": "No violation: heat flows hot→cold at every local point. In counterflow the cold outlet sits at the hot INLET end, so it can climb toward $T_{h,in}$ while the hot stream keeps cooling toward the cold inlet at the far end — local ΔT stays positive everywhere. Parallel flow puts both outlets at the same end, pinching toward a shared temperature, which is exactly why counterflow achieves higher effectiveness from the same area."
+        },
+        {
+          "question": "A plant heat exchanger met spec on day one but underperforms a year later with both flow rates unchanged. What happened, and how do designers anticipate it?",
+          "answer": "Fouling: scale, biofilm or corrosion products add conduction resistances in series, so U falls ($1/UA = \\Sigma R$ now including $R_f''/A$ terms) — outlet temperatures drift and pressure drop usually creeps up too. Designers budget published fouling factors into U, buying extra area that makes the exchanger overperform when clean; maintenance restores U by cleaning. Specifying clean-surface U with no fouling allowance is the classic rookie sizing error."
         }
       ]
     }
