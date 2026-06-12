@@ -36,6 +36,7 @@ APP_DIR = Path(__file__).resolve().parent
 ROOT_DIR = APP_DIR.parent
 DATA_DIR = ROOT_DIR / "data"
 WEB_DIR = ROOT_DIR / "web"
+SEEDS_DIR = ROOT_DIR / "seeds"
 
 DATA_DIR.mkdir(exist_ok=True)
 

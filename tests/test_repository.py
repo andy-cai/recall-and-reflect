@@ -244,5 +244,40 @@ class TestActivity(RepoCase):
         self.assertLess(risk[0]["retrievability"], risk[1]["retrievability"])
 
 
+class TestSubjectDelete(RepoCase):
+    def _active_titles(self):
+        rows = self.repo.db.fetch_all(
+            "SELECT title FROM learnings WHERE is_active = 1 ORDER BY title")
+        return [r["title"] for r in rows]
+
+    def test_counts_normalize_and_delete_cascades(self):
+        a = self.repo.create_learning("Alpha", "content", subject="Thermo")
+        qa = self.repo.create_question(a, "q", "a")
+        b = self.repo.create_learning("Beta", "content", subject="  thermo ")
+        self.repo.create_question(b, "q", "a")
+        self.repo.create_learning("Gamma", "content", subject="Fluids")
+        self.repo.db.execute(
+            "INSERT INTO reviews (question_id, rating, reviewed_at) "
+            "VALUES (?, 3, '2026-01-01T00:00:00')", (qa,))
+
+        counts = self.repo.subject_counts("THERMO")
+        self.assertEqual((counts["learnings"], counts["cards"], counts["reviews"]), (2, 2, 1))
+
+        removed, reviews = self.repo.delete_subject("Thermo")
+        self.assertEqual((removed, reviews), (2, 1))
+        self.assertEqual(self._active_titles(), ["Gamma"])
+        orphans = self.repo.db.fetch_one(
+            "SELECT COUNT(*) AS n FROM questions q "
+            "LEFT JOIN learnings l ON l.id = q.learning_id WHERE l.id IS NULL")["n"]
+        self.assertEqual(orphans, 0)
+
+    def test_empty_subject_deletes_only_uncategorized(self):
+        self.repo.create_learning("NoHome", "content")
+        self.repo.create_learning("Housed", "content", subject="X")
+        removed, _ = self.repo.delete_subject("")
+        self.assertEqual(removed, 1)
+        self.assertEqual(self._active_titles(), ["Housed"])
+
+
 if __name__ == "__main__":
     unittest.main()

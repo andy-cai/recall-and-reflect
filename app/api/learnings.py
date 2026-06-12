@@ -13,6 +13,7 @@ from app.db.repository import Repository
 from app.services.cloud import CloudError, get_cloud
 from app.services.embeddings import get_embeddings
 from app.services.llm import OllamaError, get_llm
+from app.services.seeds import import_decks, load_decks, remove_decks
 
 router = APIRouter(prefix="/api", tags=["learnings"])
 
@@ -507,6 +508,49 @@ def clear_focus():
 def list_subjects():
     repo = Repository()
     return {"subjects": repo.subjects_summary(), "names": repo.subject_names()}
+
+
+@router.get("/subjects/counts")
+def subject_counts(name: str = ""):
+    """Topics/cards/reviews under a subject — what a delete would take with it."""
+    return Repository().subject_counts(name)
+
+
+class SubjectDeleteReq(BaseModel):
+    subject: str = ""
+
+
+@router.post("/subjects/delete")
+def delete_subject(body: SubjectDeleteReq):
+    """Delete every topic filed under a subject ('' = uncategorized).
+    Cascades to cards, key ideas, tags and review history."""
+    removed, reviews = Repository().delete_subject(body.subject)
+    return {"removed": removed, "reviews": reviews}
+
+
+# ---------- starter curriculum (the seed decks, without the CLI) ----------
+
+@router.get("/seeds/status")
+def seeds_status():
+    """How much of the starter curriculum is currently in the library."""
+    decks = load_decks()
+    available = sum(len(d.get("topics", [])) for d in decks)
+    present, reviews = remove_decks(Repository(), decks, apply=False, verbose=False)
+    return {"available": available, "present": present, "reviews": reviews}
+
+
+@router.post("/seeds/import")
+def seeds_import():
+    """Import the seed decks (idempotent: existing titles are skipped)."""
+    created, cards, _ = import_decks(Repository(), load_decks(), verbose=False)
+    return {"created": created, "cards": cards}
+
+
+@router.post("/seeds/remove")
+def seeds_remove():
+    """Remove seed topics, matched by title — renamed and user topics are kept."""
+    removed, reviews = remove_decks(Repository(), load_decks(), apply=True, verbose=False)
+    return {"removed": removed, "reviews": reviews}
 
 
 @router.post("/subjects/suggest")

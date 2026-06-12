@@ -126,6 +126,10 @@ what's new:
 python tools/seed_curriculum.py            # --dry-run to preview
 ```
 
+Changed your mind? `--remove` previews exactly what would be deleted — matched by
+title, with any review history counted — and `--remove --yes` deletes. Topics you've
+renamed are never touched.
+
 New topics ease into review at your new-per-day cap; focus a subject on Today to pull
 its topics forward. Edit or add your own decks as JSON in `seeds/` — the format is
 plain (see any existing file), and `tests/test_seeds.py` validates them.

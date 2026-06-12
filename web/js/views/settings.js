@@ -5,10 +5,11 @@ import { ambientEnabled, setAmbientEnabled } from '../ambient.js';
 import { BENCH_COLS, BENCH_NOTE, MODEL_GUIDE } from '../models-info.js';
 
 export async function render() {
-  const [s, promptInfo, logData] = await Promise.all([
+  const [s, promptInfo, logData, seedInfo] = await Promise.all([
     api.getSettings(),
     api.prompts().catch(() => null),
     api.cloudLog().catch(() => null),
+    api.seedStatus().catch(() => null),
   ]);
   const view = el('div', { class: 'view' });
   view.append(el('div', { class: 'page-head' }, el('h1', {}, 'Settings')));
@@ -102,6 +103,13 @@ export async function render() {
     field('Due reminders', sw, 'A gentle Windows notification when reviews pile up.'),
     el('div', { class: 'row', style: { justifyContent: 'flex-end', paddingTop: '16px' } }, saveBtn)));
 
+  // ---------- starter curriculum: import / remove without the CLI ----------
+  if (seedInfo && seedInfo.available) {
+    view.append(section('Starter curriculum',
+      'Curated engineering decks: topics with rubrics, sketch tasks and contrast cards.',
+      buildSeedPanel(seedInfo), false));
+  }
+
   // ---------- the models: why these, with published scores ----------
   view.append(section('The models', 'Why each one is on the list, and how they score on published benchmarks.',
     buildModelGuide(), false));
@@ -167,6 +175,52 @@ function section(title, sub, body, open = false) {
       sub ? el('div', { class: 'muted', style: { fontSize: '12.5px' } }, sub) : null),
     chev);
   return el('div', { class: 'card', style: { marginTop: '16px' } }, head, content);
+}
+
+// ---------- starter curriculum: import / remove the seed decks ----------
+function buildSeedPanel(initial) {
+  const wrap = el('div', {});
+  function render(info) {
+    clear(wrap);
+    const reviewsNote = info.reviews
+      ? ` · ${info.reviews} review${info.reviews !== 1 ? 's' : ''} recorded on them` : '';
+    wrap.append(el('div', { class: 'soft', style: { fontSize: '13.5px', margin: '2px 0 10px' } },
+      `${info.present} of ${info.available} starter topics are in your library${reviewsNote}.`));
+    const row = el('div', { class: 'row', style: { gap: '8px' } });
+    if (info.present < info.available) {
+      const importBtn = el('button', { class: 'btn', onClick: async () => {
+        importBtn.disabled = true; importBtn.textContent = 'Importing…';
+        try {
+          const r = await api.importSeeds();
+          toast(`Imported ${r.created} topic${r.created !== 1 ? 's' : ''}`);
+          refreshBadge(); render(await api.seedStatus());
+        } catch {
+          toast('Import failed');
+          importBtn.disabled = false; importBtn.textContent = 'Import';
+        }
+      } }, info.present ? 'Import the rest' : 'Import');
+      row.append(importBtn);
+    }
+    if (info.present > 0) {
+      row.append(el('button', { class: 'btn btn-danger', onClick: async () => {
+        const lose = info.reviews
+          ? ` and ${info.reviews} recorded review${info.reviews !== 1 ? 's' : ''}` : '';
+        if (!confirm(`Remove ${info.present} starter topic${info.present !== 1 ? 's' : ''}${lose}? `
+          + 'Topics you have renamed are kept.')) return;
+        try {
+          const r = await api.removeSeeds();
+          toast(`Removed ${r.removed} topic${r.removed !== 1 ? 's' : ''}`);
+          refreshBadge(); render(await api.seedStatus());
+        } catch { toast('Remove failed'); }
+      } }, 'Remove all…'));
+    }
+    wrap.append(row,
+      el('div', { class: 'muted', style: { fontSize: '12px', marginTop: '10px', lineHeight: '1.5' } },
+        'Matched by title, exactly like the CLI (tools/seed_curriculum.py): your own topics are never touched, '
+        + 'starter topics you renamed are kept, and removal also deletes their cards and review history.'));
+  }
+  render(initial);
+  return wrap;
 }
 
 // ---------- model guide: prose + published-benchmark bars ----------
