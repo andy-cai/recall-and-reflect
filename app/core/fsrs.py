@@ -12,6 +12,7 @@ import math
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import IntEnum
+from typing import Optional
 
 
 class Rating(IntEnum):
@@ -50,7 +51,7 @@ class CardState:
     stability: float = 0.0
     difficulty: float = 0.0
     lapses: int = 0
-    last_reviewed_at: datetime | None = None
+    last_reviewed_at: Optional[datetime] = None
 
 
 @dataclass
@@ -127,7 +128,7 @@ def _next_interval(stability: float, retention: float) -> int:
 def schedule(
     card: CardState,
     rating: Rating,
-    now: datetime | None = None,
+    now: Optional[datetime] = None,
     retention: float = DEFAULT_RETENTION,
     weights=DEFAULT_WEIGHTS,
 ) -> ScheduleResult:
@@ -181,7 +182,7 @@ def schedule(
 
 
 def preview_intervals(
-    card: CardState, now: datetime | None = None, retention: float = DEFAULT_RETENTION
+    card: CardState, now: Optional[datetime] = None, retention: float = DEFAULT_RETENTION
 ) -> dict[Rating, ScheduleResult]:
     """Return the scheduled result for each rating without persisting."""
     return {r: schedule(card, r, now, retention) for r in Rating}
