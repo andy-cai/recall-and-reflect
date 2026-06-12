@@ -61,6 +61,13 @@ export const api = {
   subjects: () => jfetch('GET', '/api/subjects'),
   suggestSubjects: () => jfetch('POST', '/api/subjects/suggest'),
   assignSubjects: (assignments) => jfetch('POST', '/api/subjects/assign', { assignments }),
+  subjectCounts: (name) => jfetch('GET', '/api/subjects/counts?name=' + encodeURIComponent(name || '')),
+  deleteSubject: (subject) => jfetch('POST', '/api/subjects/delete', { subject }),
+
+  // starter curriculum (seed decks)
+  seedStatus: () => jfetch('GET', '/api/seeds/status'),
+  importSeeds: () => jfetch('POST', '/api/seeds/import'),
+  removeSeeds: () => jfetch('POST', '/api/seeds/remove'),
 
   // bulk add
   bulkTopics: (payload) => jfetch('POST', '/api/topics/bulk', payload),

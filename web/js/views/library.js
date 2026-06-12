@@ -77,7 +77,9 @@ async function list() {
     const actions = el('div', { class: 'row', style: { gap: '8px' } },
       focusAreaBtn,
       (isUncat && llmOk && items.length) ? el('button', { class: 'btn', style: { padding: '6px 12px' }, onClick: (e) => { e.stopPropagation(); suggest(e.currentTarget); } }, 'Suggest subjects') : null,
-      summary.due > 0 ? el('button', { class: 'btn', style: { padding: '6px 12px' }, onClick: (e) => { e.stopPropagation(); navigate('#/recall?subject=' + encodeURIComponent(summary.name)); } }, 'Review area →') : null);
+      summary.due > 0 ? el('button', { class: 'btn', style: { padding: '6px 12px' }, onClick: (e) => { e.stopPropagation(); navigate('#/recall?subject=' + encodeURIComponent(summary.name)); } }, 'Review area →') : null,
+      el('button', { class: 'btn btn-danger', style: { padding: '6px 12px' }, title: 'Delete every topic in this area',
+        onClick: (e) => { e.stopPropagation(); deleteArea(summary, isUncat); } }, 'Delete…'));
 
     // With a seeded curriculum the Library holds ~100 topics: sections collapse,
     // and only areas with due work start open.
@@ -95,6 +97,20 @@ async function list() {
     const rows = el('div', { class: 'stack', style: { gap: '8px', display: open ? '' : 'none' } });
     for (const l of items) rows.append(conceptRow(l));
     return el('div', { style: { marginBottom: '18px' } }, head, rows);
+  }
+
+  async function deleteArea(summary, isUncat) {
+    const label = isUncat ? 'Uncategorized' : summary.name;
+    const c = await api.subjectCounts(summary.name).catch(() => null);
+    const detail = c
+      ? `${c.learnings} topic${c.learnings !== 1 ? 's' : ''} and ${c.cards} card${c.cards !== 1 ? 's' : ''}`
+        + (c.reviews ? `, with ${c.reviews} recorded review${c.reviews !== 1 ? 's' : ''}` : '')
+      : 'everything in it';
+    if (!confirm(`Delete ${label}? This permanently removes ${detail}.`)) return;
+    await api.deleteSubject(summary.name);
+    toast(`Deleted ${label}`);
+    refreshBadge();
+    renderExplore();
   }
 
   function starBtn(l) {

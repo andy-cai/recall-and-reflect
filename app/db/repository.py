@@ -172,6 +172,32 @@ class Repository:
 
     # ---------- subjects ----------
 
+    def subject_counts(self, subject: str) -> dict:
+        """Topics, cards and recorded reviews filed under a subject ('' = uncategorized)."""
+        norm = (subject or "").strip().lower()
+        row = self.db.fetch_one(
+            """
+            SELECT COUNT(DISTINCT l.id) AS learnings,
+                   COUNT(DISTINCT q.id) AS cards,
+                   COUNT(r.id) AS reviews
+            FROM learnings l
+            LEFT JOIN questions q ON q.learning_id = l.id
+            LEFT JOIN reviews r ON r.question_id = q.id
+            WHERE l.is_active = 1
+              AND LOWER(TRIM(COALESCE(l.subject, ''))) = ?
+            """, (norm,))
+        return {"learnings": row["learnings"], "cards": row["cards"], "reviews": row["reviews"]}
+
+    def delete_subject(self, subject: str) -> tuple[int, int]:
+        """Hard-delete every active topic under a subject; cascades to cards,
+        key ideas, tags and review history. Returns (topics, reviews) removed."""
+        counts = self.subject_counts(subject)
+        norm = (subject or "").strip().lower()
+        self.db.execute(
+            "DELETE FROM learnings WHERE is_active = 1 "
+            "AND LOWER(TRIM(COALESCE(subject, ''))) = ?", (norm,))
+        return counts["learnings"], counts["reviews"]
+
     def subjects_summary(self) -> list[dict]:
         rows = self.db.fetch_all(
             """
