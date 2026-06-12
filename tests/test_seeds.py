@@ -1,10 +1,12 @@
-"""Validate the curriculum seed files and the import path.
+"""Validate the curriculum seed files and the import/remove paths.
 
 Every deck must parse, every topic must carry the full structure (title,
-subject, content, recall prompt, 3+ key ideas), and importing into a fresh
-database must round-trip with correct cards and idempotency.
+subject, content, recall prompt, 3+ key ideas), importing into a fresh
+database must round-trip with correct cards and idempotency, and --remove
+must delete exactly the seed-titled topics and nothing else.
 """
 
+import importlib.util
 import json
 import tempfile
 import unittest
@@ -14,6 +16,15 @@ from app.db.database import Database
 from app.db.repository import Repository
 
 SEED_DIR = Path(__file__).resolve().parent.parent / "seeds"
+
+
+def load_tool():
+    """Import tools/seed_curriculum.py as a module (tools/ is not a package)."""
+    path = SEED_DIR.parent / "tools" / "seed_curriculum.py"
+    spec = importlib.util.spec_from_file_location("seed_curriculum", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
 def load_all():
@@ -103,6 +114,61 @@ class TestImport(unittest.TestCase):
         self.repo.set_setting("new_per_day", 6)
         queue = self.repo.get_due_questions()
         self.assertEqual(len(queue), 6)
+
+
+class TestRemove(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        db = Database(Path(self._tmp.name) / "seed.db")
+        db.initialize()
+        self.repo = Repository(db=db)
+        self.tool = load_tool()
+        self.decks = self.tool.load_decks()
+        self.tool.import_decks(self.repo, self.decks, verbose=False)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def _active_titles(self):
+        rows = self.repo.db.fetch_all("SELECT title FROM learnings WHERE is_active = 1")
+        return [r["title"] for r in rows]
+
+    def test_preview_deletes_nothing(self):
+        before = len(self._active_titles())
+        topics, _ = self.tool.remove_decks(self.repo, self.decks, apply=False, verbose=False)
+        self.assertEqual(topics, before)
+        self.assertEqual(len(self._active_titles()), before)
+
+    def test_remove_spares_user_topics_and_cascades(self):
+        self.repo.create_learning("My own topic", "content long enough to matter " * 5,
+                                  subject="Mine")
+        topics, _ = self.tool.remove_decks(self.repo, self.decks, apply=True, verbose=False)
+        self.assertGreaterEqual(topics, 80)
+        self.assertEqual(self._active_titles(), ["My own topic"])
+        orphans = self.repo.db.fetch_one(
+            "SELECT COUNT(*) AS n FROM questions q "
+            "LEFT JOIN learnings l ON l.id = q.learning_id WHERE l.id IS NULL")["n"]
+        self.assertEqual(orphans, 0)
+        # second pass finds nothing left to remove
+        self.assertEqual(self.tool.remove_decks(self.repo, self.decks,
+                                                apply=True, verbose=False)[0], 0)
+
+    def test_renamed_topic_survives_remove(self):
+        row = self.repo.db.fetch_one(
+            "SELECT id FROM learnings WHERE title = ?", ("Column buckling",))
+        self.repo.db.execute(
+            "UPDATE learnings SET title = ? WHERE id = ?",
+            ("Column buckling (my notes)", row["id"]))
+        self.tool.remove_decks(self.repo, self.decks, apply=True, verbose=False)
+        self.assertEqual(self._active_titles(), ["Column buckling (my notes)"])
+
+    def test_review_history_is_counted(self):
+        q = self.repo.db.fetch_one("SELECT id FROM questions LIMIT 1")
+        self.repo.db.execute(
+            "INSERT INTO reviews (question_id, rating, reviewed_at) "
+            "VALUES (?, 3, '2026-01-01T00:00:00')", (q["id"],))
+        _, reviews = self.tool.remove_decks(self.repo, self.decks, apply=False, verbose=False)
+        self.assertEqual(reviews, 1)
 
 
 if __name__ == "__main__":
