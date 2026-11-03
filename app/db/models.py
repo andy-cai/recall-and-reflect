@@ -37,6 +37,7 @@ class Question:
     lapses: int = 0
     last_reviewed_at: Optional[datetime] = None
     next_review_at: Optional[datetime] = None
+    step: Optional[int] = None        # FSRS (re)learning-step index
 
     suspended: bool = False
     created_at: Optional[datetime] = None

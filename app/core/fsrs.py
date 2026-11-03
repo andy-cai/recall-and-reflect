@@ -1,18 +1,28 @@
-"""FSRS-4.5 spaced-repetition scheduler.
+"""FSRS-6 spaced-repetition scheduling, backed by the maintained `py-fsrs` package.
 
-The open FSRS-4.5 algorithm with its published default weights (trained on a large
-review corpus). FSRS-4.5's forgetting curve is R = (1 + 19/81 · t/S)^-0.5, anchored
-so that R(S) = 0.90 exactly; weights and curve must always move together — they are
-fitted jointly. Weights can be refitted to the user's own review log once enough
-history exists. Reference: https://github.com/open-spaced-repetition/fsrs4anki
+This module is a thin adapter: the algorithm itself (21 parameters, a trainable
+forgetting-curve decay, native same-day / short-term memory) lives in
+https://github.com/open-spaced-repetition/py-fsrs. The adapter keeps the app's
+own interface (CardState in, ScheduleResult out, naive local datetimes) so the
+rest of the code never touches py-fsrs types.
+
+App-specific choices, all deliberate:
+- One 10-minute learning step and one 10-minute relearning step, close to the
+  app's original feel (Again -> back in 10 min, Hard -> 15 min, Good graduates).
+- No interval fuzzing, so the interval previewed on a rating button is the one
+  you get.
+- `weights=None` uses py-fsrs's published defaults; pass fitted parameters
+  (from the FSRS optimizer) to personalize.
 Behavior is pinned by tests/test_fsrs.py.
 """
 
-import math
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import IntEnum
-from typing import Optional
+from functools import lru_cache
+from typing import Optional, Sequence
+
+import fsrs as _fsrs
 
 
 class Rating(IntEnum):
@@ -23,26 +33,23 @@ class Rating(IntEnum):
 
 
 class State(IntEnum):
+    # 1-3 match py-fsrs's State values; NEW is the app's "never reviewed".
     NEW = 0
     LEARNING = 1
     REVIEW = 2
     RELEARNING = 3
 
 
-DEFAULT_WEIGHTS = (
-    0.4872, 1.4003, 3.7145, 13.8206,
-    5.1618, 1.2298, 0.8975, 0.031,
-    1.6474, 0.1367, 1.0461, 2.1072,
-    0.0793, 0.3246, 1.587, 0.2272, 2.8755,
-)
-
+DEFAULT_WEIGHTS: tuple = tuple(_fsrs.Scheduler().parameters)
 DEFAULT_RETENTION = 0.90
 MAX_INTERVAL_DAYS = 36500
+LEARNING_STEPS = (timedelta(minutes=10),)
+RELEARNING_STEPS = (timedelta(minutes=10),)
 
-# FSRS-4.5 forgetting-curve constants: R(t) = (1 + FACTOR * t / S) ** DECAY.
-# FACTOR is chosen so that R(S) = 0.9 exactly: (1 + 19/81) ** -0.5 == 0.9.
-DECAY = -0.5
-FACTOR = 19.0 / 81.0
+# FSRS-6 forgetting curve: R(t) = (1 + FACTOR * t / S) ** DECAY, with
+# DECAY = -w[20] and FACTOR chosen so that R(S) = 0.9 exactly.
+DECAY = -DEFAULT_WEIGHTS[20]
+FACTOR = 0.9 ** (1 / DECAY) - 1
 
 
 @dataclass
@@ -52,6 +59,7 @@ class CardState:
     difficulty: float = 0.0
     lapses: int = 0
     last_reviewed_at: Optional[datetime] = None
+    step: Optional[int] = None          # learning-step index (LEARNING/RELEARNING only)
 
 
 @dataclass
@@ -60,69 +68,57 @@ class ScheduleResult:
     stability: float
     difficulty: float
     lapses: int
-    interval_days: int
+    interval_days: int                  # 0 while in a (re)learning step
     next_review_at: datetime
+    step: Optional[int] = None
+    interval_minutes: int = 0           # set for (re)learning steps, else 0
 
 
-def _clamp(value: float, lo: float, hi: float) -> float:
-    return max(lo, min(hi, value))
+# ---------- time conversion (app: naive local; py-fsrs: aware UTC) ----------
+
+def _to_utc(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        dt = dt.astimezone()            # interpret naive values as local time
+    return dt.astimezone(timezone.utc)
 
 
-def _init_stability(rating: Rating, w) -> float:
-    return max(0.1, w[rating - 1])
+def _to_local_naive(dt: datetime) -> datetime:
+    return dt.astimezone().replace(tzinfo=None)
 
 
-def _init_difficulty(rating: Rating, w) -> float:
-    return _clamp(w[4] - (rating - 3) * w[5], 1.0, 10.0)
+@lru_cache(maxsize=32)
+def _scheduler(retention: float, weights: tuple) -> "_fsrs.Scheduler":
+    return _fsrs.Scheduler(
+        parameters=weights,
+        desired_retention=retention,
+        learning_steps=LEARNING_STEPS,
+        relearning_steps=RELEARNING_STEPS,
+        maximum_interval=MAX_INTERVAL_DAYS,
+        enable_fuzzing=False,
+    )
 
 
-def _retrievability(stability: float, elapsed_days: float) -> float:
-    if stability <= 0:
-        return 1.0
-    return (1 + FACTOR * elapsed_days / stability) ** DECAY
+def _to_fsrs_card(card: CardState, now: datetime) -> "_fsrs.Card":
+    if card.state == State.NEW or card.stability <= 0:
+        return _fsrs.Card(state=_fsrs.State.Learning, step=0)
+    state = _fsrs.State(int(card.state))
+    step = (card.step or 0) if state != _fsrs.State.Review else None
+    last = card.last_reviewed_at or now
+    return _fsrs.Card(
+        state=state, step=step,
+        stability=card.stability, difficulty=card.difficulty or 5.0,
+        last_review=_to_utc(last), due=_to_utc(now),
+    )
 
+
+# ---------- public API ----------
 
 def retrievability(stability: float, elapsed_days: float) -> float:
-    """Current recall probability of a card (public: used for at-risk ranking)."""
-    return _retrievability(stability, max(0.0, elapsed_days))
-
-
-def _next_recall_stability(d: float, s: float, r: float, rating: Rating, w) -> float:
-    hard_penalty = w[15] if rating == Rating.HARD else 1.0
-    easy_bonus = w[16] if rating == Rating.EASY else 1.0
-    return s * (
-        1
-        + math.exp(w[8])
-        * (11 - d)
-        * (s ** -w[9])
-        * (math.exp(w[10] * (1 - r)) - 1)
-        * hard_penalty
-        * easy_bonus
-    )
-
-
-def _next_forget_stability(d: float, s: float, r: float, w) -> float:
-    return (
-        w[11]
-        * (d ** -w[12])
-        * (((s + 1) ** w[13]) - 1)
-        * math.exp((1 - r) * w[14])
-    )
-
-
-def _mean_reversion(init: float, current: float, w) -> float:
-    return w[7] * init + (1 - w[7]) * current
-
-
-def _next_difficulty(d: float, rating: Rating, w) -> float:
-    next_d = d - w[6] * (rating - 3)
-    return _clamp(_mean_reversion(w[4], next_d, w), 1.0, 10.0)
-
-
-def _next_interval(stability: float, retention: float) -> int:
-    # Inverse of the forgetting curve: the t at which R(t) drops to `retention`.
-    interval = max(1, round(stability / FACTOR * (retention ** (1 / DECAY) - 1)))
-    return min(interval, MAX_INTERVAL_DAYS)
+    """Current recall probability of a card (used for at-risk ranking).
+    Continuous in elapsed time, unlike py-fsrs's whole-day version."""
+    if stability <= 0:
+        return 1.0
+    return (1 + FACTOR * max(0.0, elapsed_days) / stability) ** DECAY
 
 
 def schedule(
@@ -130,66 +126,49 @@ def schedule(
     rating: Rating,
     now: Optional[datetime] = None,
     retention: float = DEFAULT_RETENTION,
-    weights=DEFAULT_WEIGHTS,
+    weights: Optional[Sequence[float]] = None,
 ) -> ScheduleResult:
     """Compute the next schedule for a card given a rating."""
     now = now or datetime.now()
-    w = weights
+    sched = _scheduler(float(retention), tuple(weights) if weights else DEFAULT_WEIGHTS)
+    was_review = card.state == State.REVIEW and card.stability > 0
+    new, _log = sched.review_card(_to_fsrs_card(card, now), _fsrs.Rating(int(rating)),
+                                  review_datetime=_to_utc(now))
 
-    if card.state == State.NEW:
-        stability = _init_stability(rating, w)
-        difficulty = _init_difficulty(rating, w)
-        new_state = State.LEARNING if rating == Rating.AGAIN else State.REVIEW
-        lapses = card.lapses
+    next_at = _to_local_naive(new.due)
+    state = State(int(new.state))
+    if state == State.REVIEW:
+        interval_days = max(1, round((next_at - now).total_seconds() / 86400))
+        interval_minutes = 0
     else:
-        elapsed_days = 0.0
-        if card.last_reviewed_at is not None:
-            elapsed_days = max(0.0, (now - card.last_reviewed_at).total_seconds() / 86400)
-        r = _retrievability(card.stability, elapsed_days)
-        difficulty = _next_difficulty(card.difficulty, rating, w)
-
-        if rating == Rating.AGAIN:
-            stability = _next_forget_stability(difficulty, card.stability, r, w)
-            new_state = State.RELEARNING
-            lapses = card.lapses + 1
-        else:
-            stability = _next_recall_stability(difficulty, card.stability, r, rating, w)
-            new_state = State.REVIEW
-            lapses = card.lapses
-
-    if new_state in (State.LEARNING, State.RELEARNING):
-        if rating == Rating.AGAIN:
-            interval = 0
-            next_at = now + timedelta(minutes=10)
-        elif rating == Rating.HARD:
-            interval = 0
-            next_at = now + timedelta(minutes=30)
-        else:
-            interval = 1
-            next_at = now + timedelta(days=1)
-    else:
-        interval = _next_interval(stability, retention)
-        next_at = now + timedelta(days=interval)
-
+        interval_days = 0
+        interval_minutes = max(1, round((next_at - now).total_seconds() / 60))
+    lapses = card.lapses + (1 if was_review and rating == Rating.AGAIN else 0)
     return ScheduleResult(
-        state=new_state,
-        stability=stability,
-        difficulty=difficulty,
+        state=state,
+        stability=float(new.stability),
+        difficulty=float(new.difficulty),
         lapses=lapses,
-        interval_days=interval,
+        interval_days=interval_days,
         next_review_at=next_at,
+        step=new.step,
+        interval_minutes=interval_minutes,
     )
 
 
 def preview_intervals(
-    card: CardState, now: Optional[datetime] = None, retention: float = DEFAULT_RETENTION
-) -> dict[Rating, ScheduleResult]:
+    card: CardState, now: Optional[datetime] = None, retention: float = DEFAULT_RETENTION,
+    weights: Optional[Sequence[float]] = None,
+) -> dict:
     """Return the scheduled result for each rating without persisting."""
-    return {r: schedule(card, r, now, retention) for r in Rating}
+    now = now or datetime.now()
+    return {r: schedule(card, r, now, retention, weights) for r in Rating}
 
 
-def format_interval(days: int) -> str:
+def format_interval(days: int, minutes: int = 0) -> str:
     if days <= 0:
+        if minutes:
+            return f"{minutes}m" if minutes < 60 else f"{round(minutes / 60)}h"
         return "<10m"
     if days == 1:
         return "1d"
@@ -203,6 +182,10 @@ def format_interval(days: int) -> str:
         return f"{months}mo"
     years = round(days / 365 * 10) / 10
     return f"{years:g}y"
+
+
+def format_result(res: ScheduleResult) -> str:
+    return format_interval(res.interval_days, res.interval_minutes)
 
 
 RATING_LABEL = {

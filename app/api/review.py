@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from app.core.cloze import render_answer, render_question
-from app.core.fsrs import CardState, State, format_interval, preview_intervals
+from app.core.fsrs import CardState, State, format_result, preview_intervals
 from app.db.models import Question
 from app.db.repository import Repository
 from app.services.llm import OllamaError, get_llm
@@ -28,10 +28,10 @@ def _serialize(q: Question, title: str, retention: float,
 
     card = CardState(
         state=State(q.state), stability=q.stability, difficulty=q.difficulty,
-        lapses=q.lapses, last_reviewed_at=q.last_reviewed_at,
+        lapses=q.lapses, last_reviewed_at=q.last_reviewed_at, step=q.step,
     )
     preview = preview_intervals(card, retention=retention)
-    intervals = {r.name.lower(): format_interval(res.interval_days) for r, res in preview.items()}
+    intervals = {r.name.lower(): format_result(res) for r, res in preview.items()}
 
     return {
         "id": q.id,
@@ -189,7 +189,7 @@ def answer(req: AnswerReq):
     )
     return {
         "interval_days": result.interval_days,
-        "interval_label": format_interval(result.interval_days),
+        "interval_label": format_result(result),
         "next_review_at": result.next_review_at.isoformat(),
         "due": repo.get_due_count(),
     }

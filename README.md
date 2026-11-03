@@ -14,13 +14,14 @@ A local-first spaced-repetition app built around two ideas from learning science
   the gaps. Effortful retrieval ("desirable difficulty") beats passive flip-and-rate —
   but there's always a hint ladder, and a miss is never punished.
 
-Scheduling uses **FSRS** (the modern successor to SM-2), so reviews land right around
-the edge of forgetting. Runs on Windows, macOS and Linux — due-review toast reminders
-are Windows-only, everything else is cross-platform.
+Scheduling uses **FSRS-6** (the modern successor to SM-2, via the maintained
+`py-fsrs` package), so reviews land right around the edge of forgetting. Runs on
+Windows, macOS and Linux — due-review toast reminders are Windows-only, everything
+else is cross-platform.
 
 ## Quick start
 
-Prerequisites: [Python](https://www.python.org) 3.9+. For the AI features, install
+Prerequisites: [Python](https://www.python.org) 3.10+. For the AI features, install
 [Ollama](https://ollama.com) and pull a local model — `ollama pull qwen3:14b` for a
 12 GB+ GPU, `ollama pull qwen3:8b` for 8 GB (see [Local models](#local-models); the
 app uses whatever is installed).
@@ -114,7 +115,7 @@ benchmark scores, and "What the AI is asked" shows every system prompt verbatim.
 | **Teach** | Topics that are solid (stability ≥ 3 weeks) occasionally swap a review for a **teach-back**: explain it simply while the local AI plays a confused first-year. Also on-demand (🎓 in the Library). The transcript joins the topic's reflection; rating counts as a review. |
 | **People** | Photo-free person cards, two directions: the story cues the name ("battery bay, tin-whisker short. Who?") and the name cues where you left off — the before-the-meeting rehearsal. The reveal is the vivid association *you* invented. **No AI ever grades a person**: you judge whether the name came back. Reviews double as keeping up — add a dated "what's new" line, or rework the association after a miss. Never sent to any cloud. Capture takes ~20 seconds (Reflect → Person). |
 | **Calibrate** | Stats shows whether your *Certain* actually means certain (confidence × AI-verdict accuracy), and names the subject where you're most overconfident. |
-| **Schedule** | FSRS-4.5 sets each card's next review to hit your target retention (default 90%). The queue is shaped: most-at-risk first, one card per topic per session (remaining siblings are buried to tomorrow), new cards throttled by a per-day cap. |
+| **Schedule** | FSRS-6 sets each card's next review to hit your target retention (default 90%). The queue is shaped: most-at-risk first, one card per topic per session (remaining siblings are buried to tomorrow), new cards throttled by a per-day cap. |
 
 ## Starter curriculum
 
@@ -177,11 +178,11 @@ Icons are generated from one design by `tools/gen_icons.py`.
 python -m unittest discover tests
 ```
 
-CI runs the suite on Linux and Windows, Python 3.9 and 3.12.
+CI runs the suite on Linux and Windows, Python 3.10 and 3.13.
 
 ## Stack
 
-- **Backend:** Python + FastAPI + SQLite. Ports the FSRS-4.5 engine.
+- **Backend:** Python + FastAPI + SQLite. Scheduling is FSRS-6 via [`py-fsrs`](https://github.com/open-spaced-repetition/py-fsrs).
 - **Frontend:** plain HTML/CSS/ES-modules — no build step, runs offline.
 - **AI:** local Ollama — prefers `qwen3:14b`, falls back to any installed model.
   Optional, with graceful degradation.

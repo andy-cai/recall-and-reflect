@@ -3,8 +3,14 @@
     python run.py
 """
 
+import sys
 import threading
 import webbrowser
+
+if sys.version_info < (3, 10):
+    sys.exit("Recall & Reflect needs Python 3.10 or newer (found "
+             f"{sys.version.split()[0]}). Install a current Python from python.org; "
+             "on Windows, delete the venv folder and run run.bat again.")
 
 import uvicorn
 

@@ -160,6 +160,13 @@ class Database:
         if "idea_results" not in rcols:
             # per-idea rubric outcomes for recall cards, JSON: [{"id":..,"result":"hit|partial|miss"}]
             conn.execute("ALTER TABLE reviews ADD COLUMN idea_results TEXT")
+        # FSRS-6 (py-fsrs) tracks the (re)learning-step index; NULL outside a step.
+        if "step_before" not in rcols:
+            conn.execute("ALTER TABLE reviews ADD COLUMN step_before INTEGER")
+            conn.execute("ALTER TABLE reviews ADD COLUMN step_after INTEGER")
+        qcols = {r["name"] for r in conn.execute("PRAGMA table_info(questions)")}
+        if "step" not in qcols:
+            conn.execute("ALTER TABLE questions ADD COLUMN step INTEGER")
 
     @contextmanager
     def get_connection(self):
