@@ -415,7 +415,7 @@ class LLMService:
             "available": model is not None,
             "model": model,
             "models": all_local,
-            "reason": None if model else "No local Ollama model found. Run: ollama pull qwen2.5:7b",
+            "reason": None if model else "No local Ollama model found. Run: ollama pull qwen3.5:9b",
         }
 
     def set_model(self, name: str) -> None:

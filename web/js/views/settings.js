@@ -84,7 +84,7 @@ export async function render() {
       el('div', { class: 'row spread' }, el('div', { style: { fontWeight: '560' } }, 'Target retention', infoTip('The chance you want of recalling a topic when it comes due. Higher = more frequent reviews. FSRS uses this to time each one; 90% is the sweet spot.')), retLabel),
       el('div', { style: { margin: '8px 0' } }, retSlider), retNote),
     field('AI model (local)', el('div', { class: 'row', style: { gap: '10px' } }, llmStatus, modelSel), 'Runs entirely on your machine via Ollama. Cloud models are blocked.'),
-    field('Fast model (grading)', fastSel, 'Snappier reviews: a small model (qwen3:4b or qwen2.5:3b) grades recall and matches focus requests; the app turns reasoning off for these calls so verdicts land in a beat. Capture quality stays on the main model.'),
+    field('Fast model (grading)', fastSel, 'Optional: a small model (qwen3.5:0.8b or qwen3.5:2b) grades recall and matches focus requests, with reasoning off. Only helps if it fits in VRAM next to the main model; on an 8 GB GPU leave it empty so nothing reloads between calls.'),
     el('div', { style: { padding: '14px 0', borderBottom: '1px solid var(--border)' } },
       el('div', { style: { fontWeight: '560' } }, 'Question style'),
       el('div', { class: 'muted', style: { fontSize: '12.5px', margin: '2px 0 8px' } },
@@ -111,7 +111,7 @@ export async function render() {
   }
 
   // ---------- the models: why these, with published scores ----------
-  view.append(section('The models', 'Why each one is on the list, and how they score on published benchmarks.',
+  view.append(section('The models', 'Why each one is on the list, and which GPU it suits.',
     buildModelGuide(), false));
 
   // ---------- prompt transparency: exactly what each model is asked ----------

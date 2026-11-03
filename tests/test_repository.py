@@ -137,10 +137,16 @@ class TestLegacySchemaMigration(unittest.TestCase):
             db = Database(path)
             db.initialize()
             # Simulate an old DB: rebuild questions without the step column.
-            with sqlite3.connect(path) as conn:
+            # Explicit close: sqlite3's context manager only commits, and Windows
+            # can't delete the temp dir while a connection holds the file open.
+            conn = sqlite3.connect(path)
+            try:
                 conn.execute("ALTER TABLE questions DROP COLUMN step")
                 conn.execute("ALTER TABLE reviews DROP COLUMN step_before")
                 conn.execute("ALTER TABLE reviews DROP COLUMN step_after")
+                conn.commit()
+            finally:
+                conn.close()
             Database(path).initialize()          # migration runs again
             repo = Repository(db=Database(path))
             lid = repo.create_learning("Old", "c")

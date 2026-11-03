@@ -22,8 +22,8 @@ else is cross-platform.
 ## Quick start
 
 Prerequisites: [Python](https://www.python.org) 3.10+. For the AI features, install
-[Ollama](https://ollama.com) and pull a local model — `ollama pull qwen3:14b` for a
-12 GB+ GPU, `ollama pull qwen3:8b` for 8 GB (see [Local models](#local-models); the
+[Ollama](https://ollama.com) and pull a local model — `ollama pull qwen3.5:9b` for an
+8–12 GB GPU, `ollama pull qwen3.5:4b` below that (see [Local models](#local-models); the
 app uses whatever is installed).
 
 **Windows** — first run creates a venv and installs deps:
@@ -92,9 +92,15 @@ Four guarantees around that exception:
 
 | VRAM | Main model | Fast model (grading) |
 |------|------------|----------------------|
-| 24 GB+ | `qwen3:30b-a3b` (MoE — fast and sharp) | `qwen3:4b` |
-| 12–16 GB | `qwen3:14b` (default) or `phi4:14b` (strong STEM) | `qwen3:4b` |
-| 8 GB | `qwen3:8b` or `qwen2.5:7b` | `qwen2.5:3b` |
+| 24 GB+ | `qwen3.8:27b` | `qwen3.5:2b` |
+| 16 GB | `gemma4:26b` (MoE — ~4B active, fast) | `qwen3.5:2b` |
+| 8–12 GB | `qwen3.5:9b` (default, ~6.6 GB) | leave empty (same model) |
+| < 8 GB | `qwen3.5:4b` | `qwen3.5:0.8b` |
+
+On 8 GB, leave the fast model empty: Ollama keeps two models loaded only if both fit
+in VRAM, otherwise each switch reloads one. After a review, `ollama ps` should show
+`100% GPU`; a CPU/GPU split means the model is too big for the card. Sizes and tags for
+`gemma4:26b` and `qwen3.8:27b` are from secondary sources — confirm with `ollama pull`.
 
 Reasoning models work well: thinking stays on for generation (cards, rubrics, drills)
 and is switched off per-call for grading, focus-matching and filing, so reviews never
@@ -151,9 +157,9 @@ Without it, math falls back to readable styled source.
 
 Review grading is the latency-sensitive path. Two knobs:
 
-- **Fast model** (Settings): pull a small model (`ollama pull qwen3:4b` or
-  `qwen2.5:3b`) and select it as the fast model — it handles grading and
-  focus-matching; capture quality stays on the main model.
+- **Fast model** (Settings): on 12 GB+, pull a small model (`ollama pull qwen3.5:2b`)
+  and select it as the fast model — it handles grading and focus-matching; capture
+  quality stays on the main model. On 8 GB, leave it empty (see Local models).
 - Grading and classification calls run with **model reasoning off** (`think: false`),
   so a reasoning model can't burn the whole token budget thinking and return nothing.
 - Every LLM call is token-capped (`num_predict`) so a rambling generation can't stall a
@@ -184,7 +190,7 @@ CI runs the suite on Linux and Windows, Python 3.10, 3.13 and 3.14.
 
 - **Backend:** Python + FastAPI + SQLite. Scheduling is FSRS-6 via [`py-fsrs`](https://github.com/open-spaced-repetition/py-fsrs).
 - **Frontend:** plain HTML/CSS/ES-modules — no build step, runs offline.
-- **AI:** local Ollama — prefers `qwen3:14b`, falls back to any installed model.
+- **AI:** local Ollama — prefers `qwen3.5:9b`, falls back to any installed model.
   Optional, with graceful degradation.
 
 ## Keyboard

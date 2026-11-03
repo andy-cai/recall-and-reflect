@@ -52,9 +52,9 @@ OLLAMA_BASE_URL = "http://localhost:11434"
 
 # Preferred local generation/grading model. Falls back to whatever local
 # instruct model is installed if this exact tag is missing.
-# qwen3:14b is the best all-round default for technical Q/A on a 12-16GB GPU;
-# qwen3:30b-a3b (MoE) if you have 24GB+; phi4:14b is a strong STEM alternative.
-DEFAULT_MODEL = "qwen3:14b"
+# qwen3.5:9b (~6.6 GB) fits an 8 GB GPU entirely; qwen3.5:4b below that;
+# gemma4:26b (MoE) on 16 GB; qwen3.8:27b on 24 GB+. See web/js/models-info.js.
+DEFAULT_MODEL = "qwen3.5:9b"
 EMBED_MODEL = "nomic-embed-text"
 
 # --- Cloud assist (strictly opt-in) ---
