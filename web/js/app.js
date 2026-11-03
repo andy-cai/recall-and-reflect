@@ -3,6 +3,7 @@ import { state, el, clear, applyTheme } from './store.js';
 import { api } from './api.js';
 import { setAmbient } from './ambient.js';
 import { loaderEl } from './loader.js';
+import { mountAssistant, openAssistant, ASK_ICON, SHORTCUT } from './assistant.js';
 
 import * as today from './views/today.js';
 import * as reflect from './views/reflect.js';
@@ -146,6 +147,9 @@ function buildShell() {
   }
 
   nav.append(el('div', { class: 'nav-spacer' }));
+  nav.append(el('button', { class: 'nav-item nav-ask', title: `Ask R&R (${SHORTCUT})`,
+    onClick: () => openAssistant(), onMouseenter: (e) => sprinkle(e.currentTarget) },
+    svg(ASK_ICON), 'Ask', el('span', { class: 'kbd nav-kbd' }, SHORTCUT)));
   navButtons.settings = el('button', { class: 'nav-item', onClick: () => navigate('#/settings'),
     onMouseenter: (e) => sprinkle(e.currentTarget) }, svg(ICONS.settings), 'Settings');
   nav.append(navButtons.settings);
@@ -159,6 +163,7 @@ function buildShell() {
 async function boot() {
   applyTheme(localStorage.getItem('rr-theme') || 'dark');
   buildShell();
+  mountAssistant({ navigate, refresh: refreshBadge });
   try {
     const s = await api.getSettings();
     state.settings = s;
