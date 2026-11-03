@@ -196,9 +196,18 @@ CI runs the suite on Linux and Windows, Python 3.10, 3.13 and 3.14.
 ## Keyboard
 
 Review is keyboard-first: `Space` reveal · `1`/`2`/`3`/`4` rate (`Enter` takes the AI
-suggestion) · `H` hint · `S` skip without rating · `Z` undo. Every card has quiet
+suggestion) · `H` hint · `S` skip (to the back of the queue; it stays due) · `Z` undo. Every card has quiet
 **✎ Edit / Skip** actions — fix a bad question inline, give feedback for an AI
 rewrite, punt it to tomorrow, or suspend it, without leaving the session.
+
+## Ask R&R
+
+`Ctrl+K` (or **Ask** in the sidebar) opens a small helper on your local model: "what
+should I review today?", "focus on vibrations this week", "what am I weakest at?",
+"make a card from this: …". It looks things up in your own topics and stats, and offers
+buttons for anything else. Nothing changes until you click **Confirm**, and the server
+re-checks every proposal before acting. Uses Ollama tool calling on the main model
+(`qwen3.5:9b` or any tool-capable model); never the cloud.
 
 ## License
 

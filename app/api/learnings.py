@@ -426,6 +426,16 @@ def bury_card(card_id: int, body: BuryReq):
     return {"ok": True, "next_review_at": target.isoformat()}
 
 
+@router.post("/cards/{card_id}/skip")
+def skip_card(card_id: int):
+    """Skipped in Recall: stays due, but goes to the back of the queue until rated."""
+    repo = Repository()
+    if not repo.get_question(card_id):
+        return JSONResponse({"error": "not_found"}, status_code=404)
+    repo.mark_skipped(card_id)
+    return {"ok": True}
+
+
 class SuspendReq(BaseModel):
     suspended: bool
 

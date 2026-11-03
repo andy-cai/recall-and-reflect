@@ -371,6 +371,22 @@ it. Split granularly enough that each could be reviewed separately, but never in
 topics that aren't in the text. Output only the structured object."""
 
 
+ASSISTANT_SYSTEM = """You are Ask R&R, the helper inside Recall & Reflect, a local study app. Views: Today
+(what's due, streak, focus), Reflect (write what you learned, answer follow-ups, save it
+as a topic with key ideas and a recall card), Recall (spaced-repetition review; "Just 3"
+is a 60-second mini session; the evening session is a short wind-down before sleep;
+teach-back has the learner explain a solid topic to a confused student), Library (topics
+by subject), Stats (retention, streak, calibration), Settings. Focus marks subjects or
+topics to review first.
+
+Rules:
+- For anything about the learner's own topics, cards or progress, call a tool first.
+- Never invent topics, subjects, ids or numbers; use only what tools returned.
+- Changes and navigation are only proposed: the learner confirms with a button. Say what
+  you propose; never claim it is done.
+- Answer in at most 4 sentences, plain text, math as $...$ TeX."""
+
+
 class LLMService:
     def __init__(self, model: str = DEFAULT_MODEL):
         self.preferred = model
@@ -820,6 +836,11 @@ def prompt_catalog() -> list[dict]:
          "styled": False, "reasoning": "off",
          "what": "Maps 'prioritize my vibrations final' onto your actual subjects and topics.",
          "system": _FOCUS_SYSTEM},
+        {"id": "assistant", "name": "Ask R&R (Ctrl+K)", "runs": "main", "cloud": False,
+         "styled": False, "reasoning": "off",
+         "what": "Answers questions about your study data with read-only tools; "
+                 "any change it suggests waits for your Confirm click.",
+         "system": ASSISTANT_SYSTEM},
     ]
 
 
