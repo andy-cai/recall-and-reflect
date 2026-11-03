@@ -31,6 +31,7 @@ class Repository:
             lapses=row["lapses"],
             last_reviewed_at=from_iso(row["last_reviewed_at"]),
             next_review_at=from_iso(row["next_review_at"]),
+            step=row["step"] if "step" in row.keys() else None,
             suspended=bool(row["suspended"]),
             created_at=from_iso(row["created_at"]),
         )
@@ -607,7 +608,7 @@ class Repository:
         now = datetime.now()
         card = CardState(
             state=State(q.state), stability=q.stability, difficulty=q.difficulty,
-            lapses=q.lapses, last_reviewed_at=q.last_reviewed_at,
+            lapses=q.lapses, last_reviewed_at=q.last_reviewed_at, step=q.step,
         )
         retention = self.get_desired_retention()
         # Hypercorrection follow-up: a confident miss is highly correctable, but the
@@ -619,9 +620,9 @@ class Repository:
         with self.db.get_connection() as conn:
             conn.execute(
                 "UPDATE questions SET stability = ?, difficulty = ?, state = ?, "
-                "lapses = ?, last_reviewed_at = ?, next_review_at = ? WHERE id = ?",
+                "lapses = ?, last_reviewed_at = ?, next_review_at = ?, step = ? WHERE id = ?",
                 (result.stability, result.difficulty, int(result.state), result.lapses,
-                 to_iso(now), to_iso(result.next_review_at), q.id),
+                 to_iso(now), to_iso(result.next_review_at), result.step, q.id),
             )
             conn.execute(
                 """
@@ -630,8 +631,9 @@ class Repository:
                     stability_before, difficulty_before, state_before, next_review_before,
                     lapses_before, last_reviewed_before,
                     stability_after, difficulty_after, state_after, next_review_after,
-                    lapses_after, interval_after, elapsed_ms, idea_results
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    lapses_after, interval_after, elapsed_ms, idea_results,
+                    step_before, step_after
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """,
                 (
                     q.id, rating, to_iso(now), recall_text, confidence, ai_verdict,
@@ -639,7 +641,7 @@ class Repository:
                     q.lapses, to_iso(q.last_reviewed_at),
                     result.stability, result.difficulty, int(result.state),
                     to_iso(result.next_review_at), result.lapses, result.interval_days,
-                    elapsed_ms, idea_results,
+                    elapsed_ms, idea_results, q.step, result.step,
                 ),
             )
             conn.commit()
@@ -665,10 +667,10 @@ class Repository:
         with self.db.get_connection() as conn:
             conn.execute(
                 "UPDATE questions SET stability = ?, difficulty = ?, state = ?, "
-                "lapses = ?, next_review_at = ?, last_reviewed_at = ? WHERE id = ?",
+                "lapses = ?, next_review_at = ?, last_reviewed_at = ?, step = ? WHERE id = ?",
                 (row["stability_before"], row["difficulty_before"], row["state_before"],
                  row["lapses_before"], row["next_review_before"],
-                 row["last_reviewed_before"], qid),
+                 row["last_reviewed_before"], row["step_before"], qid),
             )
             conn.execute("DELETE FROM reviews WHERE id = ?", (row["id"],))
             conn.commit()

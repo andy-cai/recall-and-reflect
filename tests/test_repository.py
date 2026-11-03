@@ -116,6 +116,44 @@ class TestHypercorrection(RepoCase):
                                        confidence=3, ai_verdict="wrong")
         self.assertLess(hyper.interval_days, plain.interval_days)
 
+    def test_learning_step_persists_and_undo_restores_it(self):
+        _, (qid,) = self.make_topic("Steps")
+        res = self.repo.apply_review(self.repo.get_question(qid), rating=1)   # Again on new
+        q = self.repo.get_question(qid)
+        self.assertEqual((q.state, q.step), (1, 0))
+        self.assertEqual(res.interval_minutes, 10)
+        self.repo.apply_review(q, rating=3)                                   # graduates
+        q = self.repo.get_question(qid)
+        self.assertEqual((q.state, q.step), (2, None))
+        self.repo.undo_last_review()
+        self.assertEqual(self.repo.get_question(qid).step, 0)
+
+
+class TestLegacySchemaMigration(unittest.TestCase):
+    def test_pre_fsrs6_database_gains_step_columns(self):
+        import sqlite3
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "old.db"
+            db = Database(path)
+            db.initialize()
+            # Simulate an old DB: rebuild questions without the step column.
+            # Explicit close: sqlite3's context manager only commits, and Windows
+            # can't delete the temp dir while a connection holds the file open.
+            conn = sqlite3.connect(path)
+            try:
+                conn.execute("ALTER TABLE questions DROP COLUMN step")
+                conn.execute("ALTER TABLE reviews DROP COLUMN step_before")
+                conn.execute("ALTER TABLE reviews DROP COLUMN step_after")
+                conn.commit()
+            finally:
+                conn.close()
+            Database(path).initialize()          # migration runs again
+            repo = Repository(db=Database(path))
+            lid = repo.create_learning("Old", "c")
+            qid = repo.create_question(lid, "q", "a")
+            repo.apply_review(repo.get_question(qid), rating=3)
+            self.assertEqual(repo.get_question(qid).state, 2)
+
 
 class TestKeyIdeas(RepoCase):
     def test_set_and_get_round_trip(self):

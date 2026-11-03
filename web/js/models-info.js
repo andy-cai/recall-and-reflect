@@ -13,76 +13,65 @@ export const BENCH_COLS = [
 ];
 
 export const BENCH_NOTE =
-  'Published scores only: Qwen3 blog and technical report (thinking mode), the '
-  + 'Phi-4 technical report, and Google\'s Gemini 2.5 model cards. Each family ran '
-  + 'its own harness, so compare within a column, loosely. Where a per-size score '
-  + 'was never published, you see a range or a note instead of an invented number.';
+  'No bars for this generation yet: the model cards could not be opened when this guide '
+  + 'was updated (Nov 2026), so no score here is verified. Figures in the notes are the '
+  + 'cards\' own numbers as quoted by secondary sources. Vendors run their own harnesses, '
+  + 'and these benchmarks measure problem-solving, not grading recall.';
 
 export const MODEL_GUIDE = [
   {
-    id: 'qwen3:14b', group: 'Local · main model', badge: 'default · 12–16 GB',
-    why: 'The best all-round technical Q&A at this size. It can reason when generating '
-      + 'cards and rubrics; the app switches reasoning off for grading so reviews stay quick.',
-    range: { lo: 'qwen3:4b', hi: 'qwen3:30b-a3b' },
-    note: 'Per-size scores live in the Qwen3 technical report; on every published table it lands between its 4B and 30B-A3B siblings shown here.',
+    id: 'qwen3.5:9b', group: 'Local · main model', badge: 'default · 8–12 GB',
+    why: 'Qwen\'s newest small dense model (March 2026). About 6.6 GB, so it fits an 8 GB '
+      + 'GPU entirely. On 8 GB leave the fast model empty: one model stays loaded and '
+      + 'nothing reloads between writing cards and grading them.',
+    note: 'Model card GPQA-Diamond 81.7 (quoted second-hand). Check ollama ps shows 100% GPU.',
   },
   {
-    id: 'qwen3:30b-a3b', group: 'Local · main model', badge: '24 GB+',
-    bench: { gpqa: 65.8, aime: 70.9 },
-    why: 'Mixture-of-experts: 30B of knowledge with only ~3B active per token; the most '
-      + 'quality per second you can run on a big GPU.',
-    src: 'Qwen3 release table, thinking mode (AIME\'24: 80.4)',
+    id: 'qwen3.5:4b', group: 'Local · main model', badge: '6–8 GB',
+    why: 'About 3.4 GB. Use it when the 9B spills onto the CPU (ollama ps shows a CPU/GPU '
+      + 'split), or pair it with a 0.8B fast model so both stay loaded.',
+    note: 'Model card GPQA-Diamond 76.2 (quoted second-hand).',
   },
   {
-    id: 'phi4:14b', group: 'Local · main model', badge: 'STEM alternative',
-    bench: { gpqa: 56.1 },
-    why: 'Microsoft\'s dense 14B trained hard on STEM; strong derivations and definitions '
-      + 'with no reasoning tokens at all, so every call is fast.',
-    src: 'Phi-4 technical report (MATH: 80.4, MMLU: 84.8); AIME not published',
+    id: 'gemma4:26b', group: 'Local · main model', badge: '16 GB',
+    why: 'Google\'s mixture-of-experts Gemma 4 (April 2026): ~26B of knowledge, ~4B active '
+      + 'per token, so big-model depth at small-model speed. Reads images too.',
+    note: 'Model card GPQA-Diamond 82.3 (quoted second-hand). Confirm the tag with ollama pull.',
   },
   {
-    id: 'qwen3:8b / qwen2.5:7b', group: 'Local · main model', badge: '8 GB tier',
-    why: 'The same ladders, one rung down: what to run when VRAM is tight. Expect competent '
-      + 'cards and grading, less depth in follow-up questions.',
-    note: 'Per-size scores in the Qwen3 / Qwen2.5 reports; both sit below the bars above.',
+    id: 'qwen3.8:27b', group: 'Local · main model', badge: '24 GB+',
+    why: 'Qwen\'s strongest open model that fits one GPU (August 2026). Dense, about 17–18 GB '
+      + 'at 4-bit, so it needs a 24 GB card with room for context.',
+    note: 'Model card GPQA-Diamond 89.2 (quoted second-hand). Confirm the tag with ollama pull.',
   },
   {
-    id: 'qwen3:4b', group: 'Local · fast model', badge: 'grading · focus',
-    bench: { aime: 65.6 },
-    why: 'The recommended judge: grades your recall and files subjects at chat speed. The app '
-      + 'turns its reasoning off for those calls; with it on, this 4B does competition math '
-      + 'most 70B models can\'t.',
-    src: 'Qwen3 release table, thinking mode (AIME\'24: 73.8); GPQA per-size not republished here',
+    id: 'same as main (leave empty)', group: 'Local · fast model', badge: '8 GB GPUs',
+    why: 'Ollama keeps two models loaded only if both fit in VRAM; otherwise every switch '
+      + 'reloads one. On an 8 GB card a separate fast model makes reviews slower, not faster.',
+    note: 'The app already turns reasoning off for grading, so the main model judges quickly.',
   },
   {
-    id: 'qwen2.5:3b', group: 'Local · fast model', badge: 'smallest judge',
-    why: 'No reasoning to switch off, nothing to truncate: verdicts in a beat on any GPU. '
-      + 'It only ever judges and files; it never writes your cards.',
-    note: 'Too small for the reasoning benchmarks above; that\'s fine, grading is meaning-matching, not problem-solving.',
+    id: 'qwen3.5:0.8b / qwen3.5:2b', group: 'Local · fast model', badge: 'grading · focus',
+    why: 'A tiny judge that can stay loaded beside the main model: with a 4B main on 8 GB, '
+      + 'or anything on 12 GB+. It only grades and files; it never writes your cards.',
+    note: 'Grading is meaning-matching, not problem-solving; smaller models do it well enough.',
   },
   {
     id: 'nomic-embed-text', group: 'Local · embeddings', badge: 'connections',
     why: 'Embeddings only: related concepts, contrast-pair detection, semantic search, '
       + 'duplicate warnings. Nothing generative, nothing graded.',
+    note: 'Keep it for now: switching embed models needs a re-embed the app does not yet do automatically.',
   },
   {
-    id: 'gemini-2.5-flash', group: 'Cloud · opt-in assist', badge: 'default',
-    bench: { gpqa: 82.8, aime: 72.0 },
-    why: 'The per-click assist default: near-Pro reasoning at free-tier-friendly speed for '
-      + 'card rewrites and engineering-mode Reflect questions.',
-    src: 'Gemini 2.5 Flash model card, thinking',
+    id: 'gemini-3.5-flash', group: 'Cloud · opt-in assist', badge: 'default',
+    why: 'The per-click assist default, and Google\'s named successor to 2.5 Flash. The '
+      + 'dropdown lists whatever Google offers your key right now, so retired models drop off.',
+    note: 'No bar: per-model scores weren\'t verifiable offline when this guide was updated. '
+      + 'Free tier: Google may use what you send to improve its products.',
   },
   {
-    id: 'gemini-2.5-pro', group: 'Cloud · opt-in assist', badge: 'deliberate',
-    bench: { gpqa: 86.4, aime: 88.0 },
-    why: 'For the rewrite that really matters. Slower and rate-limited harder on the free tier.',
-    src: 'Gemini 2.5 Pro model card, thinking',
-  },
-  {
-    id: 'gemini-2.5-flash-lite', group: 'Cloud · opt-in assist', badge: 'fastest',
-    bench: { gpqa: 66.7, aime: 63.1 },
-    why: 'Cheapest and fastest, and it shows on hard reasoning: fine for copy-editing a card, '
-      + 'not for deriving one.',
-    src: 'Gemini 2.5 Flash-Lite model card, thinking',
+    id: 'gemini-3.5-flash-lite', group: 'Cloud · opt-in assist', badge: 'fastest',
+    why: 'Cheapest and fastest: fine for copy-editing a card, weaker at deriving one.',
+    note: 'Flash-Lite tiers trade reasoning depth for speed; pick Flash for derivations.',
   },
 ];

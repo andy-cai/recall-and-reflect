@@ -380,7 +380,7 @@ export async function render() {
     chatWrap.append(el('div', { class: 'reflect-grid' },
       el('div', { class: 'stack' },
         el('div', { class: 'field' }, el('label', { class: 'lbl' }, 'The topic'), contentArea),
-        el('p', { class: 'muted', style: { fontSize: '13px' } }, 'Tip: start Ollama (qwen2.5:7b) to talk it through and auto-prep questions.')),
+        el('p', { class: 'muted', style: { fontSize: '13px' } }, 'Tip: start Ollama (e.g. qwen3.5:9b) to talk it through and auto-prep questions.')),
       topicPanel));
   }
 

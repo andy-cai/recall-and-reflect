@@ -46,8 +46,9 @@ decision traces back to cognitive-science or UX research.
   on the buttons. Quiet progress (count + thin bar), small default batch.
 
 ## Scheduling
-FSRS-4.5 with default weights (state of the art; ~20–30% fewer reviews than SM-2 for
-equal retention). `desired_retention` default 0.90, user-adjustable. No optimizer until
+FSRS-6 via the maintained `py-fsrs` package, default parameters (state of the art;
+~20–30% fewer reviews than SM-2 for equal retention). One 10-minute (re)learning step,
+no fuzzing, so the previewed interval is the one you get. `desired_retention` default 0.90, user-adjustable. No optimizer until
 there's a meaningful review history.
 
 ## Architecture
@@ -56,7 +57,7 @@ there's a meaningful review history.
 app/
   config.py            local-only config
   main.py              FastAPI app, static mount, lifespan (warm model, scheduler)
-  core/  fsrs.py        ported FSRS-4.5 scheduler
+  core/  fsrs.py        adapter over py-fsrs (FSRS-6)
          cloze.py       {{c1::...}} parsing/rendering
   db/    database.py    sqlite connection + schema
          models.py      dataclasses
