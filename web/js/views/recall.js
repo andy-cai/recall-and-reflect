@@ -133,7 +133,7 @@ export async function render({ params } = {}) {
     const editSlot = el('div', {});
     stage.append(el('div', { class: 'row', style: { justifyContent: 'flex-end', gap: '4px', marginTop: '6px' } },
       el('button', { class: 'btn-ghost card-act', onClick: () => toggleEditPanel(c, editSlot) }, '✎ Edit'),
-      el('button', { class: 'btn-ghost card-act', title: 'Skip without rating, stays due (S)', onClick: skipCard }, 'Skip ›')));
+      el('button', { class: 'btn-ghost card-act', title: 'Skip without rating: back of the queue, stays due (S)', onClick: skipCard }, 'Skip ›')));
     stage.append(editSlot);
 
     const recallInput = el('textarea', { class: 'input', rows: '3', placeholder:
@@ -193,7 +193,7 @@ export async function render({ params } = {}) {
     const editSlot = el('div', {});
     stage.append(el('div', { class: 'row', style: { justifyContent: 'flex-end', gap: '4px', marginTop: '6px' } },
       el('button', { class: 'btn-ghost card-act', onClick: () => toggleEditPanel(c, editSlot) }, '✎ Edit'),
-      el('button', { class: 'btn-ghost card-act', title: 'Skip without rating, stays due (S)', onClick: skipCard }, 'Skip ›')));
+      el('button', { class: 'btn-ghost card-act', title: 'Skip without rating: back of the queue, stays due (S)', onClick: skipCard }, 'Skip ›')));
     stage.append(editSlot);
 
     if (recallText) {
@@ -405,10 +405,29 @@ export async function render({ params } = {}) {
     showCard();
   }
 
-  function skipCard() {
-    toast('Skipped. No rating recorded; it stays due.');
+  // Move on without rating (after Not today / Suspend, which handled the card).
+  function advance() {
     idx += 1;
     showCard();
+  }
+
+  // Skip: no rating; the card goes to the back of this session (once; a second
+  // skip lets it go) and sorts behind your other due cards until you rate it.
+  function skipCard() {
+    const c = current();
+    if (!c) return;
+    api.skipCard(c.id).catch(() => {});   // best-effort: it stays due either way
+    const othersLeft = idx < cards.length - 1;
+    if (!c._skipped && othersLeft) {
+      c._skipped = true;
+      cards.splice(idx, 1);
+      cards.push(c);
+      toast('Skipped. Back of the queue; it stays due.');
+      showCard();                           // the next card slid into this slot
+      return;
+    }
+    toast('Skipped. It stays due, behind your other reviews.');
+    advance();
   }
 
   // ---------- edit / feedback panel (fix a bad question mid-review) ----------
@@ -470,9 +489,9 @@ export async function render({ params } = {}) {
       el('div', { class: 'row wrap', style: { gap: '8px', justifyContent: 'flex-end' } },
         localBtn, cloudBtn,
         el('button', { class: 'btn-ghost', style: { fontSize: '13px' }, title: 'Push it out a day without rating',
-          onClick: async () => { await api.buryCard(c.id, 1); toast('Not today. Back tomorrow.'); clear(slot); skipCard(); } }, 'Not today'),
+          onClick: async () => { await api.buryCard(c.id, 1); toast('Not today. Back tomorrow.'); clear(slot); advance(); } }, 'Not today'),
         el('button', { class: 'btn-ghost', style: { fontSize: '13px' },
-          onClick: async () => { await api.suspendCard(c.id, true); toast('Suspended.'); refreshBadge(); clear(slot); skipCard(); } }, 'Suspend'),
+          onClick: async () => { await api.suspendCard(c.id, true); toast('Suspended.'); refreshBadge(); clear(slot); advance(); } }, 'Suspend'),
         el('button', { class: 'btn btn-primary', style: { padding: '6px 12px', fontSize: '13px' },
           onClick: () => applyValues(qIn.value.trim(), aIn.value.trim()) }, 'Save')),
       proposalSlot));

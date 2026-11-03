@@ -92,6 +92,7 @@ export const api = {
   suspendCard: (id, suspended) => jfetch('POST', `/api/cards/${id}/suspend`, { suspended }),
   refineCard: (id, b) => jfetch('POST', `/api/cards/${id}/refine`, b),
   buryCard: (id, days = 1) => jfetch('POST', `/api/cards/${id}/bury`, { days }),
+  skipCard: (id) => jfetch('POST', `/api/cards/${id}/skip`),
   setPrivate: (id, isPrivate) => jfetch('POST', `/api/learnings/${id}/private`, { private: isPrivate }),
 
   // people (living person cards)
@@ -130,4 +131,8 @@ export const api = {
   grade: (question_id, recall) => jfetch('POST', '/api/review/grade', { question_id, recall }),
   answer: (b) => jfetch('POST', '/api/review/answer', b),
   undo: () => jfetch('POST', '/api/review/undo'),
+
+  // Ask R&R (local helper): ask reads + proposes; confirm executes one write
+  assistantAsk: (message, history = []) => jfetch('POST', '/api/assistant/ask', { message, history }),
+  assistantConfirm: (tool, args) => jfetch('POST', '/api/assistant/confirm', { tool, args }),
 };
