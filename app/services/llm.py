@@ -14,10 +14,45 @@ from pydantic import BaseModel, Field
 
 from app.config import (
     CLOUD_MODEL_MARKERS, DEFAULT_GEN_STYLE, DEFAULT_MODEL, OLLAMA_BASE_URL,
-    OLLAMA_CONNECT_TIMEOUT, OLLAMA_KEEP_ALIVE, OLLAMA_TIMEOUT,
+    OLLAMA_CONNECT_TIMEOUT, OLLAMA_KEEP_ALIVE, OLLAMA_NUM_CTX, OLLAMA_TIMEOUT,
 )
 
 _THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
+
+# Input budgets, in characters (~4 chars per token), sized so prompt + output
+# stay inside OLLAMA_NUM_CTX: about half the window for the material itself.
+_INPUT_BUDGET = OLLAMA_NUM_CTX * 2
+_TRANSCRIPT_CHARS = min(12000, _INPUT_BUDGET)
+
+
+def clip_middle(text: str, limit: int) -> str:
+    """Shorten long text by cutting from the middle: a Reflect transcript's
+    opening dump and its closing refinements both matter more than the middle."""
+    text = text or ""
+    if len(text) <= limit:
+        return text
+    head = (limit * 2) // 3
+    tail = limit - head
+    return f"{text[:head]}\n[…]\n{text[-tail:]}"
+
+
+def fit_history(history: list[dict], budget: int) -> list[dict]:
+    """Keep a chat inside the context window: always the first message (what
+    the learner set out to capture), then as many of the latest turns as fit."""
+    if not history:
+        return []
+    first = dict(history[0])
+    first["content"] = clip_middle(first.get("content", ""), budget // 2)
+    room = budget - len(first["content"])
+    tail: list[dict] = []
+    for m in reversed(history[1:]):
+        size = len(m.get("content", ""))
+        if size > room:
+            break
+        tail.append(m)
+        room -= size
+    tail.reverse()
+    return [first, *tail]
 
 
 class OllamaError(Exception):
@@ -411,7 +446,9 @@ class LLMService:
                 client.post(
                     f"{OLLAMA_BASE_URL}/api/generate",
                     json={"model": model, "prompt": "ok", "stream": False,
-                          "keep_alive": OLLAMA_KEEP_ALIVE, "options": {"num_predict": 1}},
+                          "keep_alive": OLLAMA_KEEP_ALIVE,
+                          # same num_ctx as real calls, or the first call reloads
+                          "options": {"num_predict": 1, "num_ctx": OLLAMA_NUM_CTX}},
                 )
         except Exception:
             pass
@@ -444,7 +481,7 @@ class LLMService:
         model = self.resolve_model()
         if not model:
             raise OllamaError("No local model available.")
-        options = {"temperature": temperature}
+        options = {"temperature": temperature, "num_ctx": OLLAMA_NUM_CTX}
         if num_predict:
             options["num_predict"] = num_predict   # cap tail latency
         payload = {
@@ -507,7 +544,7 @@ class LLMService:
         self, model: str, messages: list[dict], schema: type[BaseModel],
         temperature: float, num_predict: int, think: Optional[bool] = None,
     ) -> BaseModel:
-        options = {"temperature": temperature}
+        options = {"temperature": temperature, "num_ctx": OLLAMA_NUM_CTX}
         if num_predict:
             options["num_predict"] = num_predict   # cap tail latency
         payload = {
@@ -542,13 +579,15 @@ class LLMService:
     # ---------- high-level features ----------
 
     def capture_followup_stream(self, history: list[dict]) -> Iterator[str]:
-        messages = [{"role": "system", "content": _CAPTURE_SYSTEM}, *history]
+        messages = [{"role": "system", "content": _CAPTURE_SYSTEM},
+                    *fit_history(history, _INPUT_BUDGET)]
         yield from self._chat_stream(messages, temperature=0.6, num_predict=160, think=False)
 
     def generate_cards(self, transcript: str, n: int = 4, basic_only: bool = False) -> list[dict]:
         messages = [
             {"role": "system", "content": self._styled(_CARDS_BASIC_SYSTEM if basic_only else _CARDS_SYSTEM)},
-            {"role": "user", "content": f"Aim for about {n} questions.\n\nConversation:\n---\n{transcript}\n---"},
+            {"role": "user", "content": f"Aim for about {n} questions.\n\nConversation:\n---\n"
+                f"{clip_middle(transcript, _TRANSCRIPT_CHARS)}\n---"},
         ]
         result = self._complete_json(messages, CardSet, temperature=0.4, num_predict=1800)
         out: list[dict] = []
@@ -568,7 +607,7 @@ class LLMService:
     def extract_key_ideas(self, transcript: str) -> list[str]:
         messages = [
             {"role": "system", "content": self._styled(_IDEAS_SYSTEM)},
-            {"role": "user", "content": f"Conversation:\n---\n{transcript[:4000]}\n---\nDistill the key ideas."},
+            {"role": "user", "content": f"Conversation:\n---\n{clip_middle(transcript, _TRANSCRIPT_CHARS)}\n---\nDistill the key ideas."},
         ]
         result = self._complete_json(messages, KeyIdeaList, temperature=0.3, num_predict=1200)
         return [i.strip() for i in result.ideas if i.strip()][:8]
@@ -658,7 +697,7 @@ class LLMService:
     def teach_student_stream(self, topic: str, history: list[dict]) -> Iterator[str]:
         """Stream the confused student's next question during a teach-back."""
         system = _STUDENT_SYSTEM + f"\n\nThe topic being taught to you: {topic}"
-        messages = [{"role": "system", "content": system}, *history]
+        messages = [{"role": "system", "content": system}, *fit_history(history, _INPUT_BUDGET)]
         yield from self._chat_stream(messages, temperature=0.7, num_predict=120, think=False)
 
     def prettify_math(self, text: str) -> str:

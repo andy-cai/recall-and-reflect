@@ -85,6 +85,14 @@ OLLAMA_TIMEOUT = 180.0         # seconds for a full (non-stream) generation (col
 OLLAMA_CONNECT_TIMEOUT = 4.0   # seconds to detect "is Ollama up?"
 OLLAMA_KEEP_ALIVE = "30m"      # keep the model warm between interactions
 
+# Context window requested on EVERY call (and the warm-up). Ollama's own default
+# is only 4k on GPUs under 24 GB, which a Reflect transcript plus a reasoning
+# trace can overflow, silently dropping the system prompt. One fixed value for
+# both models on purpose: Ollama reloads a model whenever num_ctx changes, which
+# would stall reviews. 8k fits an 8 GB laptop GPU with a 4-9B model; raise it
+# with RR_NUM_CTX=16384 on a bigger card. App inputs are capped to fit within it.
+OLLAMA_NUM_CTX = max(2048, int(os.environ.get("RR_NUM_CTX", "8192") or 8192))
+
 # --- Spaced repetition defaults (overridable in Settings) ---
 DEFAULT_DAILY_TARGET = 20
 DEFAULT_DESIRED_RETENTION = 0.90   # FSRS target recall probability
