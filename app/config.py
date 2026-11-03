@@ -62,8 +62,14 @@ EMBED_MODEL = "nomic-embed-text"
 # Gemini" on a card). Off by default; requires GEMINI_API_KEY (free tier at
 # https://aistudio.google.com) AND the Settings toggle. Reviews, capture chat,
 # and grading never touch the cloud.
-CLOUD_DEFAULT_MODEL = "gemini-2.5-flash"
-CLOUD_MODELS = ("gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite")
+# Google retires Gemini models roughly yearly (gemini-2.5-flash: shutdown
+# 2026-10-16), so the live list comes from the API's models endpoint
+# (cloud.available_models); these are only the preference order and the
+# fallback when that listing can't be fetched. Replacement named by Google's
+# deprecations page: gemini-3.5-flash.
+CLOUD_DEFAULT_MODEL = "gemini-3.5-flash"
+CLOUD_MODELS = ("gemini-3.5-flash", "gemini-3.5-flash-lite")
+CLOUD_MODELS_TTL_S = 6 * 3600   # how long a fetched model list is trusted
 CLOUD_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 
 # Default style for generated questions/answers — editable in Settings.

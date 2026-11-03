@@ -7,7 +7,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from app.config import CLOUD_MODELS, DEFAULT_GEN_STYLE, DEFAULT_MODEL
+from app.config import DEFAULT_GEN_STYLE, DEFAULT_MODEL
 from app.db.repository import Repository
 from app.services.cloud import get_cloud
 from app.services.llm import OllamaError, get_llm, prompt_catalog
@@ -29,7 +29,7 @@ def get_settings():
         "model": status["model"] or repo.get_setting("model", DEFAULT_MODEL),
         "fast_model": repo.get_setting("fast_model", ""),
         "gen_style": repo.get_setting("gen_style", DEFAULT_GEN_STYLE),
-        "cloud": {**get_cloud().status(), "models": list(CLOUD_MODELS)},
+        "cloud": {**get_cloud().status(), "models": get_cloud().available_models()},
         "llm": status,
     }
 
@@ -100,7 +100,7 @@ def prompts():
         "prompts": prompt_catalog(),
         "main_model": llm.resolve_model() or llm.preferred,
         "fast_model": llm.resolve_fast_model() or llm.preferred,
-        "cloud_model": cloud.model,
+        "cloud_model": cloud.resolve_model(),
         "cloud_ready": cloud.status()["ready"],
         "gen_style": llm.gen_style,
     }

@@ -95,7 +95,7 @@ export async function render() {
         el('div', {},
           el('div', { style: { fontWeight: '560' } }, 'Cloud assist (Gemini)'),
           el('div', { class: 'muted', style: { fontSize: '12.5px', maxWidth: '420px' } },
-            'Off by default. When on, an “Improve with Gemini” button appears on cards; only that card’s text is sent, only when you click. Free API key at aistudio.google.com. Reviews, capture and grading always stay local.')),
+            'Off by default. When on, an “Improve with Gemini” button appears on cards; only that card’s text is sent, only when you click. Free API key at aistudio.google.com (on the free tier, Google may use what you send to improve its products, and people may review it). Reviews, capture and grading always stay local.')),
         cloudSw),
       el('div', { class: 'row', style: { gap: '10px', marginTop: '10px' } }, cloudStatus, cloudModelSel)),
     field('Theme', themeSel),

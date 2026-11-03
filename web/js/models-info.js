@@ -13,8 +13,8 @@ export const BENCH_COLS = [
 ];
 
 export const BENCH_NOTE =
-  'Published scores only: Qwen3 blog and technical report (thinking mode), the '
-  + 'Phi-4 technical report, and Google\'s Gemini 2.5 model cards. Each family ran '
+  'Published scores only: Qwen3 blog and technical report (thinking mode) and the '
+  + 'Phi-4 technical report. Each family ran '
   + 'its own harness, so compare within a column, loosely. Where a per-size score '
   + 'was never published, you see a range or a note instead of an invented number.';
 
@@ -66,23 +66,15 @@ export const MODEL_GUIDE = [
       + 'duplicate warnings. Nothing generative, nothing graded.',
   },
   {
-    id: 'gemini-2.5-flash', group: 'Cloud · opt-in assist', badge: 'default',
-    bench: { gpqa: 82.8, aime: 72.0 },
-    why: 'The per-click assist default: near-Pro reasoning at free-tier-friendly speed for '
-      + 'card rewrites and engineering-mode Reflect questions.',
-    src: 'Gemini 2.5 Flash model card, thinking',
+    id: 'gemini-3.5-flash', group: 'Cloud · opt-in assist', badge: 'default',
+    why: 'The per-click assist default, and Google\'s named successor to 2.5 Flash. The '
+      + 'dropdown lists whatever Google offers your key right now, so retired models drop off.',
+    note: 'No bar: per-model scores weren\'t verifiable offline when this guide was updated. '
+      + 'Free tier: Google may use what you send to improve its products.',
   },
   {
-    id: 'gemini-2.5-pro', group: 'Cloud · opt-in assist', badge: 'deliberate',
-    bench: { gpqa: 86.4, aime: 88.0 },
-    why: 'For the rewrite that really matters. Slower and rate-limited harder on the free tier.',
-    src: 'Gemini 2.5 Pro model card, thinking',
-  },
-  {
-    id: 'gemini-2.5-flash-lite', group: 'Cloud · opt-in assist', badge: 'fastest',
-    bench: { gpqa: 66.7, aime: 63.1 },
-    why: 'Cheapest and fastest, and it shows on hard reasoning: fine for copy-editing a card, '
-      + 'not for deriving one.',
-    src: 'Gemini 2.5 Flash-Lite model card, thinking',
+    id: 'gemini-3.5-flash-lite', group: 'Cloud · opt-in assist', badge: 'fastest',
+    why: 'Cheapest and fastest: fine for copy-editing a card, weaker at deriving one.',
+    note: 'Flash-Lite tiers trade reasoning depth for speed; pick Flash for derivations.',
   },
 ];

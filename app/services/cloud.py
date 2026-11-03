@@ -21,9 +21,43 @@ app's usage comfortably).
 import json
 import os
 import re
+import time
 from typing import Any, Optional
 
-from app.config import CLOUD_BASE_URL, CLOUD_DEFAULT_MODEL, CLOUD_MODELS
+from app.config import CLOUD_BASE_URL, CLOUD_DEFAULT_MODEL, CLOUD_MODELS, CLOUD_MODELS_TTL_S
+
+# Model ids go into the request URL path, so only plain Gemini ids are accepted.
+_MODEL_ID_RE = re.compile(r"^gemini-[a-z0-9][a-z0-9.\-]{0,63}$")
+# Listed models that can't do this app's job (text in, text/JSON out).
+_SKIP_MARKERS = ("tts", "image", "embedding", "live", "audio", "native", "robotics",
+                 "computer-use", "veo", "imagen", "-exp")
+
+
+def usable_models(listing: list) -> list[str]:
+    """Filter a models.list response down to text-generation Gemini ids,
+    stable before preview, Flash before Pro, newest version first."""
+    out = []
+    for m in listing or []:
+        if not isinstance(m, dict):
+            continue
+        name = str(m.get("name", "")).removeprefix("models/")
+        if not _MODEL_ID_RE.match(name):
+            continue
+        if "generateContent" not in (m.get("supportedGenerationMethods") or []):
+            continue
+        if any(s in name for s in _SKIP_MARKERS):
+            continue
+        out.append(name)
+
+    def version(n: str) -> float:
+        match = re.match(r"gemini-(\d+(?:\.\d+)?)", n)
+        return float(match.group(1)) if match else 0.0
+
+    def key(n: str):
+        tier = 0 if "flash" in n and "lite" not in n else 1 if "lite" in n else 2
+        return ("preview" in n, tier, -version(n), n)
+
+    return sorted(dict.fromkeys(out), key=key)
 
 
 class CloudError(Exception):
@@ -60,6 +94,8 @@ class CloudAssist:
     def __init__(self):
         self.enabled: bool = False
         self.model: str = CLOUD_DEFAULT_MODEL
+        self._listed: Optional[list[str]] = None   # from the models endpoint
+        self._listed_at: float = 0.0
 
     # ---------- configuration ----------
 
@@ -67,7 +103,60 @@ class CloudAssist:
         self.enabled = bool(enabled)
 
     def set_model(self, model: str) -> None:
-        self.model = model if model in CLOUD_MODELS else CLOUD_DEFAULT_MODEL
+        model = (model or "").strip()
+        self.model = model if _MODEL_ID_RE.match(model) else CLOUD_DEFAULT_MODEL
+
+    def available_models(self, refresh: bool = False) -> list[str]:
+        """Models Google currently offers this key, fetched from the models
+        endpoint (cached; no notes are sent, but the call is still audit-logged).
+        Falls back to the built-in list when not ready or the listing fails."""
+        fresh = self._listed is not None and time.time() - self._listed_at < CLOUD_MODELS_TTL_S
+        if (refresh or not fresh) and self.enabled and self.key_present():
+            listed = self._fetch_models()
+            if listed:
+                self._listed, self._listed_at = listed, time.time()
+        if self._listed:
+            return list(self._listed)
+        out = list(CLOUD_MODELS)
+        if self.model not in out:
+            out.insert(0, self.model)
+        return out
+
+    def _fetch_models(self) -> Optional[list[str]]:
+        try:
+            import httpx
+            listing: list = []
+            token = ""
+            with httpx.Client(timeout=15.0) as client:
+                for _ in range(5):   # pages; the list is short in practice
+                    params = {"pageSize": 1000, **({"pageToken": token} if token else {})}
+                    resp = client.get(f"{CLOUD_BASE_URL}/models", params=params,
+                                      headers={"x-goog-api-key": self._key()})
+                    if resp.status_code != 200:
+                        self._log("model list", 0, 0, ok=False,
+                                  detail=f"HTTP {resp.status_code}")
+                        return None
+                    body = resp.json()
+                    listing += body.get("models", [])
+                    token = body.get("nextPageToken", "")
+                    if not token:
+                        break
+            self._log("model list", 0, 0, ok=True)
+            return usable_models(listing) or None
+        except Exception as e:
+            self._log("model list", 0, 0, ok=False, detail=str(e)[:200])
+            return None
+
+    def resolve_model(self) -> str:
+        """The chosen model if Google still offers it, else the default if
+        offered, else the top of the listing (newest stable full Flash)."""
+        if not self._listed:
+            return self.model
+        if self.model in self._listed:
+            return self.model
+        if CLOUD_DEFAULT_MODEL in self._listed:
+            return CLOUD_DEFAULT_MODEL
+        return self._listed[0]
 
     @staticmethod
     def _key() -> str:
@@ -84,7 +173,7 @@ class CloudAssist:
             reason = "Cloud assist is switched off."
         elif not self.key_present():
             reason = "Set GEMINI_API_KEY in the environment (free key at aistudio.google.com), then restart."
-        return {"enabled": self.enabled, "model": self.model,
+        return {"enabled": self.enabled, "model": self.resolve_model(),
                 "key_present": self.key_present(), "ready": ready, "reason": reason}
 
     # ---------- calls ----------
@@ -132,6 +221,8 @@ class CloudAssist:
         if not st["ready"]:
             raise CloudError(st["reason"] or "Cloud assist is not configured.")
         import httpx
+        self.available_models()           # cached; remaps a retired saved model
+        model = self.resolve_model()
         contents, chars, redacted = self._prepare(contents)
         body = {
             "systemInstruction": {"parts": [{"text": system}]},
@@ -141,13 +232,19 @@ class CloudAssist:
         try:
             with httpx.Client(timeout=90.0) as client:
                 resp = client.post(
-                    f"{CLOUD_BASE_URL}/models/{self.model}:generateContent",
+                    f"{CLOUD_BASE_URL}/models/{model}:generateContent",
                     headers={"x-goog-api-key": self._key()},
                     json=body,
                 )
         except httpx.HTTPError as e:
-            self._log(action, chars, redacted, ok=False, detail=str(e))
+            self._log(action, chars, redacted, ok=False, detail=str(e), model=model)
             raise CloudError(f"Cloud request failed: {e}")
+        if resp.status_code == 404:
+            self._listed = None           # the model list is stale; refetch next time
+            detail = (f"Google no longer offers {model}. Pick another model in Settings "
+                      "(the list there is refreshed from Google).")
+            self._log(action, chars, redacted, ok=False, detail=detail, model=model)
+            raise CloudError(detail)
         if resp.status_code != 200:
             detail = ("Gemini rejected the request. Check that GEMINI_API_KEY is valid."
                       if resp.status_code == 400 else
@@ -156,10 +253,10 @@ class CloudAssist:
                       f"Gemini service error ({resp.status_code}). Try again shortly."
                       if resp.status_code >= 500 else
                       f"Cloud request failed (HTTP {resp.status_code}).")
-            self._log(action, chars, redacted, ok=False, detail=detail)
+            self._log(action, chars, redacted, ok=False, detail=detail, model=model)
             raise CloudError(detail)
         # the payload left the machine and was answered — log it as sent
-        self._log(action, chars, redacted, ok=True)
+        self._log(action, chars, redacted, ok=True, model=model)
         try:
             parts = resp.json()["candidates"][0]["content"]["parts"]
             return "".join(p.get("text", "") for p in parts if not p.get("thought")).strip()
@@ -190,10 +287,11 @@ class CloudAssist:
         except Exception:
             return []   # best-effort: never block the click on a lookup
 
-    def _log(self, action: str, chars: int, redacted: int, ok: bool, detail: str = "") -> None:
+    def _log(self, action: str, chars: int, redacted: int, ok: bool, detail: str = "",
+             model: str = "") -> None:
         try:
             from app.db.repository import Repository
-            Repository().log_cloud(action, self.model, chars, redacted, ok, detail)
+            Repository().log_cloud(action, model or self.model, chars, redacted, ok, detail)
         except Exception:
             pass   # the log is a courtesy; never fail the call over it
 
