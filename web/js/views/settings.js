@@ -110,8 +110,8 @@ export async function render() {
       buildSeedPanel(seedInfo), false));
   }
 
-  // ---------- the models: why these, with published scores ----------
-  view.append(section('The models', 'Why each one is on the list, and which GPU it suits.',
+  // ---------- the models: which to pull, and why ----------
+  view.append(section('The models', 'Which to pull for your GPU, and why.',
     buildModelGuide(), false));
 
   // ---------- prompt transparency: exactly what each model is asked ----------
@@ -267,7 +267,9 @@ function buildModelGuide() {
       bars(m),
       (m.src || m.note) ? el('div', { class: 'muted', style: { fontSize: '11.5px', marginTop: '6px' } }, m.src || m.note) : null));
   }
-  wrap.append(el('div', { class: 'muted', style: { fontSize: '12px', marginTop: '14px', lineHeight: '1.5' } }, BENCH_NOTE));
+  if (MODEL_GUIDE.some(m => m.bench)) {
+    wrap.append(el('div', { class: 'muted', style: { fontSize: '12px', marginTop: '14px', lineHeight: '1.5' } }, BENCH_NOTE));
+  }
   return wrap;
 }
 
