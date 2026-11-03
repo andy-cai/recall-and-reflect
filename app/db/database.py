@@ -167,6 +167,10 @@ class Database:
         qcols = {r["name"] for r in conn.execute("PRAGMA table_info(questions)")}
         if "step" not in qcols:
             conn.execute("ALTER TABLE questions ADD COLUMN step INTEGER")
+        # Set when you skip a card in Recall; it sorts behind every other due card
+        # until it is next rated (apply_review clears it).
+        if "skipped_at" not in qcols:
+            conn.execute("ALTER TABLE questions ADD COLUMN skipped_at TEXT")
 
     @contextmanager
     def get_connection(self):

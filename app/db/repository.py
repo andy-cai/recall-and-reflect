@@ -392,6 +392,12 @@ class Repository:
     def delete_question(self, question_id: int) -> None:
         self.db.execute("DELETE FROM questions WHERE id = ?", (question_id,))
 
+    def mark_skipped(self, question_id: int) -> None:
+        """Skipped in Recall: still due, but behind every other due card until
+        it is next rated."""
+        self.db.execute("UPDATE questions SET skipped_at = ? WHERE id = ?",
+                        (to_iso(datetime.now()), question_id))
+
     def set_suspended(self, question_id: int, suspended: bool) -> None:
         self.db.execute(
             "UPDATE questions SET suspended = ? WHERE id = ?",
@@ -409,6 +415,7 @@ class Repository:
 
         Beyond filtering to due cards, the queue is *shaped*:
         - focused topics first, then most-at-risk (lowest retrievability), new last;
+        - cards you skipped go behind all of that (oldest skip first) until rated;
         - at most one card per learning per fetch, so sessions interleave topics
           instead of running siblings back-to-back (the first sibling's answer
           would prime the rest);
@@ -453,18 +460,21 @@ class Repository:
             tuple(params),
         )
         focused = {r["id"] for r in rows if r["l_priority"]}
+        skipped = {r["id"]: r["skipped_at"] for r in rows
+                   if "skipped_at" in r.keys() and r["skipped_at"]}
         pool = [self._question(r) for r in rows]
         if learning_id:
             return pool[:limit]
 
         def risk(q: Question) -> tuple:
+            back = (1, skipped[q.id]) if q.id in skipped else (0, "")
             is_focus = 0 if q.id in focused else 1
             if q.state == int(State.NEW) or q.stability <= 0:
-                return (is_focus, 1, 0.0)
+                return (*back, is_focus, 1, 0.0)
             elapsed = 0.0
             if q.last_reviewed_at is not None:
                 elapsed = (now - q.last_reviewed_at).total_seconds() / 86400
-            return (is_focus, 0, retrievability(q.stability, elapsed))
+            return (*back, is_focus, 0, retrievability(q.stability, elapsed))
 
         new_budget = max(0, self.get_new_per_day() - self.new_cards_today())
         seen_learnings: set[int] = set()
@@ -620,7 +630,8 @@ class Repository:
         with self.db.get_connection() as conn:
             conn.execute(
                 "UPDATE questions SET stability = ?, difficulty = ?, state = ?, "
-                "lapses = ?, last_reviewed_at = ?, next_review_at = ?, step = ? WHERE id = ?",
+                "lapses = ?, last_reviewed_at = ?, next_review_at = ?, step = ?, "
+                "skipped_at = NULL WHERE id = ?",
                 (result.stability, result.difficulty, int(result.state), result.lapses,
                  to_iso(now), to_iso(result.next_review_at), result.step, q.id),
             )

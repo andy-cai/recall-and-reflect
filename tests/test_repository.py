@@ -65,6 +65,40 @@ class TestQueueShaping(RepoCase):
         self.assertEqual([q.id for q in queue[:2]], [q_risky, q_fresh])
         self.assertEqual(queue[2].state, 0)  # the new card rides last
 
+    def test_skipped_card_goes_to_the_back_and_stays_due(self):
+        _, (q_fresh,) = self.make_topic("hoop stress")
+        _, (q_risky,) = self.make_topic("buckling")
+        self.make_topic("brand new topic")
+        self.set_reviewed(q_fresh, stability=10, reviewed_days_ago=1)
+        self.set_reviewed(q_risky, stability=10, reviewed_days_ago=40)   # would be first
+        self.repo.mark_skipped(q_risky)
+        queue = [q.id for q in self.repo.get_due_questions()]
+        self.assertEqual(queue[0], q_fresh)
+        self.assertEqual(queue[-1], q_risky)          # behind even the new card
+        self.assertEqual(len(queue), 3)               # still due, not buried
+
+    def test_skipped_card_loses_its_spot_in_a_short_session(self):
+        _, (q_skip,) = self.make_topic("A")
+        self.set_reviewed(q_skip, stability=10, reviewed_days_ago=60)
+        for name in ("B", "C", "D"):
+            _, (qid,) = self.make_topic(name)
+            self.set_reviewed(qid, stability=10, reviewed_days_ago=5)
+        self.repo.mark_skipped(q_skip)
+        self.assertNotIn(q_skip, [q.id for q in self.repo.get_due_questions(limit=3)])
+
+    def test_rating_clears_the_skip(self):
+        _, (qa,) = self.make_topic("A")
+        _, (qb,) = self.make_topic("B")
+        self.set_reviewed(qa, stability=10, reviewed_days_ago=40)
+        self.set_reviewed(qb, stability=10, reviewed_days_ago=30)
+        self.repo.mark_skipped(qa)
+        self.assertEqual(self.repo.get_due_questions()[0].id, qb)
+        self.repo.apply_review(self.repo.get_question(qa), rating=3)
+        row = self.repo.db.fetch_one("SELECT skipped_at FROM questions WHERE id = ?", (qa,))
+        self.assertIsNone(row["skipped_at"])
+        self.set_reviewed(qa, stability=10, reviewed_days_ago=40)     # due again, most at risk
+        self.assertEqual(self.repo.get_due_questions()[0].id, qa)     # normal order restored
+
     def test_new_per_day_budget(self):
         for i in range(5):
             self.make_topic(f"topic {i}")
