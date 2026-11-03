@@ -29,6 +29,21 @@ def is_cloud_model(name: str) -> bool:
     return any(marker in n for marker in CLOUD_MODEL_MARKERS)
 
 
+def local_model_names(entries: list) -> list[str]:
+    """Names from an Ollama /api/tags listing that really run on this machine.
+
+    Two independent checks: the tag name (is_cloud_model), and the structural
+    remote_host / remote_model fields Ollama sets on cloud-proxied entries."""
+    names = []
+    for m in entries or []:
+        if not isinstance(m, dict) or not m.get("name"):
+            continue
+        if m.get("remote_host") or m.get("remote_model") or is_cloud_model(m["name"]):
+            continue
+        names.append(m["name"])
+    return names
+
+
 def strip_think(text: str) -> str:
     return _THINK_RE.sub("", text or "").strip()
 
@@ -341,10 +356,9 @@ class LLMService:
             with httpx.Client(timeout=OLLAMA_CONNECT_TIMEOUT) as client:
                 resp = client.get(f"{OLLAMA_BASE_URL}/api/tags")
                 resp.raise_for_status()
-                names = [m["name"] for m in resp.json().get("models", [])]
+                return local_model_names(resp.json().get("models", []))
         except Exception:
             return []
-        return [n for n in names if not is_cloud_model(n)]
 
     def resolve_model(self) -> Optional[str]:
         models = self.local_models()

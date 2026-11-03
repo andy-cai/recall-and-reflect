@@ -68,7 +68,8 @@ schedules the next encounter.
 Everything runs on your machine by default. The app binds to `127.0.0.1` only, stores
 data in a local SQLite file under `data/` (git-ignored), and routine operation talks
 only to a **local** [Ollama](https://ollama.com) instance — Ollama cloud-proxy model
-tags are blocked.
+tags are blocked. For a second lock at the Ollama level, start it with
+`OLLAMA_NO_CLOUD=1` (or set `"disable_ollama_cloud": true` in `~/.ollama/server.json`).
 
 One explicit exception: **cloud assist** (off by default). Set `GEMINI_API_KEY` —
 either in your shell environment or in a git-ignored `.env` file at the repo root

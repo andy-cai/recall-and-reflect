@@ -76,8 +76,10 @@ DEFAULT_GEN_STYLE = (
 
 # Models that run in Ollama's CLOUD are blocked: they would send your notes
 # off-device, which violates the local-only promise. Any tag matching these
-# substrings is refused.
-CLOUD_MODEL_MARKERS = ("-cloud", "cloud)")
+# substrings is refused. Ollama names them both ways ("gpt-oss:120b-cloud" and
+# "gemma4:cloud"); /api/tags also marks them with remote_host / remote_model,
+# which llm.local_models() checks too, so a future naming scheme can't slip by.
+CLOUD_MODEL_MARKERS = ("-cloud", ":cloud", "cloud)")
 
 OLLAMA_TIMEOUT = 180.0         # seconds for a full (non-stream) generation (cold model loads are slow)
 OLLAMA_CONNECT_TIMEOUT = 4.0   # seconds to detect "is Ollama up?"
