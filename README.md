@@ -178,7 +178,7 @@ Icons are generated from one design by `tools/gen_icons.py`.
 python -m unittest discover tests
 ```
 
-CI runs the suite on Linux and Windows, Python 3.10 and 3.13.
+CI runs the suite on Linux and Windows, Python 3.10, 3.13 and 3.14.
 
 ## Stack
 
