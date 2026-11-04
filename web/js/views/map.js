@@ -485,13 +485,21 @@ export async function mapView({ focusId = null } = {}) {
     card.append(el('div', { class: 'muted', style: { fontSize: '13px', marginBottom: '8px' } },
       `Suggested by ${res.embeddings ? 'meaning and wording' : 'wording (start an embed model for meaning matches)'}. Untick any that are wrong.`));
     const rows = res.suggestions.map(s => {
-      const chk = el('input', { type: 'checkbox', checked: '', style: { width: '16px', height: '16px', accentColor: 'var(--accent)' } });
-      return { s, chk, node: el('label', { class: 'place-row' }, chk,
-        el('span', { class: 'soft' }, s.title), el('span', { class: 'muted' }, '→'),
-        el('span', { class: 'place-path' }, s.path.join(' › '))) };
+      const chk = el('input', { type: 'checkbox', checked: '', 'aria-label': `Place “${s.title}”`,
+        style: { width: '16px', height: '16px', accentColor: 'var(--accent)' } });
+      // runners-up as a picker, so a near miss is one click from right
+      const choices = [{ node_id: s.node_id, path: s.path }, ...(s.alternatives || [])];
+      const target = choices.length > 1
+        ? el('select', { class: 'place-select', 'aria-label': `Map item for “${s.title}”` },
+            ...choices.map(c => el('option', { value: String(c.node_id), title: c.path.join(' › ') }, c.path.slice(-2).join(' › '))))
+        : el('span', { class: 'place-path', title: s.path.join(' › ') }, s.path.slice(-2).join(' › '));
+      const nodeId = () => (target.tagName === 'SELECT' ? Number(target.value) : s.node_id);
+      return { s, chk, nodeId, node: el('div', { class: 'place-row' }, chk,
+        el('span', { class: 'soft place-title' }, s.title), el('span', { class: 'muted' }, '→'), target,
+        s.via === 'meaning' ? el('span', { class: 'tag', title: 'Matched by meaning (embeddings)' }, '≈') : null) };
     });
     const apply = el('button', { class: 'btn btn-primary', onClick: async () => {
-      const links = rows.filter(r => r.chk.checked).map(r => ({ node_id: r.s.node_id, learning_id: r.s.learning_id }));
+      const links = rows.filter(r => r.chk.checked).map(r => ({ node_id: r.nodeId(), learning_id: r.s.learning_id }));
       if (!links.length) { toast('Nothing selected'); return; }
       apply.disabled = true;
       const r = await api.mapPlace(links);

@@ -151,6 +151,23 @@ internship areas). Library › Map › *Paste outline* offers it in one click; t
 bullets are optional, a line starting or ending with `!` is flagged, and a line
 `## Label` sets the source label (the filter chips) for what follows.
 
+## Working with Claude Code
+
+Use Claude Code for occasional curation: restructuring the map, placing topics,
+comparing a branch against a syllabus, or a weekly look at what's slipping.
+Grading, follow-ups and People stay on the local model. Claude Code goes through
+`tools/rr.py` (see `CLAUDE.md`), never the database. The tool:
+
+- refuses People and Private topics, replaces People names with `[name]`, and
+  logs every output under Settings › Sent to cloud as "rr CLI";
+- can change only the map; topics and cards are read-only;
+- previews map edits as a diff, and needs `--yes` to apply (and `--delete` to
+  remove items).
+
+`.claude/settings.json` pre-approves the read commands and blocks direct reads
+of `data/` and `sqlite3`. That's a guardrail, not a wall: Claude Code can still
+run arbitrary Python if you approve it.
+
 ## Math
 
 Card text supports `$...$` / `$$...$$` TeX. To render it offline, vendor KaTeX once

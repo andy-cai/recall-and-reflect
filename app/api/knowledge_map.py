@@ -53,6 +53,11 @@ def _missing():
     return JSONResponse({"error": "not found"}, status_code=404)
 
 
+def _topic_ok(store: MapStore, learning_id: int) -> bool:
+    row = store.db.fetch_one("SELECT is_active FROM learnings WHERE id = ?", (learning_id,))
+    return bool(row and row["is_active"])
+
+
 @router.get("")
 def get_map():
     return MapStore().tree()
@@ -99,7 +104,7 @@ def shift_node(node_id: int, body: ShiftIn):
 @router.post("/nodes/{node_id}/link")
 def link(node_id: int, body: LinkIn):
     store = MapStore()
-    if not store.get_node(node_id):
+    if not store.get_node(node_id) or not _topic_ok(store, body.learning_id):
         return _missing()
     store.link(node_id, body.learning_id)
     return {"ok": True}
@@ -172,7 +177,7 @@ def place(body: PlaceIn):
             nid, lid = int(item["node_id"]), int(item["learning_id"])
         except (KeyError, TypeError, ValueError):
             continue
-        if store.get_node(nid):
+        if store.get_node(nid) and _topic_ok(store, lid):
             store.link(nid, lid)
             n += 1
     return {"linked": n}

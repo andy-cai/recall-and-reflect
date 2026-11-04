@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python tools/rr.py map export:*)",
+      "Bash(python tools/rr.py map weak:*)",
+      "Bash(python tools/rr.py topics:*)",
+      "Bash(python3 tools/rr.py map export:*)",
+      "Bash(python3 tools/rr.py map weak:*)",
+      "Bash(python3 tools/rr.py topics:*)"
+    ],
+    "deny": [
+      "Read(./data/**)",
+      "Edit(./data/**)",
+      "Bash(sqlite3:*)"
+    ]
+  }
+}
