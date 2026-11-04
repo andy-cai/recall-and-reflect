@@ -409,7 +409,7 @@ class Repository:
     def get_due_questions(
         self, limit: int = 200, tag: Optional[str] = None,
         learning_id: Optional[int] = None, subject: Optional[str] = None,
-        focus: bool = False,
+        focus: bool = False, learning_ids: Optional[list[int]] = None,
     ) -> list[Question]:
         """Build the review queue.
 
@@ -448,6 +448,11 @@ class Repository:
         if learning_id:
             clauses.append("q.learning_id = ?")
             params.append(learning_id)
+        if learning_ids is not None:
+            # a map branch: only topics linked under it (empty branch -> nothing)
+            ids = [int(i) for i in learning_ids] or [-1]
+            clauses.append(f"q.learning_id IN ({','.join('?' * len(ids))})")
+            params.extend(ids)
         where = " AND ".join(clauses)
         rows = self.db.fetch_all(
             f"""

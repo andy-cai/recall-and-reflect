@@ -100,8 +100,25 @@ export const api = {
   personAssociation: (id, text) => jfetch('POST', `/api/learnings/${id}/association`, { text }),
 
   // review
-  queue: ({ tag = null, learning_id = null, subject = null, limit = null, focus = null, mode = null } = {}) => {
+  // knowledge map (outline of areas; status computed from linked topics)
+  map: () => jfetch('GET', '/api/map'),
+  mapAdd: (b) => jfetch('POST', '/api/map/nodes', b),
+  mapUpdate: (id, b) => jfetch('PUT', `/api/map/nodes/${id}`, b),
+  mapDelete: (id) => jfetch('DELETE', `/api/map/nodes/${id}`),
+  mapMove: (id, parent_id, index = null) => jfetch('POST', `/api/map/nodes/${id}/move`, { parent_id, index }),
+  mapShift: (id, op) => jfetch('POST', `/api/map/nodes/${id}/shift`, { op }),
+  mapLink: (id, learning_id) => jfetch('POST', `/api/map/nodes/${id}/link`, { learning_id }),
+  mapUnlink: (id, learning_id) => jfetch('POST', `/api/map/nodes/${id}/unlink`, { learning_id }),
+  mapPath: (id) => jfetch('GET', `/api/map/nodes/${id}/path`),
+  mapImport: (text, parent_id = null) => jfetch('POST', '/api/map/import', { text, parent_id }),
+  mapSuggest: () => jfetch('POST', '/api/map/suggest'),
+  mapPlace: (links) => jfetch('POST', '/api/map/place', { links }),
+  mapStarters: () => jfetch('GET', '/api/map/starters'),
+  mapForLearning: (id) => jfetch('GET', `/api/map/learning/${id}`),
+
+  queue: ({ tag = null, learning_id = null, subject = null, limit = null, focus = null, mode = null, node = null } = {}) => {
     const p = new URLSearchParams();
+    if (node) p.set('node', node);
     if (tag) p.set('tag', tag);
     if (learning_id) p.set('learning_id', learning_id);
     if (subject !== null && subject !== undefined) p.set('subject', subject);

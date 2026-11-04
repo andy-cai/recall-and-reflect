@@ -48,7 +48,7 @@ export async function render({ params } = {}) {
 
   const data = await api.queue({ tag: params?.tag || null, learning_id: params?.learning || null,
     subject: params?.subject, limit: params?.limit || null,
-    focus: params?.focus || null, mode: params?.mode || null });
+    focus: params?.focus || null, mode: params?.mode || null, node: params?.node || null });
   const cards = data.cards;
 
   // Scheduled teach swap-in: at most one solid topic per session teaches instead
