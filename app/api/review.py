@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from app.core.cloze import render_answer, render_question
 from app.core.fsrs import CardState, State, format_result, preview_intervals
 from app.db.models import Question
+from app.db.knowledge_map import MapStore
 from app.db.repository import Repository
 from app.services.llm import OllamaError, get_llm
 
@@ -56,15 +57,16 @@ def _serialize(q: Question, title: str, retention: float,
 @router.get("/queue")
 def queue(tag: Optional[str] = None, learning_id: Optional[int] = None,
           subject: Optional[str] = None, limit: int = 200,
-          focus: int = 0, mode: Optional[str] = None):
+          focus: int = 0, mode: Optional[str] = None, node: Optional[int] = None):
     repo = Repository()
+    branch = MapStore(repo.db).subtree_learning_ids(node) if node else None
     retention = repo.get_desired_retention()
     if mode == "evening":
         # wind-down: today's misses + today's captures, a small pass before sleep
         due = repo.evening_queue(limit=min(limit, 10))
     else:
         due = repo.get_due_questions(limit=limit, tag=tag, learning_id=learning_id,
-                                     subject=subject, focus=bool(focus))
+                                     subject=subject, focus=bool(focus), learning_ids=branch)
 
     titles: dict[int, str] = {}
     subjects: dict[int, str] = {}

@@ -1,0 +1,180 @@
+## Degree
+Mechanics of Materials & Machine Element Design
+  Classes of materials
+  Microstructure of metals
+    FCC, BCC, HCP; grain size effects on mechanical, thermal, electrical, magnetic properties
+      Hall-Petch: σy = σ0 + k/√d
+    Upper and lower yield point, Lüders bands
+    Effects of heat treatment
+    Phases of steel (ferrite, pearlite, martensite, austenite)
+      ! TTT / CCT diagrams
+  Properties of plastics from molecular structure
+    Amorphous vs semi-crystalline
+  Defining and calculating stresses
+    Mohr's circle (tensile/compressive vs shear)
+    Core stress formulas: δ = FL/EA, σ = My/I, τ = Tr/J, τ = VQ/It, φ = TL/JG, σhoop = Pr/t
+    Shear flow, shear and moment diagrams, shear center
+    Buckling failure: Pcr = π²EI/(KL)²
+  Ductile, brittle and fatigue failure
+    Lüders bands; yield as a function of grains and defects
+    Ductile failure theories: Coulomb-Mohr, von Mises (distortion energy), Tresca (max shear)
+    Griffith crack propagation, K_IC, crack types, plastic zone: K = βσ√(πa)
+    Endurance limit; modified Goodman, Soderberg, Gerber
+  Machine elements
+    AGMA equations for gear life and forces
+    Bolted joints: fatigue, stiffness, preload, pull-through
+    L10 bearing life and forces
+    Tabular stress concentration factors, fit classes
+    Thermal strains: ε = αΔT
+  Finite element analysis
+    Hooke's law, shape functions, strain energy density, stiffness/displacement/force matrices
+
+Kinematics & Dynamics
+  Vectors in moving reference frames
+    Velocity and acceleration in rotating frames
+    Inertia matrix
+    Impulse, impacts, coefficient of restitution
+    Conservation of momentum and energy
+  Mechanisms and linkages
+    Kutzbach criterion, Grashof's law, crank-rocker, double crank / rocker
+    Velocity image, higher/lower pairs, instant centers, Aronhold-Kennedy theorem
+    Acceleration polygon, Coriolis acceleration
+    D'Alembert's principle
+  Vibration and frequency analysis
+    Equations of motion via Newton, Rayleigh or D'Alembert
+    Equivalent systems and natural frequencies (Dunkerley, Rayleigh's quotient)
+    Free vibration: undamped, under/critically/over-damped; Coulomb damping, log decrement
+    Harmonic excitation: phase, magnitude vs r and ζ, energy dissipated per cycle
+    Arbitrary excitation: Fourier, impulse and convolution integral
+    Vibration isolation: loss factor, Q-factor, transmissibility (force and base excitation)
+    Vibration pickups: relative motion
+    Forces from imbalanced rotating machinery
+    Multi-DoF systems: matrix form, principal coordinates, mode orthogonality, mechanical impedance
+    Continuous systems: strings, bars (axial, torsional), beams (lateral)
+    Power spectral density testing and analysis
+
+Manufacturing Methods & Theory
+  Plastics
+    Injection molding: gates, sprues, runners, cooling time, defects (warpage, short shot, flash, weld lines)
+    Side action, overmolding, insert molding
+    Thermoforming, blow molding, blown film extrusion
+  Metals
+    Machining: shear/rake/relief angle, Merchant circle, unit power, conventional vs climb milling
+    Grinding, skiving, broaching, hobbing, shaping
+    Casting: sand, die, investment; Chvorinov's rule; defects (cold shut, shrinkage, porosity, hot tears, misruns)
+    Forming: rolling, forging, extrusion, drawing, bending, deep drawing, shearing
+    Sheet metal: blanking, punching, progressive dies, springback
+  Composites: wet layup, infusion, prepreg
+  Semiconductors and micro-fabrication
+  Ceramics
+  Additive manufacturing: SLA, material/binder jetting, FDM, sheet lamination, SLS, DED
+  Economics
+    Elasticity, cross-elasticity, price controls, marginal utility, substitution
+    Monopoly, cartels, price discrimination
+    Market failures and government intervention
+
+Fluids, Thermodynamics & Heat Transfer
+  Laws of thermodynamics; entropy relations
+  Gas power cycles
+    Ideal gas, van der Waals, Lee-Kesler residuals, Maxwell relations, Joule-Thomson
+    Carnot, Otto, Diesel, Stirling, Brayton, Ericsson cycles
+    Rankine, phase change, quality, Clausius-Clapeyron, refrigeration cycle
+    Psychrometrics, humidity
+  Jet propulsion and compressible flow
+    Thrust, specific impulse, Mach number, quasi-1D flow
+    Choking, sonic area, CD nozzles
+    Normal and oblique shocks, Prandtl-Meyer expansion
+    Kantrowitz conditions; Fanno and Rayleigh flow
+  Conduction: Fourier's law, thermal resistance
+  Convection: h, Nu, Pr, Re, Ra; variation of h with orientation, flow, surface
+  Radiation: Q = σεAT⁴, radiative resistance
+  Transient analysis: Biot number, lumped capacitance
+
+Design Process & Tools
+  Drawings and GD&T: features of size, callouts, roughness
+  Inspection tools: caliper, micrometer, CMM, dial indicator, laser micrometer
+  Coding: MATLAB, Python, C; data structures
+  Finite element method in practice
+    ANSYS Mechanical, SimLab, SimSolid
+    Connections: bearings, RBEs, bolts, contacts, remote points
+    Mesh quality metrics
+    Non-linear settings
+  ! Computational fluid dynamics
+  Design methodology: Pugh matrix, House of Quality, morphological chart, SWOT/PESTLE/Porter
+
+Control Systems
+  Transfer functions
+  Block diagram representations
+
+Applied Electronics
+  Electronic control systems
+    Nyquist sampling, aliasing; frequency vs time domain
+    1st/2nd-order responses; Bode plots
+    Filters: low/high/band-pass, notch, active; bandwidth
+  Basics of circuits
+    Impedance of R, L, C in the s-domain
+    Nodal/mesh analysis, Thévenin/Norton, op-amps, diodes, BJT and MOSFET models
+    Karnaugh maps, memory, finite state machines
+  Measuring strain, temperature, velocity, acceleration, pressure, flow
+    Wheatstone bridges, op-amp configurations, ADCs
+    LVDT, photodiodes and phototransistors
+    Magnetic pickups, Doppler (radar/lidar/sonar), stroboscope
+    Thermocouples, thermistors, RTDs
+  Transformers: losses, loading, per-unit analysis
+  Induction and synchronous machines: power factor, wye/delta, slip, VFDs, starting
+  DC machines: brushed and brushless, servos, PWM
+  Microcontrollers: UART, I²C, SPI; error detection and correction
+  Electrical grid distribution
+
+Applied Mathematics
+  Probability and statistics: distributions, hypothesis testing, outlier tests
+  Linear algebra
+    Change of basis, transformation matrices
+    Solving systems (GE, Jacobi, Gauss-Seidel), least squares
+    Eigenvalues, power method, factorizations (LU, QR, Schur, SVD)
+  Calculus for approximation: Taylor, Fourier, Laplace, Lagrangian
+  Vector calculus: curl, divergence, Green's, Stokes', divergence theorem
+  ODEs and PDEs by hand: separation, integrating factor, Laplace, phase plane, Cauchy-Euler
+    Solutions to the continuity, heat and wave equations
+
+Physics & Chemistry
+  Wave-particle duality of light
+  Bonding and periodic trends; molecular orbital and band theory
+  Organic families and reactions
+  Rate law, equilibrium, Arrhenius, Nernst, acid-base, redox
+  Magnetism: dia-, para-, ferromagnetism
+
+## MFE
+Battery & Test Engineering
+  Cell capacity testing: CC/CV charge and discharge
+  Cell dynamics testing: pulse, HPPC
+  ACIR testing
+  Design process starting from LapSim
+  Tight packaging of the HV bay: DFA, DFR
+  Selecting test apparatus: DC load, bidirectional supply
+  Composite container to meet strength requirements; bonded joint testing
+  Cell electrochemistry: how different cell types work
+  Electroplating and corrosion
+    Pros and cons of tin, nickel, gold, silver
+    Tin whiskers
+    Galvanic corrosion
+    Intermetallic formation, electromigration
+  Heat generated by cells: Joule, entropic, overpotentials, side reactions, phase change
+  Fusing design: I²t, fuse curves
+  PCB design: Altium workflow
+  High-temperature sealing: Swagelok connections
+
+## Internships
+Seal Design & Testing
+  Seal types: compression, blade and wiper, face, dispensed
+  Leak testing: magic holes, orifice-flow leak rate
+Battery Abuse & Safety
+  PPR testing protocols, pass/fail
+  Deflagration requirements
+  Cell failure types (FSR, crimp, bottom ejection)
+  HV insulation: creepage/clearance, pollution degree, corona
+Tolerance Stacks
+  RSS (Gaussian) stacks
+  Monte Carlo simulation
+Building-scale vibration test and simulation
+Simulation Tools: ANSYS Mechanical, SimSolid, SKF SimPro

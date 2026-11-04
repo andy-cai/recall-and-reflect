@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from app.core.cloze import extract_cloze_cards
+from app.db.knowledge_map import MapStore
 from app.db.repository import Repository
 from app.services.cloud import CloudError, get_cloud
 from app.services.embeddings import get_embeddings
@@ -47,6 +48,7 @@ class LearningIn(BaseModel):
     recall_card: bool = True   # auto-add a free-recall prompt for the topic
     private: bool = False      # never sent to any cloud model (People always are)
     notes: Optional[str] = None
+    map_node_id: Optional[int] = None  # captured from a map item ("Cover this"): link it there
 
 
 def _derive_title(content: str) -> str:
@@ -87,6 +89,10 @@ def create_learning(body: LearningIn):
     if body.recall_card:
         repo.create_recall_card(lid, title, body.content.strip())
         n += 1
+    if body.map_node_id is not None:
+        store = MapStore(repo.db)
+        if store.get_node(body.map_node_id):
+            store.link(body.map_node_id, lid)
     _embed_async(lid, title, body.content)
     return {"id": lid, "title": title, "cards": n}
 

@@ -17,7 +17,7 @@ function deriveTitle(text) {
 
 const DRAFT_KEY = 'rr-reflect-draft';
 
-export async function render() {
+export async function render({ params } = {}) {
   const llmOk = !!(state.llm && state.llm.available);
 
   const convo = [];                 // {role, content}
@@ -74,6 +74,21 @@ export async function render() {
       ? 'Talk a topic through. Explaining it yourself is what makes it stick.'
       : 'AI is offline. Jot the topic down; you can talk it through later.')));
 
+  // Opened from a map item ("Cover this"): the saved topic links back to it.
+  let mapNodeId = null, mapPath = null;
+  if (params && params.node) {
+    const r = await api.mapPath(Number(params.node)).catch(() => null);
+    if (r && r.path) {
+      mapNodeId = Number(params.node);
+      mapPath = r.path;
+      view.append(el('div', { class: 'map-cover' },
+        el('span', { class: 'eyebrow' }, 'Covering'),
+        el('span', { class: 'soft' }, r.path.slice(0, -1).join(' › ') + (r.path.length > 1 ? ' › ' : '')),
+        el('b', {}, r.path.at(-1)),
+        el('span', { class: 'muted', style: { marginLeft: 'auto', fontSize: '12.5px' } }, 'Saves into this map item')));
+    }
+  }
+
   const chatWrap = el('div', {});
 
   // ---------- topic panel ----------
@@ -83,6 +98,7 @@ export async function render() {
   const subjectList = el('datalist', { id: 'subj-list' }, ...subjectNames.map(n => el('option', { value: n })));
   const subjectInput = el('input', { class: 'input', placeholder: 'e.g. Vibrations, Geopolitics…', list: 'subj-list' });
   const saveBtn = el('button', { class: 'btn btn-primary btn-block', onClick: save }, 'Save topic');
+  if (mapPath) titleInput.value = mapPath.at(-1);
 
   // detail questions (optional, collapsed)
   const chev = el('span', { class: 'muted', style: { fontSize: '12px' } }, '▸');
@@ -176,7 +192,8 @@ export async function render() {
     saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
     try {
       const res = await api.createLearning({ title, content, reflection: reflection || null,
-        subject: subjectInput.value.trim() || null, conversation, tags, cards, key_ideas });
+        subject: subjectInput.value.trim() || null, conversation, tags, cards, key_ideas,
+        map_node_id: mapNodeId });
       toast(`Saved “${res.title}”`);
       clearDraft();
       refreshBadge();

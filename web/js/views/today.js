@@ -2,6 +2,7 @@ import { el, clear, toast, heatmapEl } from '../store.js';
 import { api } from '../api.js';
 import { navigate, refreshBadge } from '../app.js';
 import { renderMathIn } from '../math.js';
+import { indexTree, atlasEl, branchPanel, legendEl } from '../knowledge.js';
 
 function greeting() {
   const h = new Date().getHours();
@@ -81,8 +82,39 @@ function buildFocus(t) {
   return wrap;
 }
 
+// The degree at a glance: one block per area, sized by how much is in it,
+// tinted by how well it's holding. Click a block for its weakest items.
+function buildAtlas(tree) {
+  const idx = indexTree(tree);
+  const card = el('div', { class: 'card', style: { marginTop: '16px' } });
+  if (!idx.roots.length) {
+    card.classList.add('row', 'spread');
+    card.append(el('div', {},
+        el('div', { style: { fontWeight: '580' } }, 'Map the areas you want to keep'),
+        el('div', { class: 'muted', style: { fontSize: '13.5px' } }, 'Paste your outline once; it shows here, coloured by what’s fading.')),
+      el('button', { class: 'btn', onClick: () => navigate('#/library?map=0') }, 'Build your map →'));
+    return card;
+  }
+  let sel = null;
+  function draw() {
+    clear(card);
+    card.append(el('div', { class: 'row spread', style: { marginBottom: '12px' } },
+      el('div', { class: 'eyebrow' }, 'Your map'),
+      legendEl()));
+    card.append(atlasEl(idx, { height: 240, selected: sel && sel.id,
+      onSelect: (n) => { sel = sel && sel.id === n.id ? null : n; draw(); } }));
+    if (sel) card.append(branchPanel(idx, sel, {
+      onReview: (n) => navigate('#/recall?node=' + n.id),
+      onOpen: (n) => navigate('#/library?map=' + n.id),
+      onCover: (n) => navigate('#/reflect?node=' + n.id),
+    }));
+  }
+  draw();
+  return card;
+}
+
 export async function render() {
-  const t = await api.today();
+  const [t, tree] = await Promise.all([api.today(), api.map().catch(() => null)]);
   const view = el('div', { class: 'view' });
 
   const dateStr = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
@@ -147,6 +179,8 @@ export async function render() {
   }
 
   view.append(hero);
+
+  if (tree) view.append(buildAtlas(tree));
 
   // Focus — prioritize topics by telling it what matters right now
   view.append(buildFocus(t));

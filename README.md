@@ -115,6 +115,7 @@ benchmark scores, and "What the AI is asked" shows every system prompt verbatim.
 | **Reflect** | Free-flow chat → 2–3 generative follow-ups (skippable) → the AI distills editable **key ideas** (the rubric your recall is graded against) + optional detail questions → save. |
 | **Recall** | Free recall (type it) → confidence → AI grades **per key idea** (✓/◐/✕ checklist) + one Socratic poke → rate (1–4, with the verdict-consistent rating pre-highlighted — `Enter` takes it). Confident misses return at the end of the session and a bit sooner next time (hypercorrection). An idea missed twice in a row earns its own drill card. **Sketch tasks** ("Sketch the S-N curve…") are drawn on nearby paper; the reveal is a feature checklist (axes, shape, landmarks), and anything you type about your drawing gets the AI check. |
 | **Organize** | Each note gets a **Subject** (its home area). The Library's *Explore* view groups concepts by subject, and the local AI can suggest subjects for an uncategorized backlog (you approve). |
+| **Map** | Library › **Map** is an editable outline of the areas you want to keep (a degree review, a job's skill tree). Items link to topics, and each item's status is **computed from your reviews**, never highlighted by hand: solid (recall ≥ 85%), fading (60–85%), shaky (< 60%, an idea missed twice running, or flagged `!`), new, or no cards yet. Outliner keys: `Enter` edit / new item below, `Tab` / `⇧Tab` indent, `Alt+↑↓` move, `←→` fold, `Del` remove. *Cover in Reflect* turns an uncovered item into a topic that files itself there; *Place topics* matches unplaced topics to items (wording, plus meaning with an embed model; you confirm); an inbox holds gaps you haven't placed. The **Atlas** (also on Today) draws the whole map as blocks sized by how much is in them and tinted by how well they're holding; click one for its weakest items or to review just that branch. |
 | **Focus** | Prioritize what matters now: star topics in the Library, focus a whole subject, or just tell Today *"vibrations final next week"* — the local model matches it to your real topics (you confirm). Focused topics jump every queue and claim the new-card budget first. |
 | **Rhythm** | Come back after days away to a **welcome-back ramp** (spread the pile over N days, keep today's most-at-risk). Evenings offer a small **wind-down session** — today's misses and new captures, timed for sleep consolidation. |
 | **Connect** | With a local embed model (`ollama pull nomic-embed-text`), topics link up: **related concepts** in the Library, one-click **contrast cards** for confusables (Tresca vs. von Mises), **connection chips** while you capture, semantic search, and duplicate warnings on bulk add. |
@@ -141,6 +142,31 @@ renamed are never touched.
 New topics ease into review at your new-per-day cap; focus a subject on Today to pull
 its topics forward. Edit or add your own decks as JSON in `seeds/` — the format is
 plain (see any existing file), and `tests/test_seeds.py` validates them.
+
+### Starter map
+
+`seeds/map/degree_review.txt` is a ready outline of the curriculum (degree, MFE and
+internship areas). Library › Map › *Paste outline* offers it in one click; then
+*Place topics* links the seeded topics into it. The format is plain indented text:
+bullets are optional, a line starting or ending with `!` is flagged, and a line
+`## Label` sets the source label (the filter chips) for what follows.
+
+## Working with Claude Code
+
+Use Claude Code for occasional curation: restructuring the map, placing topics,
+comparing a branch against a syllabus, or a weekly look at what's slipping.
+Grading, follow-ups and People stay on the local model. Claude Code goes through
+`tools/rr.py` (see `CLAUDE.md`), never the database. The tool:
+
+- refuses People and Private topics, replaces People names with `[name]`, and
+  logs every output under Settings › Sent to cloud as "rr CLI";
+- can change only the map; topics and cards are read-only;
+- previews map edits as a diff, and needs `--yes` to apply (and `--delete` to
+  remove items).
+
+`.claude/settings.json` pre-approves the read commands and blocks direct reads
+of `data/` and `sqlite3`. That's a guardrail, not a wall: Claude Code can still
+run arbitrary Python if you approve it.
 
 ## Math
 

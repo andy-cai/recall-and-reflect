@@ -105,6 +105,29 @@ CREATE TABLE IF NOT EXISTS cloud_log (
     detail TEXT                   -- error text on failure, else empty
 );
 
+-- The knowledge map: an outline of the areas you want to keep (your "degree
+-- review"). Nodes link to topics; each node's status is computed from those
+-- topics' cards, never typed by hand. kind 'inbox' = a parked item not yet
+-- placed in the tree (parent_id stays NULL).
+CREATE TABLE IF NOT EXISTS map_nodes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    parent_id INTEGER REFERENCES map_nodes(id) ON DELETE CASCADE,
+    position INTEGER NOT NULL DEFAULT 0,
+    text TEXT NOT NULL,
+    kind TEXT NOT NULL DEFAULT 'item',    -- 'item' | 'inbox'
+    source TEXT,                          -- where it comes from: Degree, MFE, Internships…
+    flag INTEGER NOT NULL DEFAULT 0,      -- 1 = you marked it "lacking understanding"
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS map_links (
+    node_id INTEGER NOT NULL REFERENCES map_nodes(id) ON DELETE CASCADE,
+    learning_id INTEGER NOT NULL REFERENCES learnings(id) ON DELETE CASCADE,
+    PRIMARY KEY (node_id, learning_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_map_nodes_parent ON map_nodes(parent_id, position);
+CREATE INDEX IF NOT EXISTS idx_map_links_learning ON map_links(learning_id);
 CREATE INDEX IF NOT EXISTS idx_key_ideas_learning ON key_ideas(learning_id);
 CREATE INDEX IF NOT EXISTS idx_questions_learning ON questions(learning_id);
 CREATE INDEX IF NOT EXISTS idx_questions_next_review ON questions(next_review_at);

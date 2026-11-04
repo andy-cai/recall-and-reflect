@@ -2,6 +2,7 @@
 import { el, clear, toast, agoDate, relDate, state } from '../store.js';
 import { api } from '../api.js';
 import { navigate, refreshBadge } from '../app.js';
+import { mapView } from './map.js';
 
 function parseConversation(raw) {
   if (!raw) return [];
@@ -9,24 +10,30 @@ function parseConversation(raw) {
   catch { return []; }
 }
 
-export async function render({ rest } = {}) {
+export async function render({ rest, params } = {}) {
   if (rest && rest[0]) return detail(Number(rest[0]));
-  return list();
+  return list(params || {});
 }
 
-async function list() {
+const LIB_MODE_KEY = 'rr-library-mode';
+
+async function list(params = {}) {
   const view = el('div', { class: 'view' });
   view.append(el('div', { class: 'page-head' }, el('h1', {}, 'Library'),
     el('p', { class: 'sub' }, 'Browse what you’ve learned by subject area.')));
 
   let mode = 'explore', search = '', activeTag = null, timer = null;
+  try { mode = localStorage.getItem(LIB_MODE_KEY) || 'explore'; } catch {}
+  const mapFocus = params.map ? Number(params.map) : null;
+  if (params.map !== undefined) mode = 'map';
   const llmOk = !!(state.llm && state.llm.available);
 
-  const exploreBtn = el('button', { class: 'chip on', onClick: () => setMode('explore') }, 'Explore');
+  const exploreBtn = el('button', { class: 'chip', onClick: () => setMode('explore') }, 'Explore');
   const listBtn = el('button', { class: 'chip', onClick: () => setMode('list') }, 'List');
+  const mapBtn = el('button', { class: 'chip', onClick: () => setMode('map') }, 'Map');
   const searchInput = el('input', { class: 'input', placeholder: 'Search…', style: { maxWidth: '280px' } });
   view.append(el('div', { class: 'row spread', style: { marginBottom: '14px' } },
-    el('div', { class: 'row', style: { gap: '7px' } }, exploreBtn, listBtn), searchInput));
+    el('div', { class: 'row', style: { gap: '7px' } }, mapBtn, exploreBtn, listBtn), searchInput));
 
   const reviewSlot = el('div', {});
   const content = el('div', {});
@@ -34,18 +41,36 @@ async function list() {
 
   function setMode(m) {
     mode = m;
-    exploreBtn.classList.toggle('on', m === 'explore');
-    listBtn.classList.toggle('on', m === 'list');
+    try { localStorage.setItem(LIB_MODE_KEY, m); } catch {}
+    paintMode();
     clear(reviewSlot);
     render();
   }
+  function paintMode() {
+    exploreBtn.classList.toggle('on', mode === 'explore');
+    listBtn.classList.toggle('on', mode === 'list');
+    mapBtn.classList.toggle('on', mode === 'map');
+    searchInput.style.display = mode === 'map' ? 'none' : '';
+    view.classList.toggle('wide', mode === 'map');
+  }
+  paintMode();
   searchInput.addEventListener('input', () => {
     clearTimeout(timer);
     search = searchInput.value.trim();
     if (search && mode === 'explore') setMode('list');
     else timer = setTimeout(render, 220);
   });
-  function render() { return mode === 'explore' ? renderExplore() : renderList(); }
+  function render() {
+    if (mode === 'map') return renderMap();
+    return mode === 'explore' ? renderExplore() : renderList();
+  }
+
+  // ---------- Map (outline of areas, status from reviews) ----------
+  async function renderMap() {
+    const node = await mapView({ focusId: mapFocus });
+    clear(content);
+    content.append(node);
+  }
 
   // ---------- Explore (grouped by subject) ----------
   async function renderExplore() {
@@ -270,6 +295,41 @@ async function detail(id) {
     el('div', { class: 'field' }, el('label', { class: 'lbl' }, 'Tags'), tagsInput),
     el('div', { class: 'row', style: { justifyContent: 'flex-end' } },
       el('button', { class: 'btn btn-primary', onClick: saveMeta }, 'Save'))));
+
+  // where this topic sits in the knowledge map (loads async)
+  const mapSlot = el('div', { class: 'map-place' });
+  view.append(mapSlot);
+  async function drawMapPlace() {
+    const [mine, tree] = await Promise.all([api.mapForLearning(id), api.map()]).catch(() => [null, null]);
+    if (!mine || !tree) return;
+    clear(mapSlot);
+    const items = tree.nodes.filter(n => n.kind === 'item');
+    if (!items.length) return;                 // no map yet: stay quiet
+    const byId = new Map(items.map(n => [n.id, n]));
+    const pathOf = (nid) => { const out = []; let c = byId.get(nid), g = 0; while (c && g++ < 64) { out.unshift(c.text); c = byId.get(c.parent_id); } return out.join(' › '); };
+    mapSlot.append(el('span', { class: 'eyebrow' }, 'In your map'));
+    for (const m of mine.nodes) {
+      mapSlot.append(el('span', { class: 'mtopic' },
+        el('a', { href: '#/library?map=' + m.id }, m.path.join(' › ')),
+        el('button', { class: 'mtopic-x', 'aria-label': 'Remove from this map item',
+          onClick: async () => { await api.mapUnlink(m.id, id); drawMapPlace(); } }, '×')));
+    }
+    const opts = items.map(n => ({ id: n.id, label: pathOf(n.id) }));
+    const dl = el('datalist', { id: 'map-paths-d' }, ...opts.map(o => el('option', { value: o.label })));
+    const inp = el('input', { class: 'input', list: 'map-paths-d', style: { maxWidth: '360px', padding: '6px 10px' },
+      placeholder: mine.nodes.length ? 'Also place under…' : 'Not in your map yet. Place under…' });
+    const go = async () => {
+      const hit = opts.find(o => o.label === inp.value);
+      if (!hit) return;
+      await api.mapLink(hit.id, id);
+      toast('Placed in your map');
+      drawMapPlace();
+    };
+    inp.addEventListener('change', go);
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+    mapSlot.append(inp, dl);
+  }
+  drawMapPlace();
 
   // capture conversation (read-only, collapsed)
   const convo = parseConversation(L.conversation);
